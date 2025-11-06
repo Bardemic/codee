@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import subprocess, os
 from dulwich import porcelain
+from dulwich.repo import Repo
 from langchain.agents import create_agent
 from dotenv import load_dotenv
 
@@ -30,6 +31,11 @@ def createWorkspace(repo_id: uuid.UUID):
         return None
     workspaceId = str(uuid.uuid4())
     shutil.copytree(path, f"../.data/workspaces/{workspaceId}")
+    repo = porcelain.open_repo(f"../.data/workspaces/{workspaceId}")
+    if repo:
+        branch_name = str(uuid.uuid4())
+        porcelain.branch_create(repo, branch_name)
+        porcelain.checkout_branch(repo, branch_name)
     return workspaceId
 
 def getWorkspacePath(workspace_id: uuid.UUID):
@@ -77,13 +83,29 @@ async def pipeline(req: newRequest):
 
     if mountWorkspaceToDocker(workspaceId) < 0: return "error"
 
+    def runCommit(message: str):
+        """Commit changes to the repository"""
+        return commit(message, workspaceId)
+
+    def runUpdateFile(path: str, content: str):
+        """Update a file based off path, and given content"""
+        return updateFile(path, content, workspaceId)
+
+    def runListFiles(path: str = ""):
+        """run ls on the codebase in order to view files. path variable is to see inside folders (for example, a passing in "./backend" will do "ls ./backend"). leave empty to see root."""
+        return listFiles(path, workspaceId)
+
+    def runReadFile(path: str):
+        """read a full file's contents using 'cat' from the path."""
+        return readFile(path, workspaceId)
+
     def runGrep(grepCmd: str):
         """Given a grep command, runs command in the docker environment (If error running grep once, STOP RUNNING. Say you fail.)"""
         return grep(grepCmd, workspaceId)
 
     agent = create_agent(
         model="gpt-5-nano",
-        tools=[runGrep],
+        tools=[runCommit, runUpdateFile, runGrep, runListFiles, runReadFile],
         system_prompt=
         """
         You are the core agent of a coding agent, Codee. Codee is the future of Asynchronous
@@ -145,3 +167,47 @@ def grep(command: str, workspace_id):
         return out
     except subprocess.CalledProcessError as e:
         return "error running grep: " + e.output.decode()
+
+def listFiles(path: str, workspace_id):
+    cmd = [
+        "docker", "exec", "-it", workspace_id, "sh", "-c", f"cd app && ls {path}"
+    ]
+    try:
+        out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, timeout = 30)
+        print(out)
+        return out
+    except subprocess.CalledProcessError as e:
+        return "error running ls: " + e.output.decode()
+
+def readFile(path: str, workspace_id):
+    cmd = [
+        "docker", "exec", "-it", workspace_id, "sh", "-c", f"cd app && cat {path}"
+    ]
+    try:
+        out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, timeout = 30)
+        return out
+    except subprocess.CalledProcessError as e:
+        return "error running cat: " + e.output.decode()
+
+def updateFile(path: str, content: str, workspace_id):
+    workspacePath = f"../.data/workspaces/{workspace_id}"
+    if not os.path.isdir(workspacePath):
+        return "workspace not found."
+    repo = Repo(workspacePath)
+
+    full_path = os.path.join(workspacePath, path)
+    os.makedirs(os.path.dirname(full_path), exist_ok=True)
+    with open(full_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    repo.get_worktree().stage([path.encode()])
+    return ('file updated')
+
+def commit(message: str, workspace_id):
+    path = f"../.data/workspaces/{workspace_id}"
+    if not os.path.isdir(path):
+        return "workspace not found."
+    repo = Repo(path)
+    
+    repo.get_worktree().commit(
+        message.encode()
+    )
