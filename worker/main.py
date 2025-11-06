@@ -124,9 +124,16 @@ async def pipeline(req: newRequest):
     )
 
     response = agent.invoke({"messages": [{"role": "user", "content": req.prompt}]})
+
+    # when auth stuff
+    # repo = porcelain.open_repo(f"../.data/workspaces/{workspaceId}")
+    # if repo:
+    #     porcelain.push(repo)
+    
+    unmountDockerWorkspace(workspaceId)
+    
     return {"response": response}
 
-    # unmountDockerWorkspace(workspaceId)
 
 def mountWorkspaceToDocker(workspace_id: uuid.UUID):
     path = getWorkspacePath(workspace_id)
