@@ -16,17 +16,6 @@ export const repositoriesApi = createApi({
     endpoints: (builder) => ({
         getRepositories: builder.query<Repository[], void>({
             query: () => ""
-            // query: (id: int) => `{id}` to use specific id
-            /*
-            createRepository: builder.mutation({
-                query: (newPost: string) => ({
-                    url: "posts",
-                    method: "POST", //could be Delete, Patch, etc
-                    body: newPost,
-
-                })
-            })
-            */
         })
     })
 })

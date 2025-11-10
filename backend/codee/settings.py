@@ -33,7 +33,6 @@ ALLOWED_HOSTS = []
 REST_AUTH_SERIALIZERS = {
     'TOKEN_SERIALIZER': 'authentication.serializers.TokenSerializer',
     'USER_DETAILS_SERIALIZER': 'authentication.serializers.UserSerializer',
-    # 'LOGIN_SERIALIZER': 'authentication.serializers.CustomLoginSerializer'
 }
 
 AUTH_USER_MODEL = 'users.User'

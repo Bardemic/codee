@@ -8,7 +8,6 @@ import { setupListeners } from "@reduxjs/toolkit/query"
 
 export const store = configureStore({
     reducer: {
-        // repositories: repositoriesReducer,
         auth: authReducer,
         [repositoriesApi.reducerPath]: repositoriesApi.reducer,
         [authApi.reducerPath]: authApi.reducer,
