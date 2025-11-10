@@ -7,6 +7,13 @@
     justify-self: center;
     display: flex;
     justify-content: space-around;
-    padding: 8px 20px;
+    padding: 12px 20px;
     border-radius: 24px;
+}
+.button {
+    box-sizing: border-box;
+    border-bottom: 1px solid transparent;
+    &:hover {
+        border-bottom: 1px solid black;
+    }
 }

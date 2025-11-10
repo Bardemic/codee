@@ -12,6 +12,7 @@ export default function Sidebar({ children }: SidebarProps) {
             {children}
             <div className={styles.sidebar}>
                 <SidebarButton text="Home" />
+                <SidebarButton text="Logout" />
             </div>
         </div>
     )
