@@ -9,6 +9,7 @@ import Login from './pages/Login/Login';
 import Register from './pages/Register/Register';
 import Home from './pages/Home/Home';
 import Sidebar from './components/Sidebar/Sidebar';
+import Integrations from './pages/Integrations/Integrations';
 
 function SidebarLayout() {
   return (
@@ -25,6 +26,7 @@ function App() {
       <Routes>
         <Route path="/" element={<SidebarLayout />}>
           <Route index element={<Home />} />
+          <Route path="integrations" element={<Integrations />} />
         </Route>
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
