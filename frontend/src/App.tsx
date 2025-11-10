@@ -1,16 +1,35 @@
 import './App.css'
-import { RepositoriesPill } from './features/repositories/RepositoriesPill'
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Outlet,
+} from "react-router-dom";
+import Login from './pages/Login/Login';
+import Register from './pages/Register/Register';
+import Home from './pages/Home/Home';
+import Sidebar from './components/Sidebar/Sidebar';
+
+function SidebarLayout() {
+  return (
+    <Sidebar>
+      <Outlet />
+    </Sidebar>
+  )
+}
 
 function App() {
+  
   return (
-    <>
-    <div>
-      <div className='text-area-container'>
-        <textarea className='new-message' placeholder='Find all errors from the recent commit and fix them' name="prompt" id="6-7" />
-        <RepositoriesPill />
-      </div>
-    </div>
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={<SidebarLayout />}>
+          <Route index element={<Home />} />
+        </Route>
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
+      </Routes>
+    </Router>
   )
 }
 

@@ -31,7 +31,7 @@ body {
 }
 
 h1 {
-  font-size: 3.2em;
+  font-size: 2.4em;
   line-height: 1.1;
 }
 
@@ -54,10 +54,22 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
+textarea {
+  border: 1px solid #b69874;
+  color: #777777;
+  background-color: rgba(240, 248, 255, 0.729);
+  resize: none;
+}
+
+textarea:focus {
+  border: 1px solid #b69874;
+  outline: none;
+}
+
+@media (prefers-color-scheme: dark) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    color: #b69874;
+    background-color: #fef9ec;
   }
   a:hover {
     color: #747bff;

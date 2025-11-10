@@ -1,13 +1,21 @@
+from allauth.account.views import login_required
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import authentication_classes, permission_classes, api_view
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
 from rest_framework.parsers import JSONParser
+from users.models import User
 from repositories.models import Repository
 from repositories.serializers import RepositorySerializer
 
-@csrf_exempt
+
+@api_view(["GET", "POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
 def repository_list(request):
     if request.method == "GET":
-        repos = Repository.objects.all()
+        repos = Repository.objects.filter(user=request.user)
         serializer = RepositorySerializer(repos, many=True)
         return JsonResponse(serializer.data, safe=False)
     
