@@ -1,20 +1,24 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useAppDispatch } from "../../app/hooks";
 import { loginUser } from '../../features/auth/authSlice';
 import { useNavigate } from "react-router-dom";
-import { useGetUserInfoQuery } from "../../app/services/auth/authService";
+import { authApi } from "../../app/services/auth/authService";
 
 function Login() {
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const { data: user } = useGetUserInfoQuery();
-    if (user) navigate('/')
 
-    function handleSubmit() {
+    useEffect(() => {
+        const token = localStorage.getItem('userToken');
+        if (token) navigate('/');
+    }, [navigate]);
+
+    async function handleSubmit() {
         try {
-            dispatch(loginUser({email, password}));
+            await dispatch(loginUser({email, password})).unwrap();
+            dispatch(authApi.util.resetApiState());
             navigate("/");
         } catch { return; }
     }

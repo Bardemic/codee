@@ -1,9 +1,17 @@
 import { useGetUserInfoQuery } from '../../app/services/auth/authService';
 import { RepositoriesPill } from '../../features/repositories/RepositoriesPill'
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 function Home() {
-    const { data: user } = useGetUserInfoQuery();
-    console.log(user)
+    const navigate = useNavigate();
+    const { data: user, isLoading } = useGetUserInfoQuery(undefined, { refetchOnMountOrArgChange: true });
+
+    useEffect(() => {
+        if (!isLoading && !user) {
+            navigate("/login");
+        }
+    }, [isLoading, user, navigate]);
     return (
         <div>
             <div className='text-area-container'>
