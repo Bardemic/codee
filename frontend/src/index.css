@@ -75,6 +75,10 @@ textarea:focus {
     color: #747bff;
   }
   button {
-    background-color: #f9f9f9;
+    background-color: #b69874;
+
+    &:hover {
+      background-color: #b69874be;
+    }
   }
 }

@@ -1,0 +1,38 @@
+.integrationsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    width: 600px;
+}
+
+.icon {
+    height: 36px;
+}
+
+.connected {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.connected button {
+    all: unset;
+    color: gray;
+    &:hover {
+        color: red
+    }
+}
+
+.integration {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.iconContainer {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    font-weight: bold;
+}
