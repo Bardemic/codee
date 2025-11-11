@@ -16,7 +16,7 @@
     gap: 8px;
 }
 
-.connected Button {
+.connected button {
     all: unset;
     color: gray;
     &:hover {

@@ -22,8 +22,9 @@ export const integrationsApi = createApi({
             const token = localStorage.getItem('userToken');
             if (token) headers.set('Authorization', `Token ${token}`);
             return headers;
-        }
+        },
     }),
+    tagTypes: ['Integrations', 'Repositories'],
     endpoints: (builder) => ({
         addIntegration: builder.mutation<void, { type: string; data: unknown }>({ //data is a json
             query: ({ type, data }) => ({
@@ -31,18 +32,22 @@ export const integrationsApi = createApi({
                 method: "POST",
                 body: data,
             }),
+            invalidatesTags: ['Integrations', 'Repositories'],
         }),
         getRepositories: builder.query<Repository[], void>({
-            query: () => "github/repositories/"
+            query: () => "github/repositories/",
+            providesTags: ['Repositories'],
         }),
         getIntegrations: builder.query<Integration[], void>({
-            query: () => ""
+            query: () => "",
+            providesTags: ['Integrations']
         }),
         deleteIntegration: builder.mutation<void, number>({
             query: (key: number) => ({
                 url: `${key}/`,
                 method: "DELETE"
-            })
+            }),
+            invalidatesTags: ['Integrations', 'Repositories'],
         })
     })
 })

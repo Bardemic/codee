@@ -20,6 +20,8 @@ class GitHubIntegrationViews(viewsets.ViewSet):
     @action(detail=False, methods=["get"], url_path="repositories")
     def repositories(self, request):
         connection = IntegrationConnection.objects.filter(user=request.user, provider__slug="github_app").first()
+        if not connection:
+            APIException("no github connection found")
         installation_id = connection.getDataConfig()["installation_id"]
 
         token = get_installation_token(installation_id)
