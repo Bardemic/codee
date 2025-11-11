@@ -6,6 +6,24 @@
     width: 600px;
 }
 
+.icon {
+    height: 36px;
+}
+
+.connected {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.connected Button {
+    all: unset;
+    color: gray;
+    &:hover {
+        color: red
+    }
+}
+
 .integration {
     display: flex;
     justify-content: space-between;

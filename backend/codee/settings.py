@@ -11,9 +11,13 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from dotenv import load_dotenv
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv()
 
 
 # Quick-start development settings - unsuitable for production
@@ -44,8 +48,12 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 SITE_ID = 1
 
+FERNET_KEY = os.getenv("FERNET_KEY")
+
+GITHUB_APP_ID = os.getenv("GITHUB_APP_ID")
+GITHUB_PRIVATE_KEY = os.getenv("GITHUB_PRIVATE_KEY")
+
 INSTALLED_APPS = [
-    'repositories.apps.RepositoriesConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.sites',
@@ -62,7 +70,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'allauth',
     "allauth.account",
-    "allauth.socialaccount"
+    "workspaces",
+    "integrations",
 ]
 
 

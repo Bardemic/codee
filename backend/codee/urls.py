@@ -34,7 +34,6 @@ router.register(r'users', UserViewSet)
 urlpatterns = [
     path("api/auth/", include('authentication.urls')),
     path('admin/', admin.site.urls),
-    path('repositories/', include("repositories.urls")),
     path('', include(router.urls)),
-    path("", include("repositories.urls")),
+    path("integrations/", include("integrations.urls"))
 ]

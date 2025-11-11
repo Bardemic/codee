@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useGetRepositoriesQuery, type Repository } from "../../app/services/repositories/repositoriesService";
+import { useGetRepositoriesQuery, type Repository } from "../../app/services/integrations/integrationsService";
 import styles from './repositoriesPill.module.css'
 
 export const RepositoriesPill = () => {
@@ -37,9 +37,9 @@ export const RepositoriesPill = () => {
             {dropDown && repos && repos.length > 0 && (
                 <div className={styles.dropdownContainer} role="listbox">
                     {repos
-                        .filter(repo => repo.id !== selected?.id)
+                        .filter(repo => repo.github_id !== selected?.github_id)
                         .map(repo => (
-                            <div key={repo.id}
+                            <div key={repo.github_id}
                                 onClick={(e) => {
                                     e.stopPropagation()
                                     setSelected(repo)

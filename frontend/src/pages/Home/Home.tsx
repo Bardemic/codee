@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 
 function Home() {
     const navigate = useNavigate();
-    const { data: user, isLoading } = useGetUserInfoQuery(undefined, { refetchOnMountOrArgChange: true });
+    const { data: user, isLoading } = useGetUserInfoQuery();
 
     useEffect(() => {
         if (!isLoading && !user) {
