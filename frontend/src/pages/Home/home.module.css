@@ -1,0 +1,13 @@
+.sendButton {
+    all: unset;
+    border-radius: 50%;
+    background-color: black;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: absolute;
+    right: 0;
+    bottom: -3000;
+}

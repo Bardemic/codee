@@ -2,16 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import { useGetRepositoriesQuery, type Repository } from "../../app/services/integrations/integrationsService";
 import styles from './repositoriesPill.module.css'
 
-export const RepositoriesPill = () => {
+interface pillProps {
+    selected: Repository | null
+    setSelected: (repo: Repository | null) => void
+}
+
+export const RepositoriesPill = (props: pillProps) => {
+    const { selected, setSelected } = props;
     const { data: repos } = useGetRepositoriesQuery();
-    const [selected, setSelected] = useState<Repository | null>(null)
     const [dropDown, setDropDown] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
         if (!repos || repos.length === 0) return
-        setSelected(repos[0])
-    }, [repos])
+        if (selected === null) {
+            setSelected(repos[0])
+        }
+    }, [repos, selected, setSelected])
     useEffect(() => {
         const onDocumentClick = (event: MouseEvent) => {
             if (!containerRef.current) return
