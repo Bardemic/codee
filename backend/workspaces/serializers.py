@@ -1,4 +1,4 @@
-from .models import Workspace
+from .models import Workspace, Message
 from rest_framework import serializers
 
 class WorkspaceSerializer(serializers.ModelSerializer):
@@ -15,3 +15,8 @@ class NewMessageSerializer(serializers.Serializer):
 class NewAiMessage(serializers.Serializer):
     message = serializers.CharField()
     workspace_id = serializers.IntegerField()
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields= ["id", "created_at", "content", "sender"]

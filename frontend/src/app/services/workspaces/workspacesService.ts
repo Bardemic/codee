@@ -1,5 +1,22 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 
+export interface Workspace {
+    id: number
+    created_at: Date
+    name: string
+}
+
+export interface Message {
+    id: number
+    created_at: Date
+    sender: "USER" | "AGENT"
+    content: string
+}
+
+export interface NewMessageResponse {
+    workspace_id: number
+}
+
 export const workspacesApi = createApi({
     reducerPath: 'workspacesApi',
     baseQuery: fetchBaseQuery({
@@ -10,14 +27,24 @@ export const workspacesApi = createApi({
         },
     }),
     endpoints: (builder) => ({
-        newMessage: builder.mutation<void, { message: string, repository_name: string}>({
+        newMessage: builder.mutation<NewMessageResponse, { message: string, repository_name: string}>({
             query: ({ message, repository_name}) => ({
                 url: 'new_workspace/',
                 method: "POST",
                 body: {message, repository_full_name:repository_name}
             })
+        }),
+        getWorkspaces: builder.query<Workspace[], void>({
+            query: () => ({
+                url: '',
+            })
+        }),
+        getWorkspaceMessages: builder.query<Message[], string>({
+            query: (workspace_id: string) => ({
+                url: `messages/${workspace_id}`,
+            })
         })
     })
 })
 
-export const { useNewMessageMutation } = workspacesApi;
+export const { useNewMessageMutation, useGetWorkspacesQuery, useGetWorkspaceMessagesQuery } = workspacesApi;

@@ -1,0 +1,27 @@
+.chatContainer {
+    border: 1px black solid;
+    padding: 8px;
+    width: 50%;
+    min-width: 50%;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.workspaceContainer {
+    display: flex;
+    justify-content: center;
+}
+
+.userMessage {
+    background-color: aqua;
+    padding: 4px;
+    max-width: 45%;
+    align-self: flex-end;
+}
+
+.agentMessage {
+    background-color: blue;
+    padding: 4px;
+    max-width: 45%;
+}

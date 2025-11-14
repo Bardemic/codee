@@ -5,15 +5,17 @@ import { authApi } from "./services/auth/authService"
 import authReducer from "../features/auth/authSlice"
 import { integrationsApi } from "./services/integrations/integrationsService"
 import { setupListeners } from "@reduxjs/toolkit/query"
+import { workspacesApi } from "./services/workspaces/workspacesService"
 
 export const store = configureStore({
     reducer: {
         auth: authReducer,
         [integrationsApi.reducerPath]: integrationsApi.reducer,
         [authApi.reducerPath]: authApi.reducer,
+        [workspacesApi.reducerPath]: workspacesApi.reducer,
     },
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(integrationsApi.middleware, authApi.middleware)
+        getDefaultMiddleware().concat(integrationsApi.middleware, authApi.middleware, workspacesApi.middleware)
 })
 
 setupListeners(store.dispatch);

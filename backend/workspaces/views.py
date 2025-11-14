@@ -1,3 +1,4 @@
+from pydantic import Json
 from integrations.models import IntegrationConnection
 from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
@@ -7,7 +8,7 @@ from .models import Workspace, Message
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
-from .serializers import NewMessageSerializer, NewAiMessage
+from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, WorkspaceSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
@@ -17,6 +18,15 @@ from rest_framework.permissions import IsAuthenticated
 class UserWorkspaceViews(viewsets.ViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=["GET"], url_path="messages/(?P<workspace_id>\d+)")
+    def getMessages(self, request, workspace_id):
+        workspace = Workspace.objects.filter(pk=workspace_id, user=request.user).first()
+        if not workspace:
+            raise APIException("no workspace found")
+        messages = Message.objects.filter(workspace=workspace)
+        return JsonResponse(MessageSerializer(messages, many=True).data, safe=False)
+
     @action(detail=False, methods=["POST"], url_path="new_workspace")
     def newWorkspace(self, request):
         serializer = NewMessageSerializer(data=request.data)
@@ -36,6 +46,11 @@ class UserWorkspaceViews(viewsets.ViewSet):
         if response["status"] == "queued":
             return JsonResponse({"workspace_id": newWorkspaceObject.pk})
         raise APIException("worker issue")
+    
+    def list(self, request):
+        workspaces = Workspace.objects.filter(user=request.user).order_by('created_at').reverse()
+        return JsonResponse(WorkspaceSerializer(workspaces, many=True).data, safe=False)
+    
 
 class OrchestratorViews(viewsets.ViewSet):
     @action(detail=False, methods=["GET"], url_path="workspaces/(?P<workspace_id>[^/.]+)/token", permission_classes=[permissions.AllowAny])

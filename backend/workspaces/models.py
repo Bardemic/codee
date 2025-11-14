@@ -1,17 +1,18 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.validators import MinLengthValidator
 
 
 class Workspace(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
-    name = models.CharField(max_length = 200)
+    name = models.CharField(max_length = 200, default="Untitled", validators=[MinLengthValidator(1)])
     default_branch = models.CharField(max_length = 100, default="main")
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     github_repository_name = models.CharField(editable=False, null=False)
     github_branch_name = models.CharField(null=True)
 
     def __str__(self):
-        return self.name
+        return str(self.pk)
 
 class Message(models.Model):
     class senderType(models.TextChoices):

@@ -10,6 +10,7 @@ import Register from './pages/Register/Register';
 import Home from './pages/Home/Home';
 import Sidebar from './components/Sidebar/Sidebar';
 import Integrations from './pages/Integrations/Integrations';
+import Workspace from './pages/Workspace/Workspace';
 
 function SidebarLayout() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="/" element={<SidebarLayout />}>
           <Route index element={<Home />} />
           <Route path="integrations" element={<Integrations />} />
+          <Route path="workspace/:workspaceId" element={<Workspace />} />
         </Route>
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
