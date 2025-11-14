@@ -26,9 +26,9 @@ function Home() {
     }, [isLoading, user, navigate]);
     return (
         <div>
-            <h1>Welcome, {user && user.email}</h1>
+            <h1 className={styles.header}>say hi to <span className={styles.focusedHeader}>Codee</span>.</h1>
             <div className={styles.chatContainer}>
-                <textarea onKeyDown={(e) => { if (e.key === 'Enter' && userMessage.length > 0) { e.preventDefault(); sendNewMessage(); } }} value={userMessage} onChange={(e) => setUserMessage(e.target.value)} className={styles.newWorkspace} placeholder='Find all errors from the recent commit and fix them' name="prompt" id="6-7" />
+                <textarea onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && userMessage.length > 0) { e.preventDefault(); sendNewMessage(); } }} value={userMessage} onChange={(e) => setUserMessage(e.target.value)} className={styles.newWorkspace} placeholder='Find all errors from the recent commit and fix them' name="prompt" id="6-7" />
                 {userMessage.length > 0 && <button className={styles.sendButton} onClick={sendNewMessage}><BsSend size={16} /></button>}
                 <RepositoriesPill selected={selected} setSelected={setSelected}/>
             </div>

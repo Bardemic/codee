@@ -23,7 +23,10 @@
     min-width: 120px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
     z-index: 1000;
-
+    background: var(--color-surface);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .dropdownOption {
@@ -35,4 +38,19 @@
     &:hover {
         background-color: var(--color-surface-strong);
     }
+}
+
+.searchInput {
+    margin: 0 8px;
+    padding: 6px 8px;
+    border-radius: 0.5em;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: transparent;
+    color: inherit;
+}
+
+.emptyState {
+    padding: 8px;
+    font-size: 14px;
+    color: var(--color-text-weak, #888);
 }

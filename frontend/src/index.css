@@ -86,3 +86,8 @@ textarea:focus {
   outline: none;
 }
 
+input:focus {
+  border: 1px solid var(--color-accent-strong);
+  outline: none;
+}
+
