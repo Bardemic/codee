@@ -18,7 +18,8 @@ export default function IntegrationCard(props: IntegrationCardProps) {
             </div>
             {props.integration.connection_id ? (
                 <div className={styles.connected}>
-                    <button onClick={() => {props.onDelete(props.integration.connection_id!)}}>Delete connection</button><p>Connected</p>
+                    <button onClick={() => {props.onDelete(props.integration.connection_id!)}}>Delete connection</button>
+                    <button disabled onClick={props.onOpen}>Connected</button>
                 </div>
             ) : <button onClick={props.onOpen}>Connect</button>}
         </div>

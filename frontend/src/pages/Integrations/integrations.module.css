@@ -1,13 +1,14 @@
 .integrationsContainer {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    justify-self: center;
     padding: 12px;
     width: 600px;
 }
 
 .icon {
     height: 36px;
+    margin-right: 12px;
 }
 
 .connected {
@@ -16,8 +17,9 @@
     gap: 8px;
 }
 
-.connected button {
+.connected button:first-child {
     all: unset;
+    cursor: pointer;
     color: gray;
     &:hover {
         color: red

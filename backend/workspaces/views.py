@@ -45,6 +45,7 @@ class UserWorkspaceViews(viewsets.ViewSet):
         response = r.json()
         if response["status"] == "queued":
             return JsonResponse({"workspace_id": newWorkspaceObject.pk})
+        newWorkspaceObject.delete()
         raise APIException("worker issue")
     
     def list(self, request):

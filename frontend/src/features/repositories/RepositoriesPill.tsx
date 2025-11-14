@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useGetRepositoriesQuery, type Repository } from "../../app/services/integrations/integrationsService";
 import styles from './repositoriesPill.module.css'
 
@@ -11,6 +11,7 @@ export const RepositoriesPill = (props: pillProps) => {
     const { selected, setSelected } = props;
     const { data: repos } = useGetRepositoriesQuery();
     const [dropDown, setDropDown] = useState(false)
+    const [searchTerm, setSearchTerm] = useState('')
     const containerRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
@@ -31,6 +32,20 @@ export const RepositoriesPill = (props: pillProps) => {
             document.removeEventListener('mousedown', onDocumentClick)
         }
     }, [])
+    useEffect(() => {
+        if (!dropDown) {
+            setSearchTerm('')
+        }
+    }, [dropDown])
+
+    const filteredRepos = useMemo(() => {
+        if (!repos) return []
+        const sanitized = searchTerm.trim().toLowerCase()
+        return repos
+            .filter(repo => repo.github_id !== selected?.github_id)
+            .filter(repo => repo.name.toLowerCase().includes(sanitized))
+    }, [repos, searchTerm, selected])
+
     return (
         <div
             ref={containerRef}
@@ -42,10 +57,19 @@ export const RepositoriesPill = (props: pillProps) => {
         >
             {selected ? selected.name : 'Select repository'}
             {dropDown && repos && repos.length > 0 && (
-                <div className={styles.dropdownContainer} role="listbox">
-                    {repos
-                        .filter(repo => repo.github_id !== selected?.github_id)
-                        .map(repo => (
+                <div
+                    className={styles.dropdownContainer}
+                    role="listbox"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <input
+                        className={styles.searchInput}
+                        placeholder="Search repositories"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    {filteredRepos.length > 0 ? (
+                        filteredRepos.map(repo => (
                             <div key={repo.github_id}
                                 onClick={(e) => {
                                     e.stopPropagation()
@@ -57,7 +81,10 @@ export const RepositoriesPill = (props: pillProps) => {
                                 aria-selected={false}>
                                 {repo.name}
                             </div>
-                        ))}
+                        ))
+                    ) : (
+                        <div className={styles.emptyState}>No repositories found</div>
+                    )}
                 </div>
             )}
         </div>
