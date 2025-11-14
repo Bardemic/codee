@@ -1,11 +1,12 @@
 .chatContainer {
     border: 1px solid rgba(255, 255, 255, 0.25);
-    padding: 8px;
+    padding: 24px;
     width: 50%;
     min-width: 50%;
     height: 80vh;
     display: flex;
     flex-direction: column;
+    overflow-y: scroll;
 }
 
 .workspaceContainer {
@@ -13,16 +14,46 @@
     justify-content: center;
 }
 
-.userMessage {
-    background-color: var(--color-accent-hover);
-    padding: 4px;
+.messageWrapper {
     max-width: 45%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.messageWrapper.userWrapper {
     align-self: flex-end;
+    align-items: flex-end;
+}
+
+.messageWrapper.agentWrapper {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.message {
+    padding: 0;
+    width: 100%;
+}
+
+.messageContent {
+    padding: 16px;
+    text-align: left;
+}
+
+.userMessage {
+    background-color: var(--color-accent);
+    border-radius: 8px;
 }
 
 .agentMessage {
     background-color: var(--color-surface);
-    padding: 4px;
-    max-width: 45%;
     border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+}
+
+.sender {
+    margin: 0;
+    padding-left: 12px;
+    padding-right: 12px;
 }
