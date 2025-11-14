@@ -21,7 +21,7 @@
     border-radius: 0.5em;
     padding: 6px 0;
     min-width: 120px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
     z-index: 1000;
 
 }
@@ -33,6 +33,6 @@
     cursor: pointer;
 
     &:hover {
-        background-color: rgba(0, 0, 0, 0.0375);
+        background-color: var(--color-surface-strong);
     }
 }

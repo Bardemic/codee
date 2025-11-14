@@ -2,13 +2,16 @@ import { useEffect, useState } from "react"
 import { useAppDispatch } from "../../app/hooks";
 import { loginUser } from '../../features/auth/authSlice';
 import { useNavigate } from "react-router-dom";
-import { authApi } from "../../app/services/auth/authService";
+import { authApi, useGetUserInfoQuery } from "../../app/services/auth/authService";
 
 function Login() {
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const { data: user, isLoading } = useGetUserInfoQuery();
+    
+    if (!user && !isLoading) navigate("");
 
     useEffect(() => {
         const token = localStorage.getItem('userToken');

@@ -1,5 +1,5 @@
 .chatContainer {
-    border: 1px black solid;
+    border: 1px solid rgba(255, 255, 255, 0.25);
     padding: 8px;
     width: 50%;
     min-width: 50%;
@@ -14,14 +14,15 @@
 }
 
 .userMessage {
-    background-color: aqua;
+    background-color: var(--color-accent-hover);
     padding: 4px;
     max-width: 45%;
     align-self: flex-end;
 }
 
 .agentMessage {
-    background-color: blue;
+    background-color: var(--color-surface);
     padding: 4px;
     max-width: 45%;
+    border: 1px solid rgba(255, 255, 255, 0.25);
 }

@@ -11,29 +11,8 @@
     bottom: 12px;
 
     &:hover {
-        color: rgba(0, 0, 0, 0.298);
+        color: rgba(255, 255, 255, 0.7);
     }
-}
-
-.workspacesContainer {
-    border: black 1px solid;
-    display: flex;
-    gap: 12px;
-    box-sizing: border-box;
-    width: max(500px, 60%);
-    margin: auto;
-    flex-wrap: wrap;
-    max-height: 300px;
-    overflow-y: scroll;
-    padding: 8px;
-    border-radius: 8px;
-    margin-top: 40px;
-}
-
-.workspace {
-    font-size: 18px;
-    padding: 12px;
-    border: pink 1px solid;
 }
 
 .chatContainer {
