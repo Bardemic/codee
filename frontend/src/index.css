@@ -67,11 +67,24 @@ button {
 
 button:hover {
   border-color: var(--color-accent-strong);
+  background-color: var(--color-accent-strong);
 }
 
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+}
+
+button:disabled {
+  background-color: var(--color-surface);
+  color: var(--color-muted);
+  cursor: not-allowed;
+  border-color: transparent;
+}
+
+button:disabled:hover {
+  background-color: var(--color-surface);
+  border-color: transparent;
 }
 
 input {
