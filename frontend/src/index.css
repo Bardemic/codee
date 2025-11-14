@@ -74,6 +74,17 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+input {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: var(--color-muted);
+  background-color: var(--color-surface);
+}
+
+input:focus {
+  border: 1px solid var(--color-accent-strong);
+  outline: none;
+}
+
 textarea {
   border: 1px solid rgba(255, 255, 255, 0.25);
   color: var(--color-muted);
@@ -82,11 +93,6 @@ textarea {
 }
 
 textarea:focus {
-  border: 1px solid var(--color-accent-strong);
-  outline: none;
-}
-
-input:focus {
   border: 1px solid var(--color-accent-strong);
   outline: none;
 }
