@@ -1,0 +1,181 @@
+from celery_app import celery_app
+import httpx
+import subprocess, os, uuid
+from pydantic import BaseModel
+from dulwich import porcelain
+from dulwich.repo import Repo
+from dotenv import load_dotenv
+from langchain.agents import create_agent
+
+load_dotenv()
+
+class newRequest(BaseModel):
+    repo_id: uuid.UUID
+    prompt: str
+
+def getToken(workspace_id: int):
+    r = httpx.get(f"http://127.0.0.1:5001/api/internals/workspaces/{workspace_id}/token/")
+    #need to implement error handling for when !token
+    return r.json()["token"]
+
+def createWorkspace(full_name: str, workspace_id: int):
+    repo_url = f"https://x-access-token:{getToken(workspace_id)}@github.com/{full_name}.git"
+    clone_directory = f"/Users/brandonpieczka/repos/codee/.data/workspaces/{str(workspace_id)}"
+    porcelain.clone(repo_url, clone_directory)
+    repo = porcelain.open_repo(clone_directory)
+    if repo:
+        branch_name = str(uuid.uuid4())
+        porcelain.branch_create(repo, branch_name)
+        porcelain.checkout_branch(repo, branch_name)
+    return workspace_id
+
+def getWorkspacePath(workspace_id: int):
+    path = f"/Users/brandonpieczka/repos/codee/.data/workspaces/{str(workspace_id)}"
+    if not os.path.isdir(path): 
+        return None
+    return path
+
+def mountWorkspaceToDocker(workspace_id: int, docker_name: str):
+    path = getWorkspacePath(workspace_id)
+    if not path: 
+        return -1
+    cmd = [
+        "docker", "run", "-d",
+        "--name", docker_name,
+        "-v", f"{path}:/app", "nginx:latest"
+    ]
+    try:
+        subprocess.run(cmd, check=False)
+        return 1
+    except subprocess.CalledProcessError:
+        return -1
+
+def unmountDockerWorkspace(docker_name: str):
+    cmd1 = ["docker", "stop", docker_name]
+    cmd2 = ["docker", "rm", docker_name]
+    try:
+        subprocess.run(cmd1, check=False)
+        subprocess.run(cmd2, check=False)
+    except Exception:
+        pass
+
+def grep(command: str, docker_name: str):
+    cmd = [
+       "docker", "exec", docker_name, "sh", "-c", f"cd app && {command}"
+    ]
+    try:
+        out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, timeout=30)
+        return out.decode("utf-8", errors="replace")
+    except subprocess.CalledProcessError as e:
+        return "error running grep: " + e.output.decode()
+
+def listFiles(path: str, docker_name: str):
+    cmd = [
+        "docker", "exec", docker_name, "sh", "-c", f"cd app && ls {path}"
+    ]
+    try:
+        out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, timeout=30)
+        return out.decode("utf-8", errors="replace")
+    except subprocess.CalledProcessError as e:
+        return "error running ls: " + e.output.decode()
+
+def readFile(path: str, docker_name: str):
+    cmd = [
+        "docker", "exec", docker_name, "sh", "-c", f"cd app && cat {path}"
+    ]
+    try:
+        out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, timeout=30)
+        return out.decode("utf-8", errors="replace")
+    except subprocess.CalledProcessError as e:
+        return "error running cat: " + e.output.decode()
+
+def updateFile(path: str, content: str, workspace_id):
+    workspacePath = f"/Users/brandonpieczka/repos/codee/.data/workspaces/{workspace_id}"
+    if not os.path.isdir(workspacePath):
+        return "workspace not found."
+    repo = Repo(workspacePath)
+    full_path = os.path.join(workspacePath, path)
+    os.makedirs(os.path.dirname(full_path), exist_ok=True)
+    with open(full_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    repo.get_worktree().stage([path.encode()])
+    return "file updated"
+
+def commit(message: str, workspace_id: int):
+    path = f"/Users/brandonpieczka/repos/codee/.data/workspaces/{str(workspace_id)}"
+    if not os.path.isdir(path):
+        return "workspace not found."
+    repo = Repo(path)
+    repo.get_worktree().commit(message.encode())
+    try:
+        head_ref = repo.refs.get_symrefs().get(b'HEAD')
+        if not head_ref:
+            return "commit done, but no current branch"
+        ref_name = head_ref.decode()
+        branch_name = ref_name.replace('refs/heads/', '')
+        config = repo.get_config()
+        config.set((b'branch', branch_name.encode()), b'remote', b'origin')
+        config.set((b'branch', branch_name.encode()), b'merge', head_ref)
+        config.write_to_path()
+        refspec = f"{ref_name}:{ref_name}"
+        porcelain.push(repo, 'origin', refspecs=[refspec])
+        return "committed"
+    except Exception as e:
+        return f"commit done, but push failed: {str(e)}"
+
+@celery_app.task(name="tasks.pipeline", bind=True)
+def pipeline(self, github_repo_name: str, prompt: str, workspace_id: int):
+    dockerId = str(uuid.uuid4())
+    workspaceId = createWorkspace(github_repo_name, workspace_id)
+    if not workspaceId: 
+        return {"error": "repository not found"}
+    if mountWorkspaceToDocker(workspaceId, dockerId) < 0: 
+        return {"error": "docker mount failed"}
+
+    def runCommit(message: str):
+        """Commit changes to the repository"""
+        return commit(message, workspaceId)
+
+    def runUpdateFile(path: str, content: str):
+        """Update a file based off path, and given content"""
+        return updateFile(path, content, workspaceId)
+
+    def runListFiles(path: str = ""):
+        """run ls on the codebase in order to view files. path variable is to see inside folders (for example, a passing in "./backend" will do "ls ./backend"). leave empty to see root."""
+        return listFiles(path, dockerId)
+
+    def runReadFile(path: str):
+        """read a full file's contents using 'cat' from the path."""
+        return readFile(path, dockerId)
+
+    def runGrep(grepCmd: str):
+        """Given a grep command, runs command in the docker environment"""
+        return grep(grepCmd, dockerId)
+
+    agent = create_agent(
+        model="gpt-5-nano",
+        tools=[runCommit, runUpdateFile, runGrep, runListFiles, runReadFile],
+        system_prompt="""
+        You are the core agent of a coding agent, Codee. Codee is the future of Asynchronous
+        coding agents. Users connect a git repo on the website, put in a request, then Codee (you)
+        creates a workspace, reads the codebase, understand the request, make changes, create a Pull Request,
+        and push it to the git repo.
+
+        <DEVELOPER_NOTES> You are in *EARLY* Beta. We are currently developing your tools.
+        You may have none, you may have a few. Act as normal as you can, try to run to best of your capabilities.
+        Don't try to run a tool if you don't have it. The prompt/message may be asking you to perform a certain
+        action regarding your tools, and if so, just run the tool and return what you think.
+
+        If there is an error running a tool, do NOT continue. Just say that the tool doesn't work. don't try to run it multiple times.
+        Sorry... </DEVELOPER_NOTES>
+        """
+    )
+
+    response = agent.invoke({"messages": [{"role": "user", "content": prompt}]})
+    unmountDockerWorkspace(dockerId)
+    # print(response["messages"][-1].content)
+    httpx.post(f"http://127.0.0.1:5001/api/internals/workspaces/message/", json={
+        "message": response["messages"][-1].content,
+        "workspace_id": workspace_id
+    })
+    return {"response": str(response["messages"][-1])}

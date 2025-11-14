@@ -28,7 +28,7 @@ class GitHubIntegrationViews(viewsets.ViewSet):
         if not token:
             raise APIException("auth didn't work")
         headers = {"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"}
-        r = requests.get("https://api.github.com/installation/repositories", headers=headers)
+        r = requests.get("https://api.github.com/installation/repositories?per_page=100", headers=headers)
         serializer = GithubRepositorySerializer((r.json())["repositories"], many=True)
         return JsonResponse(serializer.data, safe=False)
 

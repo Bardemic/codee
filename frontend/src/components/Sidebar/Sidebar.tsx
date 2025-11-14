@@ -13,13 +13,15 @@ export default function Sidebar({ children }: SidebarProps) {
     const navigate = useNavigate();
 
     return (
-        <div>
-            {children}
-            <div className={styles.sidebar}>
+        <div className={styles.container}>
+            <nav className={styles.sidebar}>
                 <SidebarButton text="Home" onClick={() => navigate('/')}/>
                 <SidebarButton text="Integrations" onClick={() => navigate('/integrations')}/>
                 <SidebarButton text="Logout" onClick={() => userSignout()}/>
-            </div>
+            </nav>
+            <main className={styles.content}>
+                {children}
+            </main>
         </div>
     )
 }
