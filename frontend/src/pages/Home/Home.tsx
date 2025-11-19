@@ -5,13 +5,14 @@ import { useEffect, useState } from 'react';
 import type {Repository} from "../../app/services/integrations/integrationsService";
 import { useNewMessageMutation } from '../../app/services/workspaces/workspacesService';
 import { BsSend } from 'react-icons/bs';
+import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import styles from './home.module.css';
 
 function Home() {
     const [selected, setSelected] = useState<Repository | null>(null)
     const navigate = useNavigate();
     const [userMessage, setUserMessage] = useState("");
-    const [newMessage] = useNewMessageMutation();
+    const [newMessage, { isLoading: isCreatingWorkspace }] = useNewMessageMutation();
     const { data: user, isLoading } = useGetUserInfoQuery();
 
     async function sendNewMessage() {
@@ -28,8 +29,12 @@ function Home() {
         <div>
             <h1 className={styles.header}>say hi to <span className={styles.focusedHeader}>Codee</span>.</h1>
             <div className={styles.chatContainer}>
-                <textarea onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && userMessage.length > 0) { e.preventDefault(); sendNewMessage(); } }} value={userMessage} onChange={(e) => setUserMessage(e.target.value)} className={styles.newWorkspace} placeholder='Find all errors from the recent commit and fix them' name="prompt" id="6-7" />
-                {userMessage.length > 0 && <button className={styles.sendButton} onClick={sendNewMessage}><BsSend size={16} /></button>}
+                <textarea onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && userMessage.length > 0 && !isCreatingWorkspace) { e.preventDefault(); sendNewMessage(); } }} value={userMessage} onChange={(e) => setUserMessage(e.target.value)} className={styles.newWorkspace} placeholder='Find all errors from the recent commit and fix them' name="prompt" id="6-7" />
+                {userMessage.length > 0 && (
+                    <button className={styles.sendButton} onClick={sendNewMessage} disabled={isCreatingWorkspace}>
+                        {isCreatingWorkspace ? <AiOutlineLoading3Quarters size={16} className={styles.spinIcon} /> : <BsSend size={16} />}
+                    </button>
+                )}
                 <RepositoriesPill selected={selected} setSelected={setSelected}/>
             </div>
         </div>
