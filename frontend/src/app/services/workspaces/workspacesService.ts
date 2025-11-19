@@ -32,7 +32,7 @@ export interface Message {
 
 export const workspacesApi = createApi({
     reducerPath: 'workspacesApi',
-    tagTypes: ['WorkspaceMessages'],
+    tagTypes: ['WorkspaceMessages', 'Workspaces'],
     baseQuery: fetchBaseQuery({
         baseUrl: 'http://127.0.0.1:5001/api/workspace/', prepareHeaders: (headers,) => {
             const token = localStorage.getItem('userToken');
@@ -46,12 +46,14 @@ export const workspacesApi = createApi({
                 url: 'new_workspace/',
                 method: "POST",
                 body: {message, repository_full_name:repository_name}
-            })
+            }),
+            invalidatesTags: ['Workspaces']
         }),
         getWorkspaces: builder.query<Workspace[], void>({
             query: () => ({
                 url: '',
-            })
+            }),
+            providesTags: ['Workspaces']
         }),
         getWorkspaceMessages: builder.query<Message[], string>({
             query: (workspace_id: string) => ({
