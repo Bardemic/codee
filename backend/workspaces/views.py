@@ -12,6 +12,8 @@ import httpx
 from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, WorkspaceSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
+from rest_framework.response import Response
 
 
 
@@ -61,6 +63,13 @@ class UserWorkspaceViews(viewsets.ViewSet):
     def list(self, request):
         workspaces = Workspace.objects.filter(user=request.user).order_by('created_at').reverse()
         return JsonResponse(WorkspaceSerializer(workspaces, many=True).data, safe=False)
+
+    def retrieve(self, request, pk=None):
+        workspaceSet = Workspace.objects.all()
+        workspace = get_object_or_404(workspaceSet, pk=pk)
+        serializer = WorkspaceSerializer(workspace)
+        return JsonResponse(serializer.data)
+
     
 
 class OrchestratorViews(viewsets.ViewSet):

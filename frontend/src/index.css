@@ -110,3 +110,7 @@ textarea:focus {
   outline: none;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-muted) transparent;
+}

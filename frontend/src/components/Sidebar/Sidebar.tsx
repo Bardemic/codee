@@ -23,15 +23,13 @@ export default function Sidebar({ children }: SidebarProps) {
                     <SidebarButton text="Home" onClick={() => navigate('/')}/>
                     <SidebarButton text="Integrations" onClick={() => navigate('/integrations')}/>
                 </div>
-                <div className={styles.workspacesSection}>
-                    <h3>Workspaces</h3>
-                    <div className={styles.workspaces}>
-                        {workspaces?.map((workspace) => (
-                            <div key={workspace.id} className={styles.button} onClick={() => navigate(`workspace/${workspace.id}`)}>
-                                {workspace.name}
-                            </div>
-                        ))}
-                    </div>
+                <h3>Workspaces</h3>
+                <div className={styles.workspaces}>
+                    {workspaces?.map((workspace) => (
+                        <div key={workspace.id} className={styles.button} onClick={() => navigate(`workspace/${workspace.id}`)}>
+                            {workspace.name}
+                        </div>
+                    ))}
                 </div>
                 <div className={styles.profileSection}>
                     <SidebarButton text="Logout" onClick={() => userSignout()}/>

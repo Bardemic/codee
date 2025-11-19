@@ -55,6 +55,11 @@ export const workspacesApi = createApi({
             }),
             providesTags: ['Workspaces']
         }),
+        getWorkspace: builder.query<Workspace, string>({
+            query: (id: string) => ({
+                url: `/${id}`,
+            }),
+        }),
         getWorkspaceMessages: builder.query<Message[], string>({
             query: (workspace_id: string) => ({
                 url: `messages/${workspace_id}`,
@@ -152,4 +157,4 @@ export const workspacesApi = createApi({
     })
 })
 
-export const { useNewMessageMutation, useGetWorkspacesQuery, useGetWorkspaceMessagesQuery } = workspacesApi;
+export const { useNewMessageMutation, useGetWorkspacesQuery, useGetWorkspaceMessagesQuery, useGetWorkspaceQuery } = workspacesApi;
