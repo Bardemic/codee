@@ -1,4 +1,5 @@
 from datetime import datetime, timezone as dt_timezone
+from workspaces.utils.llm import generateTitle
 from integrations.models import IntegrationConnection
 from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
@@ -40,7 +41,9 @@ class UserWorkspaceViews(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        newWorkspaceObject = Workspace.objects.create(github_repository_name=data["repository_full_name"], user=request.user)
+        title = generateTitle(data["message"])
+
+        newWorkspaceObject = Workspace.objects.create(github_repository_name=data["repository_full_name"], user=request.user, name=title)
         newWorkspaceObject.save()
         userMessageObject = Message.objects.create(workspace=newWorkspaceObject, content=data["message"], sender="USER")
         userMessageObject.save()
