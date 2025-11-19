@@ -4,21 +4,35 @@ export interface Workspace {
     id: number
     created_at: Date
     name: string
-}
-
-export interface Message {
-    id: number
-    created_at: Date
-    sender: "USER" | "AGENT"
-    content: string
+    status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED"
 }
 
 export interface NewMessageResponse {
     workspace_id: number
 }
 
+export interface ToolCall {
+    id: number | string
+    created_at: Date
+    tool_name: string
+    arguments: Record<string, unknown>
+    result: string
+    status: string
+    duration_ms: number | null
+}
+
+export interface Message {
+    id: number | string
+    created_at: Date
+    sender: "USER" | "AGENT"
+    content: string
+    tool_calls: ToolCall[]
+    isPendingAgent?: boolean
+}
+
 export const workspacesApi = createApi({
     reducerPath: 'workspacesApi',
+    tagTypes: ['WorkspaceMessages'],
     baseQuery: fetchBaseQuery({
         baseUrl: 'http://127.0.0.1:5001/api/workspace/', prepareHeaders: (headers,) => {
             const token = localStorage.getItem('userToken');
@@ -42,7 +56,96 @@ export const workspacesApi = createApi({
         getWorkspaceMessages: builder.query<Message[], string>({
             query: (workspace_id: string) => ({
                 url: `messages/${workspace_id}`,
-            })
+            }),
+            providesTags: (_result, _error, workspace_id) => [{ type: 'WorkspaceMessages', id: workspace_id }],
+            async onCacheEntryAdded(
+                workspace_id,
+                {updateCachedData, cacheDataLoaded, cacheEntryRemoved, dispatch},
+            ) {
+                try {
+                    await cacheDataLoaded
+
+                    let shouldStream = false;
+                    try {
+                        const statusResponse = await fetch(`http://127.0.0.1:5001/api/workspace/${workspace_id}/status/`, {
+                            headers: {
+                                'Authorization': `Token ${localStorage.getItem('userToken')}`
+                            }
+                        });
+
+                        if (statusResponse.ok) {
+                            const statusData = await statusResponse.json();
+                            shouldStream = statusData.status === 'PENDING' || statusData.status === 'RUNNING';
+                        } else {
+                            console.warn('Failed to fetch workspace status', statusResponse.status);
+                            shouldStream = true;
+                        }
+                    } catch (statusError) {
+                        console.warn('Unable to determine workspace status', statusError);
+                        shouldStream = true;
+                    }
+
+                    if (shouldStream) {
+                        const eventSource = new EventSource(`http://localhost:8000/stream/${workspace_id}`);
+
+                        eventSource.addEventListener('status', (event: MessageEvent) => {
+                            const data = JSON.parse(event.data)
+                            console.log('[status]', data.phase, data.step, data.detail);
+
+                            if (data.step?.startsWith('tool_')) {
+                                const statusId = event.lastEventId || `sse_${Date.now()}`;
+                                updateCachedData((draft) => {
+                                    let targetMessage = draft.find((msg) => msg.id === '__pending_agent__');
+                                    if (!targetMessage) {
+                                        targetMessage = {
+                                            id: '__pending_agent__',
+                                            created_at: new Date(),
+                                            sender: "AGENT",
+                                            content: "",
+                                            isPendingAgent: true,
+                                            tool_calls: []
+                                        };
+                                        draft.push(targetMessage);
+                                    }
+                                    const exists = targetMessage.tool_calls.some((tc) => tc.id === statusId);
+                                    if (exists) return;
+
+                                    targetMessage.tool_calls.push({
+                                        id: statusId,
+                                        created_at: new Date(),
+                                        tool_name: data.step,
+                                        arguments: {},
+                                        result: data.detail ?? '',
+                                        status: data.phase ?? 'running',
+                                        duration_ms: null
+                                    });
+                                })
+                            }
+                        })
+
+                        eventSource.addEventListener('error', (event: MessageEvent) => {
+                            const data = JSON.parse(event.data);
+                            console.error('[error]', data.code, data.message);
+                        });
+
+                        eventSource.addEventListener('done', (event) => {
+                            const data = JSON.parse(event.data);
+                            console.log('[done]', data.reason);
+                            eventSource.close();
+                            dispatch(workspacesApi.util.invalidateTags([{ type: 'WorkspaceMessages', id: workspace_id }]))
+                        });
+
+                        eventSource.onerror = () => {
+                            eventSource.close();
+                        };
+
+                        await cacheEntryRemoved;
+                        eventSource.close();
+                    }
+                } catch (error) {
+                    console.error('Error setting up workspace messages:', error);
+                }
+            },
         })
     })
 })

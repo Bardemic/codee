@@ -1,22 +1,30 @@
-from .models import Workspace, Message
+from .models import Workspace, Message, ToolCall
 from rest_framework import serializers
+
+
+class ToolCallSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ToolCall
+        fields = ["id", "created_at", "tool_name", "arguments", "result", "status", "duration_ms"]
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    tool_calls = ToolCallSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ["id", "created_at", "content", "sender", "tool_calls"]
+
 
 class WorkspaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workspace
-        fields = ["id", "created_at", "name", "default_branch"]
+        fields = ["id", "created_at", "name", "default_branch", "status"]
 
 class NewMessageSerializer(serializers.Serializer):
     message = serializers.CharField()
-    # repository_id = serializers.IntegerField()
     repository_full_name = serializers.CharField()
-    #branch later
-    #for now, only new
+
 class NewAiMessage(serializers.Serializer):
     message = serializers.CharField()
     workspace_id = serializers.IntegerField()
-
-class MessageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Message
-        fields= ["id", "created_at", "content", "sender"]

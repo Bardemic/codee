@@ -1,10 +1,10 @@
-from pydantic import Json
+from datetime import datetime, timezone as dt_timezone
 from integrations.models import IntegrationConnection
 from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
 from django.http import JsonResponse, HttpResponse
 from rest_framework import viewsets
-from .models import Workspace, Message
+from .models import Workspace, Message, ToolCall
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
@@ -24,8 +24,15 @@ class UserWorkspaceViews(viewsets.ViewSet):
         workspace = Workspace.objects.filter(pk=workspace_id, user=request.user).first()
         if not workspace:
             raise APIException("no workspace found")
-        messages = Message.objects.filter(workspace=workspace)
+        messages = Message.objects.filter(workspace=workspace).order_by('created_at').prefetch_related('tool_calls')
         return JsonResponse(MessageSerializer(messages, many=True).data, safe=False)
+    
+    @action(detail=False, methods=["GET"], url_path="(?P<workspace_id>\d+)/status")
+    def getWorkspaceStatus(self, request, workspace_id):
+        workspace = Workspace.objects.filter(pk=workspace_id, user=request.user).first()
+        if not workspace:
+            raise APIException("no workspace found")
+        return JsonResponse({"status": workspace.status})
 
     @action(detail=False, methods=["POST"], url_path="new_workspace")
     def newWorkspace(self, request):
@@ -77,4 +84,60 @@ class OrchestratorViews(viewsets.ViewSet):
             raise APIException("no workspace found matching id")
         newMessage = Message.objects.create(sender="AGENT", workspace=workspace, content=data["message"])
         newMessage.save()
+        return JsonResponse({"message_id": newMessage.id})
+    
+    @action(detail=False, methods=["POST"], url_path="workspaces/(?P<workspace_id>[^/.]+)/status", permission_classes=[permissions.AllowAny])
+    def updateWorkspaceStatus(self, request, workspace_id=None):
+        workspace = Workspace.objects.filter(id=workspace_id).first()
+        if not workspace:
+            raise APIException("no workspace found")
+        status = request.data.get("status")
+        if status not in [choice[0] for choice in Workspace.Status.choices]:
+            raise APIException("invalid status")
+        workspace.status = status
+        workspace.save()
         return HttpResponse("Ok")
+    
+    @action(detail=False, methods=["POST"], url_path="workspaces/(?P<workspace_id>[^/.]+)/bulk-tool-calls", permission_classes=[permissions.AllowAny])
+    def bulkAddToolCalls(self, request, workspace_id=None):
+        workspace = Workspace.objects.filter(id=workspace_id).first()
+        if not workspace:
+            raise APIException("no workspace found")
+        
+        message_id = request.data.get("message_id")
+        if not message_id:
+            raise APIException("message_id required")
+
+        message = Message.objects.filter(id=message_id, workspace=workspace, sender='AGENT').first()
+        if not message:
+            raise APIException("agent message not found")
+        
+        tool_calls = []
+        for tc in request.data.get("tool_calls", []):
+            timestamp_ms = tc.get("timestamp_ms")
+            tool_name = tc.get("tool_name")
+            if timestamp_ms is None or not tool_name:
+                continue
+
+            try:
+                created_at = datetime.fromtimestamp(float(timestamp_ms) / 1000, tz=dt_timezone.utc)
+            except (TypeError, ValueError):
+                continue
+
+            tool_calls.append(
+                ToolCall(
+                    workspace=workspace,
+                    message=message,
+                    created_at=created_at,
+                    tool_name=tool_name,
+                    arguments=tc.get('arguments') or {},
+                    result=tc.get('detail', ''),
+                    status=tc.get('status', 'success'),
+                    duration_ms=tc.get('duration_ms')
+                )
+            )
+        
+        if tool_calls:
+            ToolCall.objects.bulk_create(tool_calls)
+        
+        return JsonResponse({"created": len(tool_calls)})
