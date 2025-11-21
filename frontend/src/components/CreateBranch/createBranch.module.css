@@ -1,0 +1,24 @@
+button {
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+}
+
+.spinIcon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

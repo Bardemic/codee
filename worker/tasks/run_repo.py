@@ -102,19 +102,24 @@ def getToken(workspace_id: int):
     #need to implement error handling for when !token
     return r.json()["token"]
 
+def _generate_branch_name(workspace_id: int) -> str:
+    return f"codee/workspace-{workspace_id}-{uuid.uuid4().hex[:8]}"
+
+
 def createWorkspace(full_name: str, workspace_id: int):
     repo_url = f"https://x-access-token:{getToken(workspace_id)}@github.com/{full_name}.git"
-    clone_directory = f"/Users/brandonpieczka/repos/codee/.data/workspaces/{str(workspace_id)}"
+    clone_directory = f"/Users/brandonpieczka/repos/codee/.data/workspaces/{workspace_id}"
     porcelain.clone(repo_url, clone_directory)
     repo = porcelain.open_repo(clone_directory)
+    branch_name = None
     if repo:
-        branch_name = str(uuid.uuid4())
+        branch_name = _generate_branch_name(workspace_id)
         porcelain.branch_create(repo, branch_name)
         porcelain.checkout_branch(repo, branch_name)
-    return workspace_id
+    return workspace_id, branch_name
 
 def getWorkspacePath(workspace_id: int):
-    path = f"/Users/brandonpieczka/repos/codee/.data/workspaces/{str(workspace_id)}"
+    path = f"/Users/brandonpieczka/repos/codee/.data/workspaces/{workspace_id}"
     if not os.path.isdir(path): 
         return None
     return path
@@ -185,28 +190,6 @@ def updateFile(path: str, content: str, workspace_id):
     repo.get_worktree().stage([path.encode()])
     return "file updated"
 
-def commit(message: str, workspace_id: int):
-    path = f"/Users/brandonpieczka/repos/codee/.data/workspaces/{str(workspace_id)}"
-    if not os.path.isdir(path):
-        return "workspace not found."
-    repo = Repo(path)
-    repo.get_worktree().commit(message.encode())
-    try:
-        head_ref = repo.refs.get_symrefs().get(b'HEAD')
-        if not head_ref:
-            return "commit done, but no current branch"
-        ref_name = head_ref.decode()
-        branch_name = ref_name.replace('refs/heads/', '')
-        config = repo.get_config()
-        config.set((b'branch', branch_name.encode()), b'remote', b'origin')
-        config.set((b'branch', branch_name.encode()), b'merge', head_ref)
-        config.write_to_path()
-        refspec = f"{ref_name}:{ref_name}"
-        porcelain.push(repo, 'origin', refspecs=[refspec])
-        return "committed"
-    except Exception as e:
-        return f"commit done, but push failed: {str(e)}"
-
 @celery_app.task(name="tasks.pipeline", bind=True)
 def pipeline(self, github_repo_name: str, prompt: str, workspace_id: int):
     dockerId = str(uuid.uuid4())
@@ -215,21 +198,18 @@ def pipeline(self, github_repo_name: str, prompt: str, workspace_id: int):
     update_workspace_status(workspace_id, "RUNNING")
     success = False
     try:
-        workspaceId = createWorkspace(github_repo_name, workspace_id)
+        workspaceId, branch_name = createWorkspace(github_repo_name, workspace_id)
 
         if not workspaceId: 
             emit_error(workspace_id, "workspace_not_found", "repository not found", step="create_workspace")
             return {"error": "repository not found"}
+        if not branch_name:
+            emit_error(workspace_id, "branch_creation_failed", "failed to create workspace branch", step="create_workspace")
+            return {"error": "branch creation failed"}
 
         if mountWorkspaceToDocker(workspaceId, dockerId) < 0: 
             emit_error(workspace_id, "docker_mount_failed", "docker mount failed", step="mount_workspace")
             return {"error": "docker mount failed"}
-
-        def runCommit(message: str):
-            """Commit changes to the repository"""
-            emit_status(workspace_id, "running", step="tool_commit", detail=f"committing: {message[:50]}")
-            result = commit(message, workspaceId)
-            return result
 
         def runUpdateFile(path: str, content: str):
             """Update a file based off path, and given content"""
@@ -257,7 +237,7 @@ def pipeline(self, github_repo_name: str, prompt: str, workspace_id: int):
 
         agent = create_agent(
             model="gpt-5-nano",
-            tools=[runCommit, runUpdateFile, runGrep, runListFiles, runReadFile],
+            tools=[runUpdateFile, runGrep, runListFiles, runReadFile],
             system_prompt="""
             You are the core agent of a coding agent, Codee. Codee is the future of Asynchronous
             coding agents. Users connect a git repo on the website, put in a request, then Codee (you)

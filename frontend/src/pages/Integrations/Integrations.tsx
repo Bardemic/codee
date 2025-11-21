@@ -44,7 +44,7 @@ export default function Integrations() {
         deleteIntegration(id);
     }
     return (
-        <div>
+        <div className={styles.integrationsPage}>
             <h1>
                 Integrations
             </h1>

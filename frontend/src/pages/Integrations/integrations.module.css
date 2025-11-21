@@ -11,6 +11,10 @@
     margin-right: 12px;
 }
 
+.integrationsPage {
+    padding: 24px;
+}
+
 .connected {
     display: flex;
     align-items: center;

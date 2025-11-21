@@ -14,7 +14,7 @@ class Workspace(models.Model):
     name = models.CharField(max_length = 200, default="Untitled", validators=[MinLengthValidator(1)])
     default_branch = models.CharField(max_length = 100, default="main")
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
-    github_repository_name = models.CharField(editable=False, null=False)
+    github_repository_name = models.CharField(null=False)
     github_branch_name = models.CharField(null=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
 

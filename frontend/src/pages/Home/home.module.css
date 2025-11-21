@@ -61,3 +61,7 @@
     font-weight: 900;
     color: var(--color-foreground);
 }
+
+.homeContainer {
+    padding: 24px;
+}

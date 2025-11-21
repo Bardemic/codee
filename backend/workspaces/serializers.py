@@ -19,7 +19,7 @@ class MessageSerializer(serializers.ModelSerializer):
 class WorkspaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Workspace
-        fields = ["id", "created_at", "name", "default_branch", "status"]
+        fields = ["id", "created_at", "name", "default_branch", "status", "github_branch_name", "github_repository_name"]
 
 class NewMessageSerializer(serializers.Serializer):
     message = serializers.CharField()

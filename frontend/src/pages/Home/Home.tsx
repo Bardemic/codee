@@ -26,7 +26,7 @@ function Home() {
         }
     }, [isLoading, user, navigate]);
     return (
-        <div>
+        <div className={styles.homeContainer}>
             <h1 className={styles.header}>say hi to <span className={styles.focusedHeader}>Codee</span>.</h1>
             <div className={styles.chatContainer}>
                 <textarea onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && userMessage.length > 0 && !isCreatingWorkspace) { e.preventDefault(); sendNewMessage(); } }} value={userMessage} onChange={(e) => setUserMessage(e.target.value)} className={styles.newWorkspace} placeholder='Find all errors from the recent commit and fix them' name="prompt" id="6-7" />
