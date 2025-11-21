@@ -9,7 +9,7 @@ export interface Workspace {
     github_repository_name: string
 }
 
-export interface NewMessageResponse {
+export interface NewWorkspaceResponse {
     workspace_id: number
 }
 
@@ -43,13 +43,23 @@ export const workspacesApi = createApi({
         },
     }),
     endpoints: (builder) => ({
-        newMessage: builder.mutation<NewMessageResponse, { message: string, repository_name: string}>({
+        newWorkspace: builder.mutation<NewWorkspaceResponse, { message: string, repository_name: string}>({
             query: ({ message, repository_name}) => ({
                 url: 'new_workspace/',
                 method: "POST",
                 body: {message, repository_full_name:repository_name}
             }),
             invalidatesTags: ['Workspaces']
+        }),
+        newMessage: builder.mutation<void, {message: string, workspace_id: number}>({
+            query: ({message, workspace_id}: {message: string, workspace_id: number}) => ({
+                url: `${workspace_id}/message/`,
+                method: "POST",
+                body: {message}
+            }),
+            invalidatesTags: (_, __, workspace_id) => [
+                {type: 'Workspace', workspace_id}
+            ]
         }),
         createBranch: builder.mutation<void, string>({
             query: (workspace_id: string) => ({
@@ -171,4 +181,4 @@ export const workspacesApi = createApi({
     })
 })
 
-export const { useNewMessageMutation, useGetWorkspacesQuery, useGetWorkspaceMessagesQuery, useGetWorkspaceQuery, useCreateBranchMutation } = workspacesApi;
+export const { useNewWorkspaceMutation, useGetWorkspacesQuery, useGetWorkspaceMessagesQuery, useGetWorkspaceQuery, useCreateBranchMutation, useNewMessageMutation } = workspacesApi;
