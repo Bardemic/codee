@@ -11,7 +11,7 @@ export default function Workspace() {
     const { data: messages } = useGetWorkspaceMessagesQuery(workspaceId || '');
     const { data: workspace, isLoading } = useGetWorkspaceQuery(workspaceId || "");
     const chatRef = useRef<HTMLDivElement>(null);
-    const [createBranch] = useCreateBranchMutation();
+    const [createBranch, { isLoading: isCreatingBranch }] = useCreateBranchMutation();
     const messageList = messages ?? [];
     const lastMessage = messageList[messageList.length - 1];
     const hasPendingAgentMessage = messageList.some(
@@ -36,7 +36,7 @@ export default function Workspace() {
         <div className={style.workspaceContainer}>
             <div className={style.workspaceHeader}>
                 <h1>{workspace.name}</h1>
-                <CreateBranch github_repository_name={workspace.github_repository_name} branch_name={workspace.github_branch_name} createBranch={() => {createBranch(workspaceId || "")}}/>
+                <CreateBranch github_repository_name={workspace.github_repository_name} branch_name={workspace.github_branch_name} createBranch={() => {createBranch(workspaceId || "")}} isLoading={isCreatingBranch}/>
             </div>
             <div className={style.chatContainer} ref={chatRef}>
                 {messageList.map((message) => (
