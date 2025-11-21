@@ -5,6 +5,8 @@ export interface Workspace {
     created_at: Date
     name: string
     status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED"
+    github_branch_name: string | null
+    github_repository_name: string
 }
 
 export interface NewMessageResponse {
@@ -32,7 +34,7 @@ export interface Message {
 
 export const workspacesApi = createApi({
     reducerPath: 'workspacesApi',
-    tagTypes: ['WorkspaceMessages', 'Workspaces'],
+    tagTypes: ['WorkspaceMessages', 'Workspaces', 'Workspace'],
     baseQuery: fetchBaseQuery({
         baseUrl: 'http://127.0.0.1:5001/api/workspace/', prepareHeaders: (headers,) => {
             const token = localStorage.getItem('userToken');
@@ -49,6 +51,15 @@ export const workspacesApi = createApi({
             }),
             invalidatesTags: ['Workspaces']
         }),
+        createBranch: builder.mutation<void, string>({
+            query: (workspace_id: string) => ({
+                url: `${workspace_id}/create-branch/`,
+                method: "POST",
+            }),
+            invalidatesTags: (_, __, workspace_id) => [
+                { type: 'Workspace', workspace_id}
+            ]
+        }),
         getWorkspaces: builder.query<Workspace[], void>({
             query: () => ({
                 url: '',
@@ -59,6 +70,9 @@ export const workspacesApi = createApi({
             query: (id: string) => ({
                 url: `/${id}`,
             }),
+            providesTags: (_, __, id) => [
+                { type: 'Workspace', id}
+            ]
         }),
         getWorkspaceMessages: builder.query<Message[], string>({
             query: (workspace_id: string) => ({
@@ -157,4 +171,4 @@ export const workspacesApi = createApi({
     })
 })
 
-export const { useNewMessageMutation, useGetWorkspacesQuery, useGetWorkspaceMessagesQuery, useGetWorkspaceQuery } = workspacesApi;
+export const { useNewMessageMutation, useGetWorkspacesQuery, useGetWorkspaceMessagesQuery, useGetWorkspaceQuery, useCreateBranchMutation } = workspacesApi;

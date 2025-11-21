@@ -1,5 +1,6 @@
 from datetime import datetime, timezone as dt_timezone
 from workspaces.utils.llm import generateTitle
+from workspaces.utils.createBranch import createBranch
 from integrations.models import IntegrationConnection
 from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
@@ -13,7 +14,6 @@ from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, 
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from rest_framework.response import Response
 
 
 
@@ -37,6 +37,14 @@ class UserWorkspaceViews(viewsets.ViewSet):
             raise APIException("no workspace found")
         return JsonResponse({"status": workspace.status})
 
+    @action(detail=False, methods=["POST"], url_path="(?P<workspace_id>\d+)/create-branch")
+    def create_branch(self, request, workspace_id):
+        workspace = Workspace.objects.filter(pk=workspace_id, user=request.user).first()
+        if not workspace:
+            raise APIException("no workspace found")
+        branch_name = createBranch(workspace)
+        return JsonResponse({"branch_name": branch_name})
+
     @action(detail=False, methods=["POST"], url_path="new_workspace")
     def newWorkspace(self, request):
         serializer = NewMessageSerializer(data=request.data)
@@ -46,9 +54,7 @@ class UserWorkspaceViews(viewsets.ViewSet):
         title = generateTitle(data["message"])
 
         newWorkspaceObject = Workspace.objects.create(github_repository_name=data["repository_full_name"], user=request.user, name=title)
-        newWorkspaceObject.save()
         userMessageObject = Message.objects.create(workspace=newWorkspaceObject, content=data["message"], sender="USER")
-        userMessageObject.save()
         r = httpx.post('http://127.0.0.1:8000/execute', json={
             "prompt":data["message"],
             "repository_full_name":data["repository_full_name"],
@@ -95,7 +101,6 @@ class OrchestratorViews(viewsets.ViewSet):
         if not workspace:
             raise APIException("no workspace found matching id")
         newMessage = Message.objects.create(sender="AGENT", workspace=workspace, content=data["message"])
-        newMessage.save()
         return JsonResponse({"message_id": newMessage.id})
     
     @action(detail=False, methods=["POST"], url_path="workspaces/(?P<workspace_id>[^/.]+)/status", permission_classes=[permissions.AllowAny])
