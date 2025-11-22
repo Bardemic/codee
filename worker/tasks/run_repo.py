@@ -1,6 +1,6 @@
 from celery_app import celery_app
 import httpx
-import subprocess, os, uuid, time, logging
+import subprocess, os, uuid, time, logging, json
 from typing import Optional
 from dulwich import porcelain
 from dulwich.repo import Repo
@@ -190,91 +190,124 @@ def updateFile(path: str, content: str, workspace_id):
     repo.get_worktree().stage([path.encode()])
     return "file updated"
 
-@celery_app.task(name="tasks.pipeline", bind=True)
-def pipeline(self, github_repo_name: str, prompt: str, workspace_id: int):
-    dockerId = str(uuid.uuid4())
+AGENT_SYSTEM_PROMPT = """
+You are the core agent of a coding agent, Codee. Codee is the future of Asynchronous
+coding agents. Users connect a git repo on the website, put in a request, then Codee (you)
+creates a workspace, reads the codebase, understand the request, make changes, create a Pull Request,
+and push it to the git repo.
+
+<DEVELOPER_NOTES> You are in *EARLY* Beta. We are currently developing your tools.
+You may have none, you may have a few. Act as normal as you can, try to run to best of your capabilities.
+Don't try to run a tool if you don't have it. The prompt/message may be asking you to perform a certain
+action regarding your tools, and if so, just run the tool and return what you think.
+
+If there is an error running a tool, do NOT continue. Just say that the tool doesn't work. don't try to run it multiple times.
+Sorry... </DEVELOPER_NOTES>
+"""
+
+
+def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, previousMessages: list | None = None):
+    def runUpdateFile(path: str, content: str):
+        """Update a file based off path, and given content"""
+        emit_status(workspace_id, "running", step="tool_update_file", detail=f"updating: {path}")
+        return updateFile(path, content, workspace_id)
+
+    def runListFiles(path: str = ""):
+        """run ls on the codebase in order to view files."""
+        emit_status(workspace_id, "running", step="tool_list_files", detail=f"listing: {path or 'root'}")
+        return listFiles(path, docker_id)
+
+    def runReadFile(path: str):
+        """read a full file's contents using 'cat' from the path."""
+        emit_status(workspace_id, "running", step="tool_read_file", detail=f"reading: {path}")
+        return readFile(path, docker_id)
+
+    def runGrep(grepCmd: str):
+        """Given a grep command, runs command in the docker environment"""
+        emit_status(workspace_id, "running", step="tool_grep", detail=f"grep: {grepCmd[:50]}")
+        return grep(grepCmd, docker_id)
+
+    agent = create_agent(
+        model="gpt-5-nano",
+        tools=[runUpdateFile, runGrep, runListFiles, runReadFile],
+        system_prompt=AGENT_SYSTEM_PROMPT
+    )
+
+    emit_status(workspace_id, "running", step="agent_start", detail="agent execution started")
+
+    messages = [{"role": "user", "content": prompt}]
+    if previousMessages:
+        previous_messages_str = json.dumps(previousMessages, default=str)
+        messages.insert(0, {"role": "user", "content": previous_messages_str})
+
+    response = agent.invoke({"messages": messages})
+    final_message = response["messages"][-1].content
+
+    msg_response = httpx.post(
+        f"http://127.0.0.1:5001/api/internals/workspaces/message/",
+        json={"message": final_message, "workspace_id": workspace_id}
+    )
+    message_id = msg_response.json().get("message_id")
+
+    if message_id:
+        persist_tool_calls_from_redis(workspace_id, message_id)
+
+    emit_status(workspace_id, "complete", step="done", detail="Response ready")
+    update_workspace_status(workspace_id, "COMPLETED")
+    return {"response": str(response["messages"][-1])}
+
+
+def _run_workspace_job(workspace_id: int, prompt: str, github_repo_name: str | None = None, previous_messages: list | None = None):
+    docker_id = str(uuid.uuid4())
     reset_workspace_stream(workspace_id)
-    emit_status(workspace_id, "starting", step="init", detail="preparing workspace")
+    init_detail = "preparing workspace" if github_repo_name else "processing workspace message"
+    emit_status(workspace_id, "starting", step="init", detail=init_detail)
     update_workspace_status(workspace_id, "RUNNING")
     success = False
     try:
-        workspaceId, branch_name = createWorkspace(github_repo_name, workspace_id)
+        if github_repo_name:
+            workspaceId, branch_name = createWorkspace(github_repo_name, workspace_id)
+            if not workspaceId:
+                emit_error(workspace_id, "workspace_not_found", "repository not found", step="create_workspace")
+                update_workspace_status(workspace_id, "FAILED")
+                return {"error": "repository not found"}
+            if not branch_name:
+                emit_error(workspace_id, "branch_creation_failed", "failed to create workspace branch", step="create_workspace")
+                update_workspace_status(workspace_id, "FAILED")
+                return {"error": "branch creation failed"}
+        else:
+            if not getWorkspacePath(workspace_id):
+                emit_error(
+                    workspace_id,
+                    "workspace_not_initialized",
+                    "workspace not initialized. create a workspace first",
+                    step="load_workspace"
+                )
+                update_workspace_status(workspace_id, "FAILED")
+                return {"error": "workspace not initialized"}
 
-        if not workspaceId: 
-            emit_error(workspace_id, "workspace_not_found", "repository not found", step="create_workspace")
-            return {"error": "repository not found"}
-        if not branch_name:
-            emit_error(workspace_id, "branch_creation_failed", "failed to create workspace branch", step="create_workspace")
-            return {"error": "branch creation failed"}
-
-        if mountWorkspaceToDocker(workspaceId, dockerId) < 0: 
+        if mountWorkspaceToDocker(workspace_id, docker_id) < 0:
             emit_error(workspace_id, "docker_mount_failed", "docker mount failed", step="mount_workspace")
+            update_workspace_status(workspace_id, "FAILED")
             return {"error": "docker mount failed"}
 
-        def runUpdateFile(path: str, content: str):
-            """Update a file based off path, and given content"""
-            emit_status(workspace_id, "running", step="tool_update_file", detail=f"updating: {path}")
-            result = updateFile(path, content, workspaceId)
-            return result
-
-        def runListFiles(path: str = ""):
-            """run ls on the codebase in order to view files. path variable is to see inside folders (for example, a passing in "./backend" will do "ls ./backend"). leave empty to see root."""
-            emit_status(workspace_id, "running", step="tool_list_files", detail=f"listing: {path or 'root'}")
-            result = listFiles(path, dockerId)
-            return result
-
-        def runReadFile(path: str):
-            """read a full file's contents using 'cat' from the path."""
-            emit_status(workspace_id, "running", step="tool_read_file", detail=f"reading: {path}")
-            result = readFile(path, dockerId)
-            return result
-
-        def runGrep(grepCmd: str):
-            """Given a grep command, runs command in the docker environment"""
-            emit_status(workspace_id, "running", step="tool_grep", detail=f"grep: {grepCmd[:50]}")
-            result = grep(grepCmd, dockerId)
-            return result
-
-        agent = create_agent(
-            model="gpt-5-nano",
-            tools=[runUpdateFile, runGrep, runListFiles, runReadFile],
-            system_prompt="""
-            You are the core agent of a coding agent, Codee. Codee is the future of Asynchronous
-            coding agents. Users connect a git repo on the website, put in a request, then Codee (you)
-            creates a workspace, reads the codebase, understand the request, make changes, create a Pull Request,
-            and push it to the git repo.
-
-            <DEVELOPER_NOTES> You are in *EARLY* Beta. We are currently developing your tools.
-            You may have none, you may have a few. Act as normal as you can, try to run to best of your capabilities.
-            Don't try to run a tool if you don't have it. The prompt/message may be asking you to perform a certain
-            action regarding your tools, and if so, just run the tool and return what you think.
-
-            If there is an error running a tool, do NOT continue. Just say that the tool doesn't work. don't try to run it multiple times.
-            Sorry... </DEVELOPER_NOTES>
-            """
-        )
-
-        emit_status(workspace_id, "running", step="agent_start", detail="agent execution started")
-        response = agent.invoke({"messages": [{"role": "user", "content": prompt}]})
-        final_message = response["messages"][-1].content
-        
-        msg_response = httpx.post(f"http://127.0.0.1:5001/api/internals/workspaces/message/", json={
-            "message": final_message,
-            "workspace_id": workspace_id
-        })
-        message_id = msg_response.json().get("message_id")
-
-        if message_id:
-            persist_tool_calls_from_redis(workspace_id, message_id)
-        
-        emit_status(workspace_id, "complete", step="done", detail="Response ready")
-        update_workspace_status(workspace_id, "COMPLETED")
+        result = _run_agent_session(workspace_id, docker_id, prompt, previous_messages)
         success = True
-        return {"response": str(response["messages"][-1])}
+        return result
     except Exception as exc:
         emit_error(workspace_id, "pipeline_failure", str(exc))
         update_workspace_status(workspace_id, "FAILED")
         raise
     finally:
         emit_done(workspace_id, "success" if success else "error")
-        unmountDockerWorkspace(dockerId)
+        unmountDockerWorkspace(docker_id)
+
+
+@celery_app.task(name="tasks.pipeline", bind=True)
+def pipeline(self, github_repo_name: str, prompt: str, workspace_id: int):
+    return _run_workspace_job(workspace_id=workspace_id, prompt=prompt, github_repo_name=github_repo_name)
+
+
+@celery_app.task(name="tasks.process_workspace_message", bind=True)
+def process_workspace_message(self, prompt: str, workspace_id: int, previous_messages):
+    return _run_workspace_job(workspace_id=workspace_id, prompt=prompt, previous_messages=previous_messages)

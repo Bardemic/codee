@@ -54,18 +54,21 @@ class UserWorkspaceViews(viewsets.ViewSet):
         workspace = Workspace.objects.filter(pk=workspace_id).first()
         if not workspace:
             raise APIException("workspace not found")
-        
+
+        prevMessages = Message.objects.filter(workspace=workspace).order_by('created_at').prefetch_related('tool_calls')
+        serializedMessages = MessageSerializer(prevMessages, many=True).data
+
         userMessageObject = Message.objects.create(workspace=workspace, content=data["message"], sender="USER")
-        messages = Message.objects.filter(workspace=workspace).order_by('created_at').prefetch_related('tool_calls')
-        serialized_messages = MessageSerializer(messages, many=True).data
 
         r = httpx.post('http://127.0.0.1:8000/newMessage', json={
             "prompt": data["message"],
             "workspace_id": workspace.id,
-            "previous_messages": serialized_messages
+            "previous_messages": serializedMessages
         })
         response = r.json()
         if response["status"] == "queued":
+            workspace.status = "RUNNING"
+            workspace.save()
             return HttpResponse("Ok")
         userMessageObject.delete()
         raise APIException("worker issue")
@@ -81,7 +84,7 @@ class UserWorkspaceViews(viewsets.ViewSet):
         title = generateTitle(data["message"])
 
         newWorkspaceObject = Workspace.objects.create(github_repository_name=data["repository_full_name"], user=request.user, name=title)
-        userMessageObject = Message.objects.create(workspace=newWorkspaceObject, content=data["message"], sender="USER")
+        Message.objects.create(workspace=newWorkspaceObject, content=data["message"], sender="USER")
         r = httpx.post('http://127.0.0.1:8000/newWorkspace', json={
             "prompt":data["message"],
             "repository_full_name":data["repository_full_name"],
