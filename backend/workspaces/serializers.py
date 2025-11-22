@@ -21,9 +21,12 @@ class WorkspaceSerializer(serializers.ModelSerializer):
         model = Workspace
         fields = ["id", "created_at", "name", "default_branch", "status", "github_branch_name", "github_repository_name"]
 
-class NewMessageSerializer(serializers.Serializer):
+class NewWorkspaceSerialier(serializers.Serializer):
     message = serializers.CharField()
     repository_full_name = serializers.CharField()
+
+class NewMessageSerializer(serializers.Serializer):
+    message = serializers.CharField()
 
 class NewAiMessage(serializers.Serializer):
     message = serializers.CharField()

@@ -49,7 +49,7 @@ class GitHubIntegrationViews(viewsets.ViewSet):
         userIntegration = IntegrationConnection(user=request.user, provider=provider)
         userIntegration.setDataConfig({"installation_id": installation_id})
         userIntegration.save()
-        return HttpResponse("OK")
+        return HttpResponse(status=204)
 
 class IntegrationViews(viewsets.ViewSet):
     authentication_classes = [TokenAuthentication]
@@ -80,4 +80,4 @@ class IntegrationViews(viewsets.ViewSet):
         if not userIntegration:
             raise APIException("no integration found (bad id?)")
         userIntegration.delete()
-        return HttpResponse("OK")
+        return HttpResponse(status=204)

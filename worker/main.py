@@ -4,7 +4,7 @@ import json
 import asyncio
 from fastapi.responses import StreamingResponse
 import redis.asyncio as redis
-from tasks.run_repo import pipeline
+from tasks.run_repo import pipeline, process_workspace_message
 from contextlib import asynccontextmanager
 
 REDIS_URL = "redis://localhost:6379/2"
@@ -78,7 +78,13 @@ async def root():
         "message": "codee"
     }
 
-@app.post("/execute")
-async def execute(workspace_info: dict):
+@app.post("/newWorkspace")
+async def newWorkspace(workspace_info: dict):
     workspace = pipeline.delay(workspace_info["repository_full_name"], workspace_info["prompt"], workspace_info["workspace_id"])
+    return {"workspace_id": workspace.id, "status": "queued"}
+
+
+@app.post("/newMessage")
+async def newMessage(workspace_info: dict):
+    workspace = process_workspace_message.delay(workspace_info["prompt"], workspace_info["workspace_id"], workspace_info["previous_messages"])
     return {"workspace_id": workspace.id, "status": "queued"}

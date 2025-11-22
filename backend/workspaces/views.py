@@ -10,7 +10,7 @@ from .models import Workspace, Message, ToolCall
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
-from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, WorkspaceSerializer
+from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkspaceSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -38,24 +38,54 @@ class UserWorkspaceViews(viewsets.ViewSet):
         return JsonResponse({"status": workspace.status})
 
     @action(detail=False, methods=["POST"], url_path="(?P<workspace_id>\d+)/create-branch")
-    def create_branch(self, request, workspace_id):
+    def createBranch(self, request, workspace_id):
         workspace = Workspace.objects.filter(pk=workspace_id, user=request.user).first()
         if not workspace:
             raise APIException("no workspace found")
         branch_name = createBranch(workspace)
         return JsonResponse({"branch_name": branch_name})
 
+    @action(detail=False, methods=["POST"], url_path="(?P<workspace_id>\d+)/message")
+    def newMessage(self, request, workspace_id):
+        serializer = NewMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        workspace = Workspace.objects.filter(pk=workspace_id).first()
+        if not workspace:
+            raise APIException("workspace not found")
+
+        prevMessages = Message.objects.filter(workspace=workspace).order_by('created_at').prefetch_related('tool_calls')
+        serializedMessages = MessageSerializer(prevMessages, many=True).data
+
+        userMessageObject = Message.objects.create(workspace=workspace, content=data["message"], sender="USER")
+
+        r = httpx.post('http://127.0.0.1:8000/newMessage', json={
+            "prompt": data["message"],
+            "workspace_id": workspace.id,
+            "previous_messages": serializedMessages
+        })
+        response = r.json()
+        if response["status"] == "queued":
+            workspace.status = "RUNNING"
+            workspace.save()
+            return HttpResponse(status=204)
+        userMessageObject.delete()
+        raise APIException("worker issue")
+
+        
+
     @action(detail=False, methods=["POST"], url_path="new_workspace")
     def newWorkspace(self, request):
-        serializer = NewMessageSerializer(data=request.data)
+        serializer = NewWorkspaceSerialier(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
         title = generateTitle(data["message"])
 
         newWorkspaceObject = Workspace.objects.create(github_repository_name=data["repository_full_name"], user=request.user, name=title)
-        userMessageObject = Message.objects.create(workspace=newWorkspaceObject, content=data["message"], sender="USER")
-        r = httpx.post('http://127.0.0.1:8000/execute', json={
+        Message.objects.create(workspace=newWorkspaceObject, content=data["message"], sender="USER")
+        r = httpx.post('http://127.0.0.1:8000/newWorkspace', json={
             "prompt":data["message"],
             "repository_full_name":data["repository_full_name"],
             "workspace_id": newWorkspaceObject.pk,
@@ -113,7 +143,7 @@ class OrchestratorViews(viewsets.ViewSet):
             raise APIException("invalid status")
         workspace.status = status
         workspace.save()
-        return HttpResponse("Ok")
+        return HttpResponse(status=204)
     
     @action(detail=False, methods=["POST"], url_path="workspaces/(?P<workspace_id>[^/.]+)/bulk-tool-calls", permission_classes=[permissions.AllowAny])
     def bulkAddToolCalls(self, request, workspace_id=None):
