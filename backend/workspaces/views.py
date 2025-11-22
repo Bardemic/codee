@@ -69,7 +69,7 @@ class UserWorkspaceViews(viewsets.ViewSet):
         if response["status"] == "queued":
             workspace.status = "RUNNING"
             workspace.save()
-            return HttpResponse("Ok")
+            return HttpResponse(status=204)
         userMessageObject.delete()
         raise APIException("worker issue")
 
@@ -143,7 +143,7 @@ class OrchestratorViews(viewsets.ViewSet):
             raise APIException("invalid status")
         workspace.status = status
         workspace.save()
-        return HttpResponse("Ok")
+        return HttpResponse(status=204)
     
     @action(detail=False, methods=["POST"], url_path="workspaces/(?P<workspace_id>[^/.]+)/bulk-tool-calls", permission_classes=[permissions.AllowAny])
     def bulkAddToolCalls(self, request, workspace_id=None):

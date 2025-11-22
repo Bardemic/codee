@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 
 export interface Workspace {
     id: number
-    created_at: Date
+    created_at: string
     name: string
     status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED"
     github_branch_name: string | null
@@ -15,7 +15,7 @@ export interface NewWorkspaceResponse {
 
 export interface ToolCall {
     id: number | string
-    created_at: Date
+    created_at: string
     tool_name: string
     arguments: Record<string, unknown>
     result: string
@@ -25,7 +25,7 @@ export interface ToolCall {
 
 export interface Message {
     id: number | string
-    created_at: Date
+    created_at: string
     sender: "USER" | "AGENT"
     content: string
     tool_calls: ToolCall[]
@@ -133,7 +133,7 @@ export const workspacesApi = createApi({
                                 if (!targetMessage) {
                                     targetMessage = {
                                         id: '__pending_agent__',
-                                        created_at: new Date(),
+                                        created_at: new Date().toISOString(),
                                         sender: "AGENT",
                                         content: "",
                                         isPendingAgent: true,
@@ -146,7 +146,7 @@ export const workspacesApi = createApi({
 
                                 targetMessage.tool_calls.push({
                                     id: statusId,
-                                    created_at: new Date(),
+                                    created_at: new Date().toISOString(),
                                     tool_name: data.step,
                                     arguments: {},
                                     result: data.detail ?? '',
