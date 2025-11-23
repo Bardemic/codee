@@ -4,6 +4,9 @@ from .models import IntegrationProvider, Tool
 class ConnectGithubPayloadSerializer(serializers.Serializer):
     installation_id = serializers.CharField()
 
+class ApiKeyIntegrationSerializer(serializers.Serializer):
+    api_key = serializers.CharField()
+
 class ToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tool

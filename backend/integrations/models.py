@@ -10,6 +10,9 @@ PROVIDER_SCHEMAS = {
         "account_login": {"type": str},
         "account_id": {"type": int},
         "account_type": {"type": str},
+    },
+    "posthog": {
+        "api_key": {"type": str, "required": True}
     }
 }
 

@@ -4,11 +4,14 @@
     justify-self: center;
     padding: 12px;
     width: 600px;
+    gap: 16px;
 }
 
 .icon {
     height: 36px;
+    width: auto;
     margin-right: 12px;
+    
 }
 
 .integrationsPage {
@@ -32,8 +35,19 @@
 
 .integration {
     display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    background-color: var(--color-surface);
+}
+
+.integrationHeader {
+    display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
 }
 
 .iconContainer {
@@ -41,4 +55,37 @@
     gap: 4px;
     align-items: center;
     font-weight: bold;
+}
+
+.inputContainer {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    align-items: center;
+}
+
+.apiKeyInput {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: rgba(0, 0, 0, 0.2);
+    color: var(--color-foreground);
+    font-family: inherit;
+}
+
+.apiKeyInput:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+
+.cancelButton {
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--color-muted);
+}
+
+.cancelButton:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-foreground);
 }

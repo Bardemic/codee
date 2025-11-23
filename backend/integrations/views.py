@@ -7,8 +7,8 @@ from rest_framework.exceptions import APIException
 from rest_framework.permissions import IsAuthenticated
 from integrations.services.github_app import get_installation_token
 from rest_framework import viewsets
-from .serializer import GithubRepositorySerializer, IntegrationWithStatusSerializer, ConnectGithubPayloadSerializer
-from .models import IntegrationConnection, IntegrationProvider
+from .serializer import GithubRepositorySerializer, IntegrationWithStatusSerializer, ConnectGithubPayloadSerializer, ApiKeyIntegrationSerializer
+from .models import IntegrationConnection, IntegrationProvider, PROVIDER_SCHEMAS
 from .services.github_app import get_installation_token
 
 
@@ -54,6 +54,7 @@ class GitHubIntegrationViews(viewsets.ViewSet):
 class IntegrationViews(viewsets.ViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    lookup_value_regex = r"\d+"
 
     def list(self, request):
         providers = IntegrationProvider.objects.prefetch_related('tools').annotate(
@@ -82,4 +83,31 @@ class IntegrationViews(viewsets.ViewSet):
         if not userIntegration:
             raise APIException("no integration found (bad id?)")
         userIntegration.delete()
+        return HttpResponse(status=204)
+
+    @action(detail=True, methods=["post"])
+    def connect(self, request, pk=None):
+        if not pk:
+            raise APIException("no provider id provided")
+
+        provider = IntegrationProvider.objects.filter(pk=pk).first()
+        if not provider:
+            raise APIException("unknown provider")
+
+        if provider.slug == "github_app":
+            raise APIException("github connections must use the github endpoint")
+
+        if provider.slug not in PROVIDER_SCHEMAS:
+            raise APIException("provider schema not configured")
+
+        serializer = ApiKeyIntegrationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        existing_connection = IntegrationConnection.objects.filter(user=request.user, provider=provider).first()
+        if existing_connection:
+            raise APIException("integration already connected")
+
+        userIntegration = IntegrationConnection(user=request.user, provider=provider)
+        userIntegration.setDataConfig(serializer.validated_data)
+        userIntegration.save()
         return HttpResponse(status=204)
