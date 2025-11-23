@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from langchain.agents import create_agent
 from tools import grep, list_files, read_file, update_file
 from utils import emit_status, emit_error, emit_done, get_stream_client, get_workspace_path
+from tools.posthog.error import get_error_tools
 
 load_dotenv()
 
