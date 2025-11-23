@@ -62,6 +62,7 @@ class IntegrationConnection(models.Model):
 class Tool(models.Model):
     display_name = models.CharField(max_length=200)
     provider = models.ForeignKey(IntegrationProvider, on_delete=models.CASCADE, related_name="tools", null=True)
+    slug_name = models.CharField(max_length=200)
 
     class Meta:
-        unique_together = ("display_name", "provider")
+        unique_together = ("display_name", "provider", "slug_name")

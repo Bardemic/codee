@@ -7,7 +7,7 @@ class ConnectGithubPayloadSerializer(serializers.Serializer):
 class ToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tool
-        fields = ("id", "display_name")
+        fields = ("id", "display_name", "slug_name")
 
 class IntegrationWithStatusSerializer(serializers.Serializer):
     id = serializers.IntegerField()

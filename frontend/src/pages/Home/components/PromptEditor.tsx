@@ -39,7 +39,7 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
     ref
 ) {
     const editorRef = useRef<HTMLDivElement>(null);
-    const prevMentionsRef = useRef<string[]>([]);
+    const prevPillSlugsRef = useRef<string[]>([]);
     const [mentionState, setMentionState] = useState<MentionState | null>(null);
 
     useImperativeHandle(ref, () => ({
@@ -47,30 +47,25 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
         focus: () => editorRef.current?.focus(),
     }));
 
-    const syncToolsFromPills = useCallback(
-        (currentPills: string[]) => {
-            const removed = prevMentionsRef.current.filter((pill) => !currentPills.includes(pill));
-            if (removed.length === 0) return;
+    const extractSlugsFromPill = useCallback((pill: Element): string[] => {
+        const el = pill as HTMLSpanElement & { dataset: { toolSlug?: string; integrationSlugs?: string } };
+        if (el.dataset.toolSlug) return [el.dataset.toolSlug];
+        if (el.dataset.integrationSlugs) {
+            try {
+                return JSON.parse(el.dataset.integrationSlugs);
+            } catch {
+                return [];
+            }
+        }
+        return [];
+    }, []);
 
-            onSelectedToolsChange((prev) => {
-                const updated = { ...prev };
-                
-                removed.forEach((value) => {
-                    if (value.includes('/')) {
-                        const [integrationName, tool] = value.split('/');
-                        const tools = updated[integrationName]?.filter((t) => t !== tool);
-                        if (tools?.length) {
-                            updated[integrationName] = tools;
-                        } else {
-                            delete updated[integrationName];
-                        }
-                    } else {
-                        delete updated[value];
-                    }
-                });
-                
-                return updated;
-            });
+    const syncToolsFromPills = useCallback(
+        (currentSlugsFromPills: string[]) => {
+            const removedSlugs = prevPillSlugsRef.current.filter((slug) => !currentSlugsFromPills.includes(slug));
+            if (removedSlugs.length === 0) return;
+
+            onSelectedToolsChange((prev) => prev.filter((slug) => !removedSlugs.includes(slug)));
         },
         [onSelectedToolsChange]
     );
@@ -107,13 +102,13 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
     const handleInput = useCallback(() => {
         if (!editorRef.current) return;
 
-        const currentPills = Array.from(editorRef.current.querySelectorAll(`.${styles.mentionPill}`))
-            .map((pill) => pill.textContent?.substring(1) || '');
+        const currentSlugsFromPills = Array.from(editorRef.current.querySelectorAll(`.${styles.mentionPill}`))
+            .flatMap(extractSlugsFromPill);
 
-        syncToolsFromPills(currentPills);
-        prevMentionsRef.current = currentPills;
+        syncToolsFromPills(currentSlugsFromPills);
+        prevPillSlugsRef.current = currentSlugsFromPills;
         setMentionState(detectMentionTrigger());
-    }, [detectMentionTrigger, syncToolsFromPills]);
+    }, [detectMentionTrigger, extractSlugsFromPill, syncToolsFromPills]);
 
     const handleSelectMention = useCallback(
         (value: string, type: 'integration' | 'tool') => {
@@ -142,19 +137,27 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
 
             onSelectedToolsChange((prev) => {
                 if (type === 'tool') {
-                    const [integrationName, toolName] = value.split('/');
-                    const current = prev[integrationName] || [];
-                    return current.includes(toolName) ? prev : { ...prev, [integrationName]: [...current, toolName] };
+                    const [integrationName, toolDisplay] = value.split('/');
+                    const integration = integrations.find((item) => item.name === integrationName);
+                    const tool = integration?.tools.find((t) => t.display_name === toolDisplay);
+                    if (!tool) return prev;
+                    (span as HTMLSpanElement).dataset.toolSlug = tool.slug_name;
+                    return prev.includes(tool.slug_name) ? prev : [...prev, tool.slug_name];
                 }
                 const integration = integrations.find((item) => item.name === value);
-                return integration ? { ...prev, [integration.name]: integration.tools.map((t) => t.display_name) } : prev;
+                if (!integration) return prev;
+                const slugs = integration.tools.map((t) => t.slug_name);
+                (span as HTMLSpanElement).dataset.integrationSlugs = JSON.stringify(slugs);
+                const existing = new Set(prev);
+                const toAdd = slugs.filter((slug) => !existing.has(slug));
+                return toAdd.length ? [...prev, ...toAdd] : prev;
             });
 
-            prevMentionsRef.current = [...prevMentionsRef.current, value];
+            prevPillSlugsRef.current = [...prevPillSlugsRef.current, ...extractSlugsFromPill(span)];
             setMentionState(null);
             editorRef.current.focus();
         },
-        [integrations, mentionState, onSelectedToolsChange]
+        [extractSlugsFromPill, integrations, mentionState, onSelectedToolsChange]
     );
 
     const mentionOptions = useMemo((): MentionOption[] => {

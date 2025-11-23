@@ -10,11 +10,11 @@ import styles from './home.module.css';
 import { PromptEditor, type PromptEditorRef } from './components/PromptEditor';
 import { ToolsSelector } from './components/ToolsSelector';
 
-export type SelectedTools = Record<string, string[]>;
+export type SelectedTools = string[];
 
 function Home() {
     const [selected, setSelected] = useState<Repository | null>(null);
-    const [selectedTools, setSelectedTools] = useState<SelectedTools>({});
+    const [selectedTools, setSelectedTools] = useState<SelectedTools>([]);
     const editorRef = useRef<PromptEditorRef>(null);
     const navigate = useNavigate();
     const [newWorkspace, { isLoading: isCreatingWorkspace }] = useNewWorkspaceMutation();
