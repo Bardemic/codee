@@ -58,7 +58,7 @@ async def stream(workspace_id: str, request: Request, last_event_id: str | None 
                         start_id = mid
                         event = fields.get("event", "message")
                         data = {key: val for key, val in fields.items() if key != "event"}
-                        yield sse_pack(event, data, id=mid);
+                        yield sse_pack(event, data, id=mid)
                         if event == "done":
                             seen_done = True
                             break
@@ -80,11 +80,23 @@ async def root():
 
 @app.post("/newWorkspace")
 async def newWorkspace(workspace_info: dict):
-    workspace = pipeline.delay(workspace_info["repository_full_name"], workspace_info["prompt"], workspace_info["workspace_id"])
+    tool_slugs = workspace_info.get("tool_slugs") or []
+    workspace = pipeline.delay(
+        workspace_info["repository_full_name"],
+        workspace_info["prompt"],
+        workspace_info["workspace_id"],
+        tool_slugs,
+    )
     return {"workspace_id": workspace.id, "status": "queued"}
 
 
 @app.post("/newMessage")
 async def newMessage(workspace_info: dict):
-    workspace = process_workspace_message.delay(workspace_info["prompt"], workspace_info["workspace_id"], workspace_info["previous_messages"])
+    tool_slugs = workspace_info.get("tool_slugs") or []
+    workspace = process_workspace_message.delay(
+        workspace_info["prompt"],
+        workspace_info["workspace_id"],
+        workspace_info["previous_messages"],
+        tool_slugs,
+    )
     return {"workspace_id": workspace.id, "status": "queued"}

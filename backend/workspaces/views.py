@@ -62,10 +62,13 @@ class UserWorkspaceViews(viewsets.ViewSet):
 
         userMessageObject = Message.objects.create(workspace=workspace, content=data["message"], sender="USER")
 
+        tool_slugs = list(workspace.tools.values_list("slug_name", flat=True))
+
         r = httpx.post('http://127.0.0.1:8000/newMessage', json={
             "prompt": data["message"],
             "workspace_id": workspace.id,
-            "previous_messages": serializedMessages
+            "previous_messages": serializedMessages,
+            "tool_slugs": tool_slugs,
         })
         response = r.json()
         if response["status"] == "queued":
@@ -96,10 +99,13 @@ class UserWorkspaceViews(viewsets.ViewSet):
             ignore_conflicts=True,
         )
 
+        tool_slugs = list(tools.values_list("slug_name", flat=True))
+
         r = httpx.post('http://127.0.0.1:8000/newWorkspace', json={
             "prompt":data["message"],
             "repository_full_name":data["repository_full_name"],
             "workspace_id": newWorkspaceObject.pk,
+            "tool_slugs": tool_slugs,
         })
         response = r.json()
         if response["status"] == "queued":
