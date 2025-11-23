@@ -7,11 +7,17 @@ export interface Repository {
     default_branch: string
 }
 
+export interface Tool {
+    id: number
+    display_name: string
+}
+
 export interface Integration {
     id: number
     name: string
     connected: boolean
     connection_id: number | null
+    tools: Tool[]
 }
 
 

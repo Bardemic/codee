@@ -56,16 +56,18 @@ class IntegrationViews(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
-        providers = IntegrationProvider.objects.annotate(
+        providers = IntegrationProvider.objects.prefetch_related('tools').annotate(
             connected=Exists(
                 IntegrationConnection.objects.filter(
                     user=request.user, provider=OuterRef("pk")
                 )
+
             ),
             connection_id=Subquery(
                 IntegrationConnection.objects
                 .filter(user=request.user, provider=OuterRef("pk"))
                 .values("id")[:1]
+
             ),
         )
         serializer = IntegrationWithStatusSerializer(providers, many=True)

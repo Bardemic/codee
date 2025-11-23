@@ -58,3 +58,10 @@ class IntegrationConnection(models.Model):
                 raise ValidationError(f"Missing required: {key}")
             if key in self.data and not isinstance(values[key], rules["type"]):
                 raise ValidationError(f"{key} must be {rules['type'].__name__}")
+
+class Tool(models.Model):
+    display_name = models.CharField(max_length=200)
+    provider = models.ForeignKey(IntegrationProvider, on_delete=models.CASCADE, related_name="tools", null=True)
+
+    class Meta:
+        unique_together = ("display_name", "provider")
