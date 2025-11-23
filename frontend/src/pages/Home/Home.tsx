@@ -22,7 +22,7 @@ function Home() {
     const { data: integrations } = useGetIntegrationsQuery();
 
     async function createNewWorkspace(userMessage: string) {
-        const r = await newWorkspace({message: userMessage, repository_name: selected?.name || ""}).unwrap();
+        const r = await newWorkspace({message: userMessage, repository_name: selected?.name || "", tool_slugs: selectedTools}).unwrap();
         if (r.workspace_id) navigate(`/workspace/${r.workspace_id}`)
     }
 
