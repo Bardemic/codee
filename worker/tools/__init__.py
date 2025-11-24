@@ -73,8 +73,9 @@ def _ensure_sync_tool(tool):
     return tool
 
 
-async def load_tools(slugs: list[str]):
+async def load_tools(slugs: list[str]) -> tuple[list, list]:
     loaded = []
+    prompts = []
     for slug in slugs:
         if "/" not in slug:
             raise ValueError("Slug must be in the format '<folder>/<file>'")
@@ -82,10 +83,13 @@ async def load_tools(slugs: list[str]):
         mod = importlib.import_module(f"{__name__}.{folder}.{fname}")
         if not (getter := getattr(mod, "get_tools", None)):
             raise AttributeError(f"{mod.__name__} missing get_tools")
+        if not (prompt := getattr(mod, "prompt", None)):
+            raise AttributeError(f"{mod.__name__} missing prompts")
         
         tools = getter()
         if inspect.isawaitable(tools):
             tools = await tools
         loaded.extend(_ensure_sync_tool(t) for t in tools)
-    return loaded
+        prompts.append(prompt)
+    return (loaded, prompts)
 
