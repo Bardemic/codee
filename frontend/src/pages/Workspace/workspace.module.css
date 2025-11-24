@@ -42,6 +42,7 @@ h1 {
 .headerLeft {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
 }
 
 .repoName {
