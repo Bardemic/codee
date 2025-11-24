@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
-import { BsChevronDown, BsChevronRight, BsCheck } from 'react-icons/bs';
+import { BsChevronDown, BsChevronRight, BsCheck, BsTools } from 'react-icons/bs';
 import styles from '../home.module.css';
 import type { Integration } from '../../../app/services/integrations/integrationsService';
 import type { SelectedTools } from '../Home';
@@ -61,8 +61,9 @@ export function ToolsSelector({ integrations, selectedTools, onChange }: ToolsSe
     const selectedSetForRender = useMemo(() => new Set(selectedTools), [selectedTools]);
 
     return (
-        <div className={styles.toolsPillContainer} ref={containerRef} onClick={() => setIsOpen((prev) => !prev)}>
-            {totalSelected > 0 ? `${totalSelected} Tools Selected` : 'Select Tools'}
+        <div className={styles.pillContainer} ref={containerRef} onClick={() => setIsOpen((prev) => !prev)}>
+            <BsTools size={14} />
+            {totalSelected > 0 ? `${totalSelected} Tool${totalSelected > 1 ? 's' : ''} Selected` : 'Select Tools'}
 
             {isOpen && (
                 <div className={styles.toolsDropdown} onClick={(e) => e.stopPropagation()}>

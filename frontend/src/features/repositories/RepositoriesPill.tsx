@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { GoRepo } from "react-icons/go";
 import { useGetRepositoriesQuery, type Repository } from "../../app/services/integrations/integrationsService";
-import styles from './repositoriesPill.module.css'
+import styles from '../../pages/Home/home.module.css'
 
 interface pillProps {
     selected: Repository | null
@@ -55,6 +56,7 @@ export const RepositoriesPill = (props: pillProps) => {
             aria-haspopup="listbox"
             aria-expanded={dropDown}
         >
+            <GoRepo size={14} />
             {selected ? selected.name : 'Select repository'}
             {dropDown && repos && repos.length > 0 && (
                 <div
