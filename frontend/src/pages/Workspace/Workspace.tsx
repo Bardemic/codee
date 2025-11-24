@@ -47,7 +47,12 @@ export default function Workspace() {
     return (
         <div className={style.workspaceContainer}>
             <div className={style.workspaceHeader}>
-                <h1>{workspace.name}</h1>
+                <div className={style.headerLeft}>
+                    <h1>{workspace.name}</h1>
+                    {workspace.github_repository_name && (
+                        <p className={style.repoName}>{workspace.github_repository_name}</p>
+                    )}
+                </div>
                 <CreateBranch
                     githubRepositoryName={workspace.github_repository_name}
                     branchName={workspace.github_branch_name}
