@@ -1,4 +1,5 @@
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import type React from 'react';
 import type { Integration } from '../../../app/services/integrations/integrationsService';
 import type { SelectedTools } from '../Home';
 import styles from '../home.module.css';
@@ -110,6 +111,20 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
         setMentionState(detectMentionTrigger());
     }, [detectMentionTrigger, extractSlugsFromPill, syncToolsFromPills]);
 
+    const handlePaste = useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
+        event.preventDefault();
+        const text = event.clipboardData.getData('text/plain');
+        const selection = window.getSelection();
+        if (!selection || !selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(document.createTextNode(text));
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        handleInput();
+    }, [handleInput]);
+
     const handleSelectMention = useCallback(
         (value: string, type: 'integration' | 'tool') => {
             if (!mentionState || !editorRef.current) return;
@@ -212,6 +227,7 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
                 ref={editorRef}
                 onInput={handleInput}
                 onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
                 {...{ placeholder }}
             />
 
