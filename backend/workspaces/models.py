@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator
 
+from integrations.models import Tool
+
 
 class Workspace(models.Model):
     class Status(models.TextChoices):
@@ -17,6 +19,11 @@ class Workspace(models.Model):
     github_repository_name = models.CharField(null=False)
     github_branch_name = models.CharField(null=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    tools = models.ManyToManyField(
+        Tool,
+        through='WorkspaceTool',
+        related_name='workspaces'
+    )
 
     def __str__(self):
         return str(self.pk)
@@ -52,3 +59,8 @@ class ToolCall(models.Model):
 
     def __str__(self):
         return f"{self.tool_name} @ {self.created_at}"
+
+class WorkspaceTool(models.Model):
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+    tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)

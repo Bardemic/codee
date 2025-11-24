@@ -48,7 +48,12 @@ export default function Workspace() {
         <div className={style.workspaceContainer}>
             <div className={style.workspaceHeader}>
                 <h1>{workspace.name}</h1>
-                <CreateBranch github_repository_name={workspace.github_repository_name} branch_name={workspace.github_branch_name} createBranch={() => {createBranch(workspaceId || "")}} isLoading={isCreatingBranch}/>
+                <CreateBranch
+                    githubRepositoryName={workspace.github_repository_name}
+                    branchName={workspace.github_branch_name}
+                    createBranch={() => {createBranch(workspaceId || "")}}
+                    isLoading={isCreatingBranch}
+                />
             </div>
             <div className={style.chatContainer}>
                 <div className={style.messages} ref={chatRef}>

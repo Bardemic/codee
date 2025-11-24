@@ -35,8 +35,21 @@ def publish_stream_event(workspace_id: int, event: str, **fields):
         logger.warning("failed to publish stream event: %s", exc)
 
 
-def emit_status(workspace_id: int, phase: str, step: str | None = None, detail: str | None = None):
-    publish_stream_event(workspace_id, "status", phase=phase, step=step, detail=detail)
+def emit_status(
+    workspace_id: int,
+    phase: str,
+    step: str | None = None,
+    detail: str | None = None,
+    **extra_fields,
+):
+    publish_stream_event(
+        workspace_id,
+        "status",
+        phase=phase,
+        step=step,
+        detail=detail,
+        **{key: value for key, value in extra_fields.items() if value is not None},
+    )
 
 
 def emit_error(workspace_id: int, code: str, message: str, step: str | None = None):

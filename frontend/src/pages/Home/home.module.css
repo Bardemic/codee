@@ -1,5 +1,4 @@
 
-
 .sendButton {
     all: unset;
     border-radius: 50%;
@@ -8,9 +7,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    position: absolute;
-    right: 6px;
-    bottom: 12px;
+    color: var(--color-foreground);
 
     &:hover {
         color: rgba(255, 255, 255, 0.7);
@@ -37,17 +34,107 @@
 
 .chatContainer {
     position: relative;
-    width: max(400px, 30%);
+    width: min(640px, 90%);
     margin: auto;
-  }
+    display: flex;
+    flex-direction: column;
+}
 
-.newWorkspace {
+.chatBox {
+    display: flex;
+    flex-direction: column;
     border-radius: 8px;
-    height: 250px;
-    padding: 8px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border, #333);
+}
+
+.chatBox:focus-within {
+    outline: 1px solid var(--color-link-hover);
+}
+
+.editor {
+    min-height: 240px;
+    padding: 12px;
     box-sizing: border-box;
-    overflow-y: scroll;
     width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--color-foreground);
+    font-family: inherit;
+    font-size: inherit;
+    white-space: pre-wrap;
+    outline: none;
+    text-align: left;
+}
+
+.editor:focus {
+    outline: none;
+}
+
+.editor:empty:before {
+    content: attr(placeholder);
+    color: var(--color-muted, #777);
+    pointer-events: none;
+    /* display: block; - removed as per previous optimization, but standard reset uses it. Leaving it off is fine if flex works. */
+}
+
+.mentionPill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: var(--color-surface-strong, rgba(255, 255, 255, 0.1));
+    color: var(--color-foreground);
+    border-radius: 4px;
+    padding: 0 4px;
+    margin: 0 2px;
+    font-weight: 500;
+    border: 1px solid var(--color-border, #444);
+    user-select: none;
+}
+
+.mentionsDropdown {
+    position: fixed;
+    background: var(--color-surface, #1e1e1e);
+    border: 1px solid var(--color-border, #333);
+    border-radius: 8px;
+    width: 240px;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    padding: 4px 0;
+}
+
+.mentionOption {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--color-muted, #aaa);
+}
+
+.mentionOption.active {
+    background-color: var(--color-surface-strong, rgba(255, 255, 255, 0.1));
+    color: var(--color-foreground);
+}
+
+.mentionOption:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-foreground);
+}
+
+.mentionType {
+    font-size: 10px;
+    opacity: 0.6;
+    margin-left: auto;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+    padding: 1px 4px;
+    border-radius: 4px;
 }
 
 .header {
@@ -64,4 +151,119 @@
 
 .homeContainer {
     padding: 24px;
+}
+
+.chatFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+}
+
+.pillsContainer {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Tools Selector */
+.toolsPillContainer {
+    position: relative;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 2em;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.toolsPillContainer:hover {
+    background-color: var(--color-background-secondary, rgba(255, 255, 255, 0.05));
+}
+
+.toolsDropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background: var(--color-surface, #1e1e1e);
+    border: 1px solid var(--color-border, #333);
+    border-radius: 8px;
+    width: 220px;
+    max-height: 320px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    padding: 4px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.integrationItem {
+    display: flex;
+    flex-direction: column;
+}
+
+.integrationHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.integrationHeader:hover {
+    background-color: var(--color-surface-strong, rgba(255, 255, 255, 0.1));
+}
+
+.integrationName {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.toolList {
+    background-color: rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+}
+
+.toolItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 32px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--color-muted, #aaa);
+}
+
+.toolItem:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-foreground);
+}
+
+.checkbox {
+    width: 14px;
+    height: 14px;
+    border: 1px solid #555;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.1s, border-color 0.1s;
+}
+
+.checkbox.checked {
+    background-color: var(--color-link-hover, #3b82f6);
+    border-color: var(--color-link-hover, #3b82f6);
+    color: white;
+}
+
+.expandIcon {
+    color: var(--color-muted, #777);
+    font-size: 12px;
 }

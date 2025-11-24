@@ -24,6 +24,7 @@ class WorkspaceSerializer(serializers.ModelSerializer):
 class NewWorkspaceSerialier(serializers.Serializer):
     message = serializers.CharField()
     repository_full_name = serializers.CharField()
+    tool_slugs = serializers.ListField(child=serializers.CharField())
 
 class NewMessageSerializer(serializers.Serializer):
     message = serializers.CharField()

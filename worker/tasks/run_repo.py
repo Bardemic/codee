@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 from celery_app import celery_app
 import httpx
@@ -5,7 +6,7 @@ import subprocess, os, uuid, logging, json
 from dulwich import porcelain
 from dotenv import load_dotenv
 from langchain.agents import create_agent
-from tools import grep, list_files, read_file, update_file
+from tools import grep, list_files, read_file, update_file, load_tools
 from utils import emit_status, emit_error, emit_done, get_stream_client, get_workspace_path
 
 load_dotenv()
@@ -17,7 +18,6 @@ logger = logging.getLogger(__name__)
 class ToolContext:
     workspace_id: int
     docker_name: str
-
 
 def update_workspace_status(workspace_id: int, status: str):
     """Update the workspace status in Django"""
@@ -36,17 +36,27 @@ def persist_tool_calls_from_redis(workspace_id: int, message_id: int):
         
         tool_calls_data = []
         for event_id, fields in events:
-            if fields.get("event") == "status" and fields.get("step", "").startswith("tool_"):
-                event_id_str = event_id if isinstance(event_id, str) else event_id.decode()
+            if fields.get("event") != "status" or not fields.get("step", "").startswith("tool_"):
+                continue
+            
+            event_id_str = event_id if isinstance(event_id, str) else event_id.decode()
+            try:
+                timestamp_ms = int(event_id_str.split('-')[0])
+                arguments_raw = fields.get('arguments', '{}')
                 try:
-                    tool_calls_data.append({
-                        'timestamp_ms': int(event_id_str.split('-')[0]),
-                        'tool_name': fields.get("step"),
-                        'detail': fields.get('detail', ''),
-                        'status': fields.get('phase', 'success'),
-                    })
-                except (TypeError, ValueError):
-                    continue
+                    arguments = json.loads(arguments_raw) if arguments_raw else {}
+                except json.JSONDecodeError:
+                    arguments = {"raw": arguments_raw}
+                
+                tool_calls_data.append({
+                    'timestamp_ms': timestamp_ms,
+                    'tool_name': fields.get("step"),
+                    'arguments': arguments,
+                    'detail': fields.get('detail', ''),
+                    'status': fields.get('phase', 'success'),
+                })
+            except (TypeError, ValueError):
+                continue
         
         if tool_calls_data:
             httpx.post(
@@ -101,7 +111,7 @@ def mountWorkspaceToDocker(workspace_id: int, docker_name: str):
         "-v", f"{path}:/app", "nginx:latest"
     ]
     try:
-        subprocess.run(cmd, check=False)
+        subprocess.run(cmd, check=True)
         return 1
     except subprocess.CalledProcessError:
         return -1
@@ -131,14 +141,14 @@ Sorry... </DEVELOPER_NOTES>
 """
 
 
-def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, previousMessages: list | None = None):
+def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, tool_slugs: list[str], previousMessages: list | None = None):
+    dynamic_tools = asyncio.run(load_tools(tool_slugs))
     agent = create_agent(
-        model="gpt-5-nano",
-        tools=[update_file, grep, list_files, read_file],
+        model="gpt-5-mini",
+        tools=[update_file, grep, list_files, read_file, *dynamic_tools],
         system_prompt=AGENT_SYSTEM_PROMPT,
         context_schema=ToolContext
     )
-
     emit_status(workspace_id, "running", step="agent_start", detail="agent execution started")
 
     messages = [{"role": "user", "content": prompt}]
@@ -152,6 +162,7 @@ def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, previousM
             workspace_id=workspace_id,
             docker_name=docker_id,
         ),
+        config={"configurable": {"workspace_id": workspace_id}},
     )
     final_message = response["messages"][-1].content
 
@@ -169,7 +180,7 @@ def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, previousM
     return {"response": str(response["messages"][-1])}
 
 
-def _run_workspace_job(workspace_id: int, prompt: str, github_repo_name: str | None = None, previous_messages: list | None = None):
+def _run_workspace_job(workspace_id: int, prompt: str,tool_slugs: list[str], github_repo_name: str | None = None, previous_messages: list | None = None):
     docker_id = str(uuid.uuid4())
     reset_workspace_stream(workspace_id)
     init_detail = "preparing workspace" if github_repo_name else "processing workspace message"
@@ -203,7 +214,13 @@ def _run_workspace_job(workspace_id: int, prompt: str, github_repo_name: str | N
             update_workspace_status(workspace_id, "FAILED")
             return {"error": "docker mount failed"}
 
-        result = _run_agent_session(workspace_id, docker_id, prompt, previous_messages)
+        result = _run_agent_session(
+            workspace_id,
+            docker_id,
+            prompt,
+            tool_slugs,
+            previous_messages,
+        )
         success = True
         return result
     except Exception as exc:
@@ -216,10 +233,20 @@ def _run_workspace_job(workspace_id: int, prompt: str, github_repo_name: str | N
 
 
 @celery_app.task(name="tasks.pipeline", bind=True)
-def pipeline(self, github_repo_name: str, prompt: str, workspace_id: int):
-    return _run_workspace_job(workspace_id=workspace_id, prompt=prompt, github_repo_name=github_repo_name)
+def pipeline(self, github_repo_name: str, prompt: str, workspace_id: int, tool_slugs: list[str]):
+    return _run_workspace_job(
+        workspace_id=workspace_id,
+        prompt=prompt,
+        github_repo_name=github_repo_name,
+        tool_slugs=tool_slugs,
+    )
 
 
 @celery_app.task(name="tasks.process_workspace_message", bind=True)
-def process_workspace_message(self, prompt: str, workspace_id: int, previous_messages):
-    return _run_workspace_job(workspace_id=workspace_id, prompt=prompt, previous_messages=previous_messages)
+def process_workspace_message(self, prompt: str, workspace_id: int, previous_messages, tool_slugs: list[str]):
+    return _run_workspace_job(
+        workspace_id=workspace_id,
+        prompt=prompt,
+        previous_messages=previous_messages,
+        tool_slugs=tool_slugs,
+    )

@@ -1,7 +1,7 @@
 import styles from './integrations.module.css';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
-import { useAddIntegrationMutation, useDeleteIntegrationMutation, useGetIntegrationsQuery } from "../../app/services/integrations/integrationsService";
+import { useAddIntegrationMutation, useDeleteIntegrationMutation, useGetIntegrationsQuery, type Integration } from "../../app/services/integrations/integrationsService";
 import IntegrationCard from "./IntegrationCard";
 
 export default function Integrations() {
@@ -34,15 +34,24 @@ export default function Integrations() {
         .catch(() => {sessionStorage.removeItem("curKey");});
     }, [searchParams, addIntegration, navigate])
 
-    function openIntegration() { //need a better solution later, for github for now #techdebt
-        const key = Math.random().toString();
-        sessionStorage.setItem("curKey", key);
-        window.open(`https://github.com/apps/codee-local/installations/new?state=${key}&redirect_url=http://localhost:5173/integrations?callback=github`, '_blank');
+    function handleConnect(integration: Integration, data?: { api_key: string }) {
+        const slug = integration.name.toLowerCase().replace(/\s+/g, '-');
+
+        if (slug === 'github') {
+            const key = Math.random().toString();
+            sessionStorage.setItem("curKey", key);
+            window.open(`https://github.com/apps/codee-local/installations/new?state=${key}&redirect_url=http://localhost:5173/integrations?callback=github`, '_blank');
+            navigate("/integrations");
+            return;
+        }
+        if (data?.api_key) {
+            addIntegration({
+                type: integration.id.toString(),
+                data: { api_key: data.api_key },
+            })
+        }
     }
 
-    function deleteUserIntegration(id: number) {
-        deleteIntegration(id);
-    }
     return (
         <div className={styles.integrationsPage}>
             <h1>
@@ -50,7 +59,12 @@ export default function Integrations() {
             </h1>
             <div className={styles.integrationsContainer}>
                 {integrations?.map((integration) => (
-                        <IntegrationCard key={integration.id} integration={integration} onOpen={openIntegration} onDelete={deleteUserIntegration}  />
+                        <IntegrationCard 
+                            key={integration.id} 
+                            integration={integration} 
+                            onConnect={(data) => handleConnect(integration, data)} 
+                            onDelete={deleteIntegration}  
+                        />
                 ))}
             </div>
         </div>

@@ -1,12 +1,14 @@
 from datetime import datetime, timezone as dt_timezone
+
+from django.db import transaction
 from workspaces.utils.llm import generateTitle
 from workspaces.utils.createBranch import createBranch
-from integrations.models import IntegrationConnection
+from integrations.models import IntegrationConnection, Tool
 from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
 from django.http import JsonResponse, HttpResponse
 from rest_framework import viewsets
-from .models import Workspace, Message, ToolCall
+from .models import Workspace, Message, ToolCall, WorkspaceTool
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
@@ -60,10 +62,13 @@ class UserWorkspaceViews(viewsets.ViewSet):
 
         userMessageObject = Message.objects.create(workspace=workspace, content=data["message"], sender="USER")
 
+        tool_slugs = list(workspace.tools.values_list("slug_name", flat=True))
+
         r = httpx.post('http://127.0.0.1:8000/newMessage', json={
             "prompt": data["message"],
             "workspace_id": workspace.id,
-            "previous_messages": serializedMessages
+            "previous_messages": serializedMessages,
+            "tool_slugs": tool_slugs,
         })
         response = r.json()
         if response["status"] == "queued":
@@ -74,7 +79,7 @@ class UserWorkspaceViews(viewsets.ViewSet):
         raise APIException("worker issue")
 
         
-
+    @transaction.atomic
     @action(detail=False, methods=["POST"], url_path="new_workspace")
     def newWorkspace(self, request):
         serializer = NewWorkspaceSerialier(data=request.data)
@@ -85,15 +90,26 @@ class UserWorkspaceViews(viewsets.ViewSet):
 
         newWorkspaceObject = Workspace.objects.create(github_repository_name=data["repository_full_name"], user=request.user, name=title)
         Message.objects.create(workspace=newWorkspaceObject, content=data["message"], sender="USER")
+
+        tools = Tool.objects.filter(slug_name__in=data["tool_slugs"])
+        if len(set(tools.values_list("slug_name", flat=True))) < len(set(data["tool_slugs"])):
+            raise APIException("bad slugs") #adding for now for simple checking, will implement if user has access to tools later
+        WorkspaceTool.objects.bulk_create(
+            [WorkspaceTool(workspace=newWorkspaceObject, tool=tool) for tool in tools],
+            ignore_conflicts=True,
+        )
+
+        tool_slugs = list(tools.values_list("slug_name", flat=True))
+
         r = httpx.post('http://127.0.0.1:8000/newWorkspace', json={
             "prompt":data["message"],
             "repository_full_name":data["repository_full_name"],
             "workspace_id": newWorkspaceObject.pk,
+            "tool_slugs": tool_slugs,
         })
         response = r.json()
         if response["status"] == "queued":
             return JsonResponse({"workspace_id": newWorkspaceObject.pk})
-        newWorkspaceObject.delete()
         raise APIException("worker issue")
     
     def list(self, request):

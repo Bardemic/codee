@@ -7,11 +7,18 @@ export interface Repository {
     default_branch: string
 }
 
+export interface Tool {
+    id: number
+    display_name: string
+    slug_name: string
+}
+
 export interface Integration {
     id: number
     name: string
     connected: boolean
     connection_id: number | null
+    tools: Tool[]
 }
 
 
@@ -26,7 +33,7 @@ export const integrationsApi = createApi({
     }),
     tagTypes: ['Integrations', 'Repositories'],
     endpoints: (builder) => ({
-        addIntegration: builder.mutation<void, { type: string; data: unknown }>({ //data is a json
+        addIntegration: builder.mutation<void, { type: string; data: Record<string, unknown> }>({ // data is a json
             query: ({ type, data }) => ({
                 url: `${type}/connect/`,
                 method: "POST",

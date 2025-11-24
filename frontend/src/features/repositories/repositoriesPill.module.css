@@ -1,56 +1,69 @@
 .pillContainer {
-    position: absolute;
-    bottom: 12px;
-    left: 12px;
+    position: relative;
     font-size: 12px;
     padding: 6px 12px;
     border-radius: 2em;
     cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+    transition: background-color 0.2s, border-color 0.2s;
+}
 
-    /* &:hover {
-        background-color: gray;
-    } */
+.pillContainer:hover {
+    background-color: var(--color-background-secondary, rgba(255, 255, 255, 0.05));
 }
 
 .dropdownContainer {
-    overflow-y: scroll;
-    max-height: 300px;
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
-    border-radius: 0.5em;
-    padding: 6px 0;
-    min-width: 120px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+    background: var(--color-surface, #1e1e1e);
+    border: 1px solid var(--color-border, #333);
+    border-radius: 8px;
+    width: 200px;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     z-index: 1000;
-    background: var(--color-surface);
+    padding: 4px 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 0;
 }
 
 .dropdownOption {
-    font: 16px;
-    padding: 4px 8px;
-    white-space: nowrap;
+    padding: 6px 12px;
     cursor: pointer;
+    font-size: 12px;
+    color: var(--color-muted, #aaa);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
-    &:hover {
-        background-color: var(--color-surface-strong);
-    }
+.dropdownOption:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-foreground);
 }
 
 .searchInput {
-    margin: 0 8px;
+    margin: 4px 8px 8px 8px;
     padding: 6px 8px;
-    border-radius: 0.5em;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    background: transparent;
-    color: inherit;
+    border-radius: 4px;
+    border: 1px solid var(--color-border, #333);
+    background: rgba(0, 0, 0, 0.2);
+    color: var(--color-foreground);
+    font-size: 12px;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: var(--color-link-hover, #3b82f6);
 }
 
 .emptyState {
-    padding: 8px;
-    font-size: 14px;
-    color: var(--color-text-weak, #888);
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--color-muted, #777);
+    text-align: center;
 }

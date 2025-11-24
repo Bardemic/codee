@@ -1,6 +1,7 @@
 import axios from 'axios';
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import type  { RootState } from "../../app/store";
+import { createAppAsyncThunk } from "../../app/withTypes";
 
 const backendURL = 'http://127.0.0.1:5001';
 
@@ -9,10 +10,12 @@ export interface User {
     email: string
 }
 
+type AuthStatus = 'idle' | 'pending' | 'succeeded' | 'failed'
+
 interface AuthState {
     user: User | null
     token: string | null
-    status: 'idle' |'pending' | 'suceeded' | 'failed'
+    status: AuthStatus
     error: string | null
 }
 
@@ -22,7 +25,7 @@ export interface loginInterface {
     user: User
 }
 
-export const registerUser = createAsyncThunk(
+export const registerUser = createAppAsyncThunk(
     'auth/register',
     async ({ email, password}: {email: string, password: string}, { rejectWithValue }) => {
         try {
@@ -42,7 +45,7 @@ export const registerUser = createAsyncThunk(
     }
 )
 
-export const loginUser = createAsyncThunk(
+export const loginUser = createAppAsyncThunk(
     'auth/login',
     async ({email, password}: {email: string, password: string}, { rejectWithValue }) => {
         try {
@@ -97,7 +100,7 @@ const authSlice = createSlice({
                 state.error = null
             })
             .addCase(registerUser.fulfilled, (state) => {
-                state.status = 'suceeded'
+                state.status = 'succeeded'
                 // extra logic
             })
             .addCase(registerUser.rejected, (state, {payload}) => {
@@ -109,7 +112,7 @@ const authSlice = createSlice({
                 state.error = null
             })
             .addCase(loginUser.fulfilled, (state, {payload}) => {
-                state.status = 'suceeded'
+                state.status = 'succeeded'
                 state.token = payload.key
                 state.user = payload.user
             })
