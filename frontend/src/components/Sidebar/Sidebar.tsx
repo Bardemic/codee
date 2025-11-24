@@ -22,6 +22,7 @@ export default function Sidebar({ children }: SidebarProps) {
                 <div className={styles.navigationSection}>
                     <SidebarButton text="Home" onClick={() => navigate('/')}/>
                     <SidebarButton text="Integrations" onClick={() => navigate('/integrations')}/>
+                    <SidebarButton text="Workers" onClick={() => navigate('/workers')}/>
                 </div>
                 <h3>Workspaces</h3>
                 <div className={styles.workspaces}>

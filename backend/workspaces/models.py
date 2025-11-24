@@ -4,6 +4,19 @@ from django.core.validators import MinLengthValidator
 
 from integrations.models import Tool
 
+class WorkerDefinition(models.Model):
+    prompt = models.CharField(max_length=200)
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    created_at = models.TimeField(auto_now_add=True)
+    tools = models.ManyToManyField(
+        Tool,
+        through='WorkerDefinitionTool',
+        related_name='workerDefinitions'
+    )
+
+    def __str__(self):
+        return self.prompt if len(self.prompt) < 25 else self.prompt[:25] + '...'
+
 
 class Workspace(models.Model):
     class Status(models.TextChoices):
@@ -19,6 +32,7 @@ class Workspace(models.Model):
     github_repository_name = models.CharField(null=False)
     github_branch_name = models.CharField(null=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    worker = models.ForeignKey(WorkerDefinition, null=True, on_delete=models.SET_NULL)
     tools = models.ManyToManyField(
         Tool,
         through='WorkspaceTool',
@@ -64,3 +78,9 @@ class WorkspaceTool(models.Model):
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
     tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+
+class WorkerDefinitionTool(models.Model):
+    worker_definition = models.ForeignKey(WorkerDefinition, on_delete=models.CASCADE)
+    tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
