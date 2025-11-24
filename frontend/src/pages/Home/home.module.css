@@ -38,28 +38,37 @@
     margin: auto;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+}
+
+.chatBox {
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+    background: var(--color-background);
+    border: 1px solid var(--color-border, #333);
+}
+
+.chatBox:focus-within {
+    outline: 1px solid var(--color-link-hover);
 }
 
 .editor {
-    border-radius: 8px;
     min-height: 240px;
     padding: 12px;
     box-sizing: border-box;
-    overflow-y: auto;
     width: 100%;
-    background: var(--color-background);
-    border: 1px solid var(--color-border, #333);
+    background: transparent;
+    border: none;
     color: var(--color-foreground);
     font-family: inherit;
     font-size: inherit;
     white-space: pre-wrap;
     outline: none;
-    text-align: left; /* Ensure left alignment */
+    text-align: left;
 }
 
 .editor:focus {
-    outline: 1px solid var(--color-link-hover);
+    outline: none;
 }
 
 .editor:empty:before {
@@ -148,7 +157,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 4px;
+    padding: 12px;
 }
 
 .pillsContainer {

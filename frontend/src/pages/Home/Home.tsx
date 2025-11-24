@@ -34,7 +34,8 @@ function Home() {
     return (
         <div className={styles.homeContainer}>
             <h1 className={styles.header}>say hi to <span className={styles.focusedHeader}>Codee</span>.</h1>
-            <div className={styles.chatContainer}>
+        <div className={styles.chatContainer}>
+            <div className={styles.chatBox}>
                 <PromptEditor
                     ref={editorRef}
                     integrations={integrations ?? []}
@@ -65,6 +66,7 @@ function Home() {
                     </button>
                 </div>
             </div>
+        </div>
         </div>
     )
 }

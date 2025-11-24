@@ -4,20 +4,20 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 
 type CreateBranchProps = {
     createBranch: () => void;
-    branch_name: string | null;
-    github_repository_name: string;
+    branchName: string | null;
+    githubRepositoryName: string;
     isLoading: boolean;
 };
 
 export default function CreateBranch(props: CreateBranchProps) {
     const openBranch = () => {
-        if (props.branch_name && props.github_repository_name) {
-            const githubUrl = `https://github.com/${props.github_repository_name}/tree/${props.branch_name}`;
+        if (props.branchName && props.githubRepositoryName) {
+            const githubUrl = `https://github.com/${props.githubRepositoryName}/tree/${props.branchName}`;
             window.open(githubUrl, '_blank');
         }
     }
 
-    if (props.branch_name) return (
+    if (props.branchName) return (
         <button onClick={openBranch} className={styles.button}>
             <GrGithub size={24}/>
             Open Branch

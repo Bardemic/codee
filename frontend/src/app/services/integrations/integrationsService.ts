@@ -33,7 +33,7 @@ export const integrationsApi = createApi({
     }),
     tagTypes: ['Integrations', 'Repositories'],
     endpoints: (builder) => ({
-        addIntegration: builder.mutation<void, { type: string; data: unknown }>({ //data is a json
+        addIntegration: builder.mutation<void, { type: string; data: Record<string, unknown> }>({ // data is a json
             query: ({ type, data }) => ({
                 url: `${type}/connect/`,
                 method: "POST",

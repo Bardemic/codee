@@ -4,7 +4,7 @@ import styles from './integrations.module.css'
 
 interface IntegrationCardProps {
     integration: Integration
-    onDelete: (cal: number) => void
+    onDelete: (id: number) => void
     onConnect: (data?: { api_key: string }) => void
 }
 
