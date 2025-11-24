@@ -8,17 +8,23 @@ from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
 from django.http import JsonResponse, HttpResponse
 from rest_framework import viewsets
-from .models import Workspace, Message, ToolCall, WorkspaceTool
+from .models import WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
-from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkspaceSerializer
+from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkerSerializer, WorkspaceSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 
 
+class WorkerViews(viewsets.ViewSet):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
+    def list(self, request):
+        workerDefs = WorkerDefinition.objects.filter(user=request.user).prefetch_related('tools')
+        return JsonResponse(WorkerSerializer(workerDefs, many=True).data, safe=False)
 
 class UserWorkspaceViews(viewsets.ViewSet):
     authentication_classes = [TokenAuthentication]

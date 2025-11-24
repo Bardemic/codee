@@ -1,5 +1,12 @@
-from .models import Workspace, Message, ToolCall
+from .models import WorkerDefinition, Workspace, Message, ToolCall
 from rest_framework import serializers
+from integrations.serializer import ToolSerializer
+
+class WorkerSerializer(serializers.ModelSerializer):
+    tools = ToolSerializer(many=True, read_only=True)
+    class Meta:
+        model = WorkerDefinition
+        fields = ["id", "tools", "prompt"]
 
 
 class ToolCallSerializer(serializers.ModelSerializer):

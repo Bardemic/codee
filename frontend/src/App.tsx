@@ -11,6 +11,7 @@ import Home from './pages/Home/Home';
 import Sidebar from './components/Sidebar/Sidebar';
 import Integrations from './pages/Integrations/Integrations';
 import Workspace from './pages/Workspace/Workspace';
+import Workers from './pages/Workers/Workers';
 
 function SidebarLayout() {
   return (
@@ -28,6 +29,7 @@ function App() {
         <Route path="/" element={<SidebarLayout />}>
           <Route index element={<Home />} />
           <Route path="integrations" element={<Integrations />} />
+          <Route path="workers" element={<Workers />} />
           <Route path="workspace/:workspaceId" element={<Workspace />} />
         </Route>
         <Route path="login" element={<Login />} />
