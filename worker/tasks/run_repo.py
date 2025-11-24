@@ -133,18 +133,32 @@ coding agents. Users connect a git repo on the website, put in a request, then C
 creates a workspace, reads the codebase, understand the request, make changes, create a Pull Request,
 and push it to the git repo.
 
-<DEVELOPER_NOTES> You are in *EARLY* Beta. We are currently developing your tools.
-You may have none, you may have a few. Act as normal as you can, try to run to best of your capabilities.
-Don't try to run a tool if you don't have it. The prompt/message may be asking you to perform a certain
-action regarding your tools, and if so, just run the tool and return what you think.
+A part of Codee is the ability to add tools to your agent toolkit.
+Users can integrate with different services, and when they integrate, they're able to give you certain access to tools.
+These tools will connect with different services and give you more capabilities.
+Sometimes the best solution will be through these tools, sometimes the best solution will not be through these tools.
+You have to figure that out for yourself.
+For Git/Github-related queries: the user outside of the tools has access to create a commit and create a branch and create a merge request.
+If a user requests you to do these, do not intend to do it for them. This is their job to figure that out.
 
-If there is an error running a tool, do NOT continue. Just say that the tool doesn't work. don't try to run it multiple times.
-Sorry... </DEVELOPER_NOTES>
+You are also given access to some tools, which you will always have. These are crucial. They are how you interact with the codebase.
+You may technically be able to perform the same action in multiple ways via different tools.
+For example, you may be able to figure out some loopholes to modify a file in more than one way.
+This is bad. The point is that those tools are the best way to perform that certain action.
+If you want to perform a certain action that has a tool associated with it, use that tool.
 """
 
+TOOLS_PROMPT = """
+The user has selected different functions for their integrations. Each set of user-selected function
+includes one or multiple tools. The prompt for each function is styled similarly to XML, such as the following:
+
+<provider/function_name>prompt</provider/function_name>.
+
+Use these prompts to understand the point of certain included prompts, and how they relate to the user's request.
+"""
 
 def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, tool_slugs: list[str], previousMessages: list | None = None):
-    dynamic_tools = asyncio.run(load_tools(tool_slugs))
+    dynamic_tools, prompts = asyncio.run(load_tools(tool_slugs))
     posthog = Posthog(
         (os.environ.get("POSTHOG_API_KEY", "")),
         host=os.environ.get("POSTHOG_HOST", "https://us.i.posthog.com"),
@@ -154,6 +168,7 @@ def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, tool_slug
         client=posthog,
         properties={"workspace_id": workspace_id},
     )
+    
     agent = create_agent(
         model="gpt-5-mini",
         tools=[update_file, grep, list_files, read_file, *dynamic_tools],
@@ -163,6 +178,12 @@ def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, tool_slug
     emit_status(workspace_id, "running", step="agent_start", detail="agent execution started")
 
     messages = [{"role": "user", "content": prompt}]
+
+    if prompts:
+        messages = [
+            {"role": "developer", "content": TOOLS_PROMPT},
+            {"role": "developer", "content": "\n\n\n".join(prompts)}
+        ] + messages
     if previousMessages:
         previous_messages_str = json.dumps(previousMessages, default=str)
         messages.insert(0, {"role": "user", "content": previous_messages_str})
@@ -173,7 +194,6 @@ def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, tool_slug
             workspace_id=workspace_id,
             docker_name=docker_id,
         ),
-        config={"configurable": {"workspace_id": workspace_id}},
         config={"callbacks": [callback_handler], "configurable": {"workspace_id": workspace_id}},
     )
     final_message = response["messages"][-1].content
