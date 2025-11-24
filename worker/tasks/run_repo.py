@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 from langchain.agents import create_agent
 from tools import grep, list_files, read_file, update_file, load_tools
 from utils import emit_status, emit_error, emit_done, get_stream_client, get_workspace_path
+from posthog import Posthog
+from posthog.ai.langchain import CallbackHandler
 
 load_dotenv()
 
@@ -143,6 +145,15 @@ Sorry... </DEVELOPER_NOTES>
 
 def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, tool_slugs: list[str], previousMessages: list | None = None):
     dynamic_tools = asyncio.run(load_tools(tool_slugs))
+    posthog = Posthog(
+        (os.environ.get("POSTHOG_API_KEY", "")),
+        host=os.environ.get("POSTHOG_HOST", "https://us.i.posthog.com"),
+    )
+
+    callback_handler = CallbackHandler(
+        client=posthog,
+        properties={"workspace_id": workspace_id},
+    )
     agent = create_agent(
         model="gpt-5-mini",
         tools=[update_file, grep, list_files, read_file, *dynamic_tools],
@@ -163,6 +174,7 @@ def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, tool_slug
             docker_name=docker_id,
         ),
         config={"configurable": {"workspace_id": workspace_id}},
+        config={"callbacks": [callback_handler], "configurable": {"workspace_id": workspace_id}},
     )
     final_message = response["messages"][-1].content
 
