@@ -8,11 +8,11 @@ from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
 from django.http import JsonResponse, HttpResponse
 from rest_framework import viewsets
-from .models import WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool
+from .models import WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool, WorkerDefinitionTool
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
-from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkerSerializer, WorkspaceSerializer
+from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkerSerializer, WorkspaceSerializer, NewWorkerSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -25,6 +25,22 @@ class WorkerViews(viewsets.ViewSet):
     def list(self, request):
         workerDefs = WorkerDefinition.objects.filter(user=request.user).prefetch_related('tools')
         return JsonResponse(WorkerSerializer(workerDefs, many=True).data, safe=False)
+
+    @transaction.atomic
+    def create(self, request):
+        serializer = NewWorkerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        tools = Tool.objects.filter(slug_name__in=data["tool_slugs"])
+        
+        worker = WorkerDefinition.objects.create(prompt=data["prompt"], user=request.user)
+        
+        WorkerDefinitionTool.objects.bulk_create(
+            [WorkerDefinitionTool(worker_definition=worker, tool=tool) for tool in tools]
+        )
+        
+        return JsonResponse(WorkerSerializer(worker).data)
 
 class UserWorkspaceViews(viewsets.ViewSet):
     authentication_classes = [TokenAuthentication]

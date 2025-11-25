@@ -1,4 +1,16 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import type { Tool } from "../integrations/integrationsService";
+
+export interface Worker {
+    id: number;
+    prompt: string;
+    tools: Tool[];
+}
+
+export interface NewWorkerRequest {
+    prompt: string;
+    tool_slugs: string[];
+}
 
 export const workersApi = createApi({
     reducerPath: 'workersApi',
@@ -9,13 +21,23 @@ export const workersApi = createApi({
             return headers;
         },
     }),
+    tagTypes: ['Workers'],
     endpoints: (builder) => ({
-        getWorkers: builder.query<void, void>({
+        getWorkers: builder.query<Worker[], void>({
             query: () => ({
                 url: ''
-            })
+            }),
+            providesTags: ['Workers'],
+        }),
+        createWorker: builder.mutation<Worker, NewWorkerRequest>({
+            query: (body) => ({
+                url: '',
+                method: 'POST',
+                body,
+            }),
+            invalidatesTags: ['Workers'],
         })
     })
 })
 
-export const { useGetWorkersQuery } = workersApi;
+export const { useGetWorkersQuery, useCreateWorkerMutation } = workersApi;

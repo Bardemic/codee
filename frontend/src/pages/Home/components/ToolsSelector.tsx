@@ -13,17 +13,27 @@ interface ToolsSelectorProps {
 export function ToolsSelector({ integrations, selectedTools, onChange }: ToolsSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [expandedIntegrations, setExpandedIntegrations] = useState<string[]>([]);
+    const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleClickOutside = (event: globalThis.MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node) &&
+                dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsOpen(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (isOpen && containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            setDropdownPosition({ top: rect.bottom + 8, left: rect.left });
+        }
+    }, [isOpen]);
 
     const toggleExpand = (name: string, e?: ReactMouseEvent) => {
         e?.stopPropagation();
@@ -65,8 +75,13 @@ export function ToolsSelector({ integrations, selectedTools, onChange }: ToolsSe
             <BsTools size={14} />
             {totalSelected > 0 ? `${totalSelected} Tool${totalSelected > 1 ? 's' : ''} Selected` : 'Select Tools'}
 
-            {isOpen && (
-                <div className={styles.toolsDropdown} onClick={(e) => e.stopPropagation()}>
+            {isOpen && dropdownPosition && (
+                <div 
+                    ref={dropdownRef}
+                    className={styles.toolsDropdown} 
+                    style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
+                    onClick={(e) => e.stopPropagation()}
+                >
                     {integrations.map((integration) => {
                         const selectedCount = integration.tools.filter((t) => selectedSetForRender.has(t.slug_name)).length;
                         const isAllSelected = integration.tools.length > 0 && selectedCount === integration.tools.length;
