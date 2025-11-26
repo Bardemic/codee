@@ -2,11 +2,22 @@ from .models import WorkerDefinition, Workspace, Message, ToolCall
 from rest_framework import serializers
 from integrations.serializer import ToolSerializer
 
+class LinkedWorkspaceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Workspace
+        fields = ["id", "name", "status", "created_at"]
+
 class WorkerSerializer(serializers.ModelSerializer):
     tools = ToolSerializer(many=True, read_only=True)
+    workspaces = serializers.SerializerMethodField()
+    
     class Meta:
         model = WorkerDefinition
-        fields = ["id", "tools", "prompt"]
+        fields = ["id", "tools", "prompt", "workspaces", "slug"]
+
+    def get_workspaces(self, obj):
+        qs = obj.workspace_set.order_by('-created_at')[:3]
+        return LinkedWorkspaceSerializer(qs, many=True).data
 
 
 class ToolCallSerializer(serializers.ModelSerializer):

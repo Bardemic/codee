@@ -1,0 +1,343 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    background-color: var(--color-surface);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 24px;
+    width: 800px;
+    height: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.gridSection {
+    flex: 1;
+    display: grid;
+    grid-template-rows: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    min-height: 0; /* Important for nested scroll */
+}
+
+.promptWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+}
+
+.webhookEditor {
+    grid-row: span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.headerContainer {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: color 0.2s;
+    max-width: 100%;
+}
+
+.headerContainer:hover .slugText {
+    color: var(--color-muted);
+}
+
+.autoResizeInput {
+    display: inline-grid;
+    align-items: center;
+    justify-items: start;
+    min-width: 5ch;
+}
+
+.autoResizeInput > * {
+    grid-area: 1 / 1 / 2 / 2;
+    font: inherit;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+    color: inherit;
+    width: 100%;
+    min-width: 2px;
+}
+
+.inputMirror {
+    visibility: hidden;
+    white-space: pre;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.slugInput {
+    background-color: transparent;
+    border: none !important; /*ig we doing !important now*/
+    border-bottom: 1px solid var(--color-foreground);
+    border-radius: 0;
+    outline: none;
+    padding: 0;
+    box-shadow: none;
+}
+
+.slugInput:focus {
+    outline: none;
+    border-bottom-color: var(--color-foreground);
+}
+
+.slugText {
+    border-bottom: 1px solid transparent;
+}
+
+.modalContent h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--color-foreground);
+    display: flex;
+    align-items: center;
+    height: 32px; /* Fixed height to prevent shifts */
+}
+
+.editSlugButton {
+    background: none;
+    border: none;
+    color: var(--color-muted);
+    padding: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.headerContainer:hover .editSlugButton {
+    opacity: 1;
+}
+
+.modalInput {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.modalTextarea {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    min-height: 100px;
+    resize: none;
+    flex: 1;
+}
+
+.modalActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.cancelButton {
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--color-muted);
+}
+
+.cancelButton:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-foreground);
+}
+
+.deleteButton {
+    all: unset;
+    cursor: pointer;
+    color: gray;
+}
+
+.deleteButton:hover {
+    color: red;
+    background-color: transparent;
+}
+
+.dropdownWrapper {
+    position: relative;
+    margin-bottom: 16px;
+}
+
+.dropdownToggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--color-foreground);
+    transition: background-color 0.2s;
+}
+
+.dropdownToggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.providerIcon {
+    width: 20px;
+    height: 20px;
+}
+
+.dropdownMenu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--color-surface);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    z-index: 10;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dropdownItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    background: transparent;
+    color: var(--color-foreground);
+    transition: background-color 0.2s;
+}
+
+.dropdownItem:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.dropdownItemSelected {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.toolsWrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    gap: 8px;
+}
+
+.toolsList {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.2);
+    flex: 1;
+}
+
+.toolsHeader {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-muted);
+    letter-spacing: 0.05em;
+    padding-left: 4px;
+}
+
+.integrationItem {
+    display: flex;
+    flex-direction: column;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.integrationItem:last-child {
+    border-bottom: none;
+}
+
+.integrationHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--color-foreground);
+}
+
+.integrationHeader:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.integrationName {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.toolList {
+    background-color: rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 4px;
+}
+
+.toolItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 28px;
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--color-muted);
+}
+
+.toolItem:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-foreground);
+}
+
+.checkbox {
+    width: 14px;
+    height: 14px;
+    border: 1px solid #555;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.1s, border-color 0.1s;
+    flex-shrink: 0;
+}
+
+.checkbox.checked {
+    background-color: var(--color-accent, #3b82f6);
+    border-color: var(--color-accent, #3b82f6);
+    color: white;
+}
+
+.expandIcon {
+    color: var(--color-muted);
+    font-size: 12px;
+}
+
+
+.buttonsBar {
+    flex: 1;
+}

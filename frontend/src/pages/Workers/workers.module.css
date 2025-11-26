@@ -1,139 +1,109 @@
-.container {
-    padding: 24px;
-    max-width: 1200px;
-    margin: 0 auto;
+* {
+    text-align: left;
 }
 
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 32px;
-}
 
-.header h1 {
-    font-size: 28px;
-    font-weight: 500;
-    color: var(--color-foreground);
+p {
     margin: 0;
 }
 
-.workersGrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 16px;
+.newWorkerButton {
+    font-size: 16px;
 }
+
+.page {
+    padding: 32px;
+}
+
+h1 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 32px;
+    position: relative;
+}
+
+h1 > button {
+    position: absolute;
+    right: 0;
+}
+
+
 
 .workerCard {
-    background: var(--color-background);
-    border: 1px solid var(--color-border, #333);
-    border-radius: 8px;
-    padding: 20px;
-}
-
-.workerCard:hover {
-    border-color: var(--color-link-hover, #3b82f6);
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
-}
-
-.workerPrompt {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--color-foreground);
-    margin-bottom: 12px;
-    line-height: 1.5;
-}
-
-.workerTools {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--color-border, #333);
-}
-
-.toolsList {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.toolTag {
-    display: inline-block;
-    padding: 4px 10px;
-    background-color: var(--color-surface-strong, rgba(255, 255, 255, 0.1));
-    color: var(--color-foreground);
-    border-radius: 4px;
-    font-size: 12px;
-    border: 1px solid var(--color-border, #444);
-}
-
-.noTools {
-    font-size: 13px;
-    color: var(--color-muted, #888);
-    font-style: italic;
-}
-
-.modalOverlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 20px;
-    overflow: visible;
-}
-
-.modalContent {
-    background: var(--color-background);
-    border: 1px solid var(--color-border, #333);
-    border-radius: 12px;
-    width: 100%;
-    max-width: 700px;
-    max-height: 90vh;
+    background-color: var(--color-surface);
     display: flex;
     flex-direction: column;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    overflow-y: auto;
+    padding: 12px;
+    gap: 8px;
+    border-radius: 8px;
 }
 
-.modalHeader {
+.workerCards {
+    display: flex;
+    width: 400px;
+    gap: 32px;
+    overflow-wrap: break-word;
+}
+
+.slugCard {
+    align-self: self-start;
+    font-weight: 800;
+}
+
+.promptCard {
+    color: gray;
+    font-size: 13px;
+}
+
+.previousWorkspaces {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-sidebar-bg);
+    border-radius: 7px;
+    gap: 12px;
+    padding: 4px;
+    border: 2px solid var(--color-surface-strong);
+}
+
+.prevWorkspace {
     display: flex;
     justify-content: space-between;
+    padding: 4px;
+    text-decoration: none;
+    color: inherit;
+    gap: 12px;
+}
+
+.openWorker {
+    align-self: flex-end;
+    padding: 4px 24px;
+}
+
+.workspaceNameContainer {
+    display: flex;
     align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--color-border, #333);
+    gap: 8px;
+    overflow: hidden;
+    min-width: 0;
+    flex: 1;
+}
+
+.workspaceIcon {
+    min-width: 12px;
     flex-shrink: 0;
 }
 
-.modalHeader h2 {
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--color-foreground);
-    margin: 0;
+.workspaceName {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
 
-.closeButton {
-    all: unset;
-    cursor: pointer;
-    color: var(--color-muted, #888);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px;
-    border-radius: 4px;
+.workspaceTime {
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: auto;
 }
 
-.closeButton:hover {
-    background-color: var(--color-surface-strong, rgba(255, 255, 255, 0.1));
-    color: var(--color-foreground);
-}
-
-.modalBody {
-    padding: 24px;
-    overflow: visible;
-    position: relative;
-}

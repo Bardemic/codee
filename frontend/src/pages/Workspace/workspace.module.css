@@ -25,6 +25,10 @@
     margin-bottom: 12px;
 }
 
+.headerLeft > h1 {
+    margin: 0;
+}
+
 .workspaceContainer {
     display: flex;
     justify-self: stretch;

@@ -23,7 +23,7 @@ class WorkerViews(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
-        workerDefs = WorkerDefinition.objects.filter(user=request.user).prefetch_related('tools')
+        workerDefs = WorkerDefinition.objects.filter(user=request.user).prefetch_related('tools', 'workspace_set')
         return JsonResponse(WorkerSerializer(workerDefs, many=True).data, safe=False)
 
     @transaction.atomic
