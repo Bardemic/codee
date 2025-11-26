@@ -22,6 +22,11 @@ export default function Workers() {
             </h1>
 
             <div className={styles.workerCards}>
+                {workers?.length === 0 && (
+                    <div className={styles.noWorkers}>
+                        No workers found. Create one to get started!
+                    </div>
+                )}
                 {workers?.map(worker => (
                     <WorkerCard worker={worker} key={worker.id} openView={setSelectedWorker}/>
                 ))}

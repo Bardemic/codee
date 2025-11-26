@@ -34,13 +34,43 @@ class WorkerViews(viewsets.ViewSet):
 
         tools = Tool.objects.filter(slug_name__in=data["tool_slugs"])
         
-        worker = WorkerDefinition.objects.create(prompt=data["prompt"], user=request.user)
+        worker = WorkerDefinition.objects.create(prompt=data["prompt"], user=request.user, slug=data["slug"], key="testing")
         
+        WorkerDefinitionTool.objects.bulk_create(
+            [WorkerDefinitionTool(worker_definition=worker, tool=tool) for tool in tools]
+        )
+        if data.get("key"):
+            worker.setKey(data["key"])
+            worker.save()
+        
+        return JsonResponse(WorkerSerializer(worker).data)
+
+    @transaction.atomic
+    def update(self, request, pk=None):
+        worker = get_object_or_404(WorkerDefinition, pk=pk, user=request.user)
+        serializer = NewWorkerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        worker.prompt = data["prompt"]
+        worker.slug = data["slug"]
+        if data.get("key"):
+            worker.setKey(data["key"])
+        worker.save()
+
+        # Update tools
+        tools = Tool.objects.filter(slug_name__in=data["tool_slugs"])
+        WorkerDefinitionTool.objects.filter(worker_definition=worker).delete()
         WorkerDefinitionTool.objects.bulk_create(
             [WorkerDefinitionTool(worker_definition=worker, tool=tool) for tool in tools]
         )
         
         return JsonResponse(WorkerSerializer(worker).data)
+
+    def destroy(self, request, pk=None):
+        worker = get_object_or_404(WorkerDefinition, pk=pk, user=request.user)
+        worker.delete()
+        return HttpResponse(status=204)
 
 class UserWorkspaceViews(viewsets.ViewSet):
     authentication_classes = [TokenAuthentication]

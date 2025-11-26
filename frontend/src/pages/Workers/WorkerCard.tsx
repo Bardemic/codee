@@ -15,6 +15,7 @@ export default function WorkerCard({ worker, openView }: props) {
             <div className={styles.slugCard}>{worker.slug}</div>
             <div className={styles.promptCard}>{worker.prompt}</div>
             <div className={styles.previousWorkspaces}>
+                {worker.workspaces.length == 0 && <div className={styles.noWorkspaces}>No workspaces yet</div>}
                 {worker.workspaces.map((workspace) => (
                     <Link 
                         to={`/workspace/${workspace.id}`} 
@@ -26,7 +27,7 @@ export default function WorkerCard({ worker, openView }: props) {
                             <BsBoxArrowUpRight size={12} className={styles.workspaceIcon} />
                             <p className={styles.workspaceName}>{workspace.name}</p>
                         </div>
-                        <p className={styles.workspaceTime}>{formatDistanceToNow(new Date(workspace.created_at)).replace('about ', '').replace(' hours', 'hr').replace(' hour', 'hr').replace(' minutes', 'm').replace(' minute', 'm').replace(' less than a minute', '<1m')}</p>
+                        <p className={styles.workspaceTime}>{formatDistanceToNow(new Date(workspace.created_at)).replace('about ', '').replace(' hours', 'hr').replace(' hour', 'hr').replace(' minutes', 'm').replace(' minute', 'm').replace('less than a minute', '<1m')}</p>
                     </Link>
                 ))}
             </div>

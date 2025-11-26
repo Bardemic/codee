@@ -37,11 +37,12 @@ h1 > button {
     padding: 12px;
     gap: 8px;
     border-radius: 8px;
+    width: 350px;
 }
 
 .workerCards {
     display: flex;
-    width: 400px;
+    flex-wrap: wrap;
     gap: 32px;
     overflow-wrap: break-word;
 }
@@ -54,6 +55,8 @@ h1 > button {
 .promptCard {
     color: gray;
     font-size: 13px;
+    height: 60px;
+    overflow: hidden;
 }
 
 .previousWorkspaces {
@@ -64,6 +67,9 @@ h1 > button {
     gap: 12px;
     padding: 4px;
     border: 2px solid var(--color-surface-strong);
+    margin-top: auto;
+    height: 120px;
+    overflow-y: auto;
 }
 
 .prevWorkspace {
@@ -105,5 +111,26 @@ h1 > button {
     white-space: nowrap;
     flex-shrink: 0;
     margin-left: auto;
+}
+
+.noWorkspaces {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: gray;
+    font-size: 13px;
+    font-style: italic;
+}
+
+.noWorkers {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin-top: 64px;
+    color: gray;
+    font-size: 16px;
+    font-style: italic;
 }
 

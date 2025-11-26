@@ -73,6 +73,41 @@ class BaseWebhookViewSet(viewsets.ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+
+class PostHogWebhookViewSet(BaseWebhookViewSet):
+    provider_slug = "posthog"
+
+    @action(detail=False, methods=["post"], url_path="issue")
+    def issue(self, request):
+        data = self.parse_body(request)
+        event = data.get("event")
+        if not event: raise APIException("event not found")
+        worker_slug, key = data.get("worker_slug"), data.get("key")
+        if not worker_slug or not key: raise APIException("worker or key not found")
+        
+        worker = None
+        for w in WorkerDefinition.objects.filter(slug=worker_slug):
+            if w.getKey() == key: # I promise i will stop doing this eventually
+                worker = w
+                break
+        if not worker: raise PermissionDenied("Invalid worker key")
+        repository = data.get("repository")
+        if not repository: raise APIException("repository not found")
+        event.pop("worker_slug", None)
+        event.pop("key", None)
+        event.pop("repository", None)
+
+        createWorkspaceFromWebhook(
+            repository_name=repository,
+            workerDefinition=worker,
+            title=generateTitle(f"you are an async coding agent. generate a title for this user's ai code workspace, where they are importing an error from posthog that is of the following info: {str(event)}"),
+            data=event
+        )
+
+        return Response("ok")
+
+
+
 class GitHubWebhookViewSet(BaseWebhookViewSet):
     provider_slug = "github_app"
 
@@ -170,5 +205,3 @@ class GitHubWebhookViewSet(BaseWebhookViewSet):
         repository = repository_body.get("full_name")
         if not repository: raise APIException("repository full name not found")
         return repository
-
-

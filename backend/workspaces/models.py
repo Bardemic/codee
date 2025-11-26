@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator
+from utils.encryption import encrypt_data, decrypt_data
 
 from integrations.models import Tool
 
@@ -14,6 +15,19 @@ class WorkerDefinition(models.Model):
         related_name='workerDefinitions'
     )
     slug = models.CharField(max_length=200)
+    key = models.CharField(null=True)
+
+    def setKey(self, input: str) -> None:
+        # self.key = encrypt_data(input)
+        self.key = input
+
+    def getKey(self) -> str | None:
+        if not self.key: return None
+        return self.key
+        try:
+            return decrypt_data(self.key)
+        except Exception:
+            return None
 
     class Meta:
         unique_together = ("slug", "user")

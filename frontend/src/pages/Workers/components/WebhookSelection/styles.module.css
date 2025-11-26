@@ -61,6 +61,32 @@
     font-size: 0.85rem;
     color: var(--color-foreground);
     max-width: 100%;
+    position: relative;
+}
+
+.copyButton {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-muted);
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copyButton:hover,
+.copyButton:active {
+    color: var(--color-accent);
+}
+
+.copyButton:focus {
+    outline: none;
+    border: none;
 }
 
 .codeBlock pre {

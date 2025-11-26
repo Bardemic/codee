@@ -1,3 +1,4 @@
+import { FaCopy } from 'react-icons/fa';
 import styles from './styles.module.css';
 
 interface Props {
@@ -5,7 +6,11 @@ interface Props {
 }
 
 export function PostHogWebhook({ slug }: Props) {
-    const jsonSnippet = JSON.stringify({ slug, repository: "full_name" }, null, 2);
+    const jsonSnippet = JSON.stringify({ worker_slug: slug, event: "{event.properties}", repository: "name/repository", key: "testing" }, null, 2);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(jsonSnippet);
+    };
     
     return (
         <div className={styles.container}>
@@ -16,6 +21,14 @@ export function PostHogWebhook({ slug }: Props) {
             </p>
             <div className={styles.codeBlock}>
                 <pre>{jsonSnippet}</pre>
+                <button 
+                    className={styles.copyButton} 
+                    onClick={handleCopy}
+                    aria-label="Copy to clipboard"
+                    title="Copy to clipboard"
+                >
+                    <FaCopy size={16} />
+                </button>
             </div>
         </div>
     );
