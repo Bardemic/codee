@@ -22,7 +22,6 @@ from workspaces.utils.llm import generateTitle
 
 
 def createWorkspaceFromWebhook(workerDefinition: WorkerDefinition, repository_name: str, data: dict, title: str):
-        title = workerDefinition.slug
         prompt = workerDefinition.prompt + "\n\n\n" + f"Here is data from the service: {str(data)}"
 
         newWorkspaceObject = Workspace.objects.create(github_repository_name=repository_name, user=workerDefinition.user, name=title, worker=workerDefinition)
