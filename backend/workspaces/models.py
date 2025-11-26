@@ -13,10 +13,13 @@ class WorkerDefinition(models.Model):
         through='WorkerDefinitionTool',
         related_name='workerDefinitions'
     )
+    slug = models.CharField(max_length=200)
+
+    class Meta:
+        unique_together = ("slug", "user")
 
     def __str__(self):
         return self.prompt if len(self.prompt) < 25 else self.prompt[:25] + '...'
-
 
 class Workspace(models.Model):
     class Status(models.TextChoices):

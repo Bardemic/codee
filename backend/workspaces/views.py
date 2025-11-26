@@ -154,7 +154,7 @@ class OrchestratorViews(viewsets.ViewSet):
         workspace = Workspace.objects.filter(id=workspace_id).first()
         if not workspace:
             raise APIException("no workspace found matching id")
-        user_github = IntegrationConnection.objects.filter(user=workspace.user).first()
+        user_github = IntegrationConnection.objects.filter(user=workspace.user, provider__slug="github_app").first()
         if not user_github:
             raise APIException("user's connection not found")
         token = get_installation_token(user_github.getDataConfig()["installation_id"])

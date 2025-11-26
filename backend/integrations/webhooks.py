@@ -1,19 +1,51 @@
 import hashlib
 import hmac
 import json
+import re
+from django.http import JsonResponse
+import httpx
 
-from amqp import connection
 from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, ValidationError, NotFound
+from rest_framework.exceptions import APIException, PermissionDenied, ValidationError, NotFound
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from workspaces.models import WorkerDefinition, Workspace, Message, WorkspaceTool
+
 from .models import IntegrationProvider, IntegrationConnection
 from .services.github_app import get_installation_token
+from workspaces.utils.llm import generateTitle
+
+
+def createWorkspaceFromWebhook(workerDefinition: WorkerDefinition, repository_name: str, data: dict, title: str):
+        title = workerDefinition.slug
+        prompt = workerDefinition.prompt + "\n\n\n" + f"Here is data from the service: {str(data)}"
+
+        newWorkspaceObject = Workspace.objects.create(github_repository_name=repository_name, user=workerDefinition.user, name=title, worker=workerDefinition)
+        Message.objects.create(workspace=newWorkspaceObject, content=prompt, sender="USER")
+
+        tools = workerDefinition.tools.all()
+        WorkspaceTool.objects.bulk_create(
+            [WorkspaceTool(workspace=newWorkspaceObject, tool=tool) for tool in tools],
+            ignore_conflicts=True,
+        )
+
+        tool_slugs = list(tools.values_list("slug_name", flat=True))
+
+        r = httpx.post('http://127.0.0.1:8000/newWorkspace', json={
+            "prompt": prompt,
+            "repository_full_name":repository_name,
+            "workspace_id": newWorkspaceObject.pk,
+            "tool_slugs": tool_slugs,
+        })
+        response = r.json()
+        if response["status"] == "queued":
+            return JsonResponse({"workspace_id": newWorkspaceObject.pk})
+        raise APIException("worker issue")
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -72,11 +104,46 @@ class GitHubWebhookViewSet(BaseWebhookViewSet):
         action = body.get("action")
         if not action: return
 
+        installation_id = self.get_installation_id(body)
+        connection = self.get_connection(installation_id)
+        if not connection: return
+        user = connection.user
+
         if (event == "installation" and action == "deleted"):
-            installation_id = self.get_installation_id(body)
-            connnection = self.get_connection(installation_id)
-            if connnection:
-                connnection.delete()
+            connection.delete()
+        if event == "issue_comment":
+            if action == "created":
+                comment_body = body.get("comment")
+                if not isinstance(comment_body, dict): raise APIException("comment body not found")
+                comment = comment_body.get("body")
+                if not comment: raise APIException("comment not found in body")
+                if "--codee" not in comment: return
+                match = re.search(r'--codee/(\S+)', comment)
+                if not match: raise APIException("slug not found when codee called")
+                slug = match.group(1)
+
+                issue = body.get("issue")
+                if not issue: raise APIException("issue not found")
+                title, description = issue.get("title"), issue.get("body")
+                if not title or not description: raise APIException("content not found")
+
+
+                worker = WorkerDefinition.objects.filter(user=user, slug=slug).first()
+                if not worker: raise APIException("workerDefinition not found")
+                # run the workspace setup code
+                workspaceTitle = generateTitle(f"from github issue: \n\n GitHub issue title: {title}\n\n Description: {title}\n\n Comment: {comment}")
+                createWorkspaceFromWebhook(
+                    workerDefinition=worker,
+                    repository_name=self.get_repository(body),
+                    data={
+                        "comment": comment,
+                        "title": title,
+                        "description": description
+                    },
+                    title=workspaceTitle
+                )
+
+                print("create workspace")
 
     def get_installation_id(self, body):
         installation = body.get("installation")
@@ -98,5 +165,11 @@ class GitHubWebhookViewSet(BaseWebhookViewSet):
             if stored_id and str(stored_id) == str(installation_id):
                 return connection
         return None
+    def get_repository(self, body):
+        repository_body = body.get("repository")
+        if not repository_body: raise APIException("repository body not found")
+        repository = repository_body.get("full_name")
+        if not repository: raise APIException("repository full name not found")
+        return repository
 
 
