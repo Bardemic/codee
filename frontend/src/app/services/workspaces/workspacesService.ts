@@ -75,7 +75,19 @@ export const workspacesApi = createApi({
             query: () => ({
                 url: '',
             }),
-            providesTags: ['Workspaces']
+            // backend now paginates responses: { count, next, previous, results }
+            // transform to return the results array for existing callers
+            transformResponse: (response: any) => {
+                if (response && typeof response === 'object' && 'results' in response) return response.results;
+                return response;
+            },
+            providesTags: (result) =>
+                result
+                    ? [
+                        ...result.map(({ id }) => ({ type: 'Workspace' as const, id })),
+                        { type: 'Workspaces', id: 'LIST' },
+                    ]
+                    : [{ type: 'Workspaces', id: 'LIST' }]
         }),
         getWorkspace: builder.query<Workspace, string>({
             query: (id: string) => ({

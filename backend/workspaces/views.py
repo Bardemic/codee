@@ -16,7 +16,8 @@ from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, 
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-
+from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 
 
@@ -114,7 +115,12 @@ class UserWorkspaceViews(viewsets.ViewSet):
     
     def list(self, request):
         workspaces = Workspace.objects.filter(user=request.user).order_by('created_at').reverse()
-        return JsonResponse(WorkspaceSerializer(workspaces, many=True).data, safe=False)
+        paginator = PageNumberPagination()
+        # default page size; clients can pass ?page_size= to override
+        paginator.page_size = 20
+        page = paginator.paginate_queryset(workspaces, request)
+        serializer = WorkspaceSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     def retrieve(self, request, pk=None):
         workspaceSet = Workspace.objects.all()
@@ -123,6 +129,7 @@ class UserWorkspaceViews(viewsets.ViewSet):
         return JsonResponse(serializer.data)
 
     
+
 
 class OrchestratorViews(viewsets.ViewSet):
     @action(detail=False, methods=["GET"], url_path="workspaces/(?P<workspace_id>[^/.]+)/token", permission_classes=[permissions.AllowAny])
