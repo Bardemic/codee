@@ -53,7 +53,7 @@ class UserWorkspaceViews(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        workspace = Workspace.objects.filter(pk=workspace_id).first()
+        workspace = Workspace.objects.filter(pk=workspace_id, user=request.user).first()
         if not workspace:
             raise APIException("workspace not found")
 
@@ -91,7 +91,7 @@ class UserWorkspaceViews(viewsets.ViewSet):
         newWorkspaceObject = Workspace.objects.create(github_repository_name=data["repository_full_name"], user=request.user, name=title)
         Message.objects.create(workspace=newWorkspaceObject, content=data["message"], sender="USER")
 
-        tools = Tool.objects.filter(slug_name__in=data["tool_slugs"])
+        tools = Tool.objects.filter(slug_name__in=data["tool_slugs"]) 
         if len(set(tools.values_list("slug_name", flat=True))) < len(set(data["tool_slugs"])):
             raise APIException("bad slugs") #adding for now for simple checking, will implement if user has access to tools later
         WorkspaceTool.objects.bulk_create(
@@ -113,12 +113,43 @@ class UserWorkspaceViews(viewsets.ViewSet):
         raise APIException("worker issue")
     
     def list(self, request):
-        workspaces = Workspace.objects.filter(user=request.user).order_by('created_at').reverse()
-        return JsonResponse(WorkspaceSerializer(workspaces, many=True).data, safe=False)
+        # Paginated list of user's workspaces
+        try:
+            page = int(request.GET.get('page', '1'))
+        except (TypeError, ValueError):
+            page = 1
+        page = max(page, 1)
+
+        try:
+            page_size = int(request.GET.get('page_size', '20'))
+        except (TypeError, ValueError):
+            page_size = 20
+        # put an upper bound to avoid abuse
+        page_size = max(1, min(page_size, 100))
+
+        qs = Workspace.objects.filter(user=request.user).order_by('-created_at')
+        total = qs.count()
+
+        offset = (page - 1) * page_size
+        items = qs[offset: offset + page_size]
+
+        serializer = WorkspaceSerializer(items, many=True)
+
+        has_next = offset + page_size < total
+        has_prev = page > 1 and offset < total
+
+        data = {
+            'count': total,
+            'page': page,
+            'page_size': page_size,
+            'next_page': page + 1 if has_next else None,
+            'previous_page': page - 1 if has_prev else None,
+            'results': serializer.data,
+        }
+        return JsonResponse(data)
 
     def retrieve(self, request, pk=None):
-        workspaceSet = Workspace.objects.all()
-        workspace = get_object_or_404(workspaceSet, pk=pk)
+        workspace = get_object_or_404(Workspace, pk=pk, user=request.user)
         serializer = WorkspaceSerializer(workspace)
         return JsonResponse(serializer.data)
 

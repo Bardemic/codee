@@ -32,6 +32,15 @@ export interface Message {
     isPendingAgent?: boolean
 }
 
+export interface PaginatedResponse<T> {
+    count: number
+    page: number
+    page_size: number
+    next_page: number | null
+    previous_page: number | null
+    results: T[]
+}
+
 export const workspacesApi = createApi({
     reducerPath: 'workspacesApi',
     tagTypes: ['WorkspaceMessages', 'Workspaces', 'Workspace'],
@@ -71,10 +80,18 @@ export const workspacesApi = createApi({
                 { type: 'Workspace', id: workspace_id }
             ]
         }),
-        getWorkspaces: builder.query<Workspace[], void>({
-            query: () => ({
-                url: '',
-            }),
+        getWorkspaces: builder.query<PaginatedResponse<Workspace>, { page?: number; page_size?: number } | void>({
+            query: (args) => {
+                const params = new URLSearchParams();
+                const page = (args as any)?.page;
+                const page_size = (args as any)?.page_size;
+                if (page) params.set('page', String(page));
+                if (page_size) params.set('page_size', String(page_size));
+                const queryString = params.toString();
+                return {
+                    url: queryString ? `?${queryString}` : '',
+                };
+            },
             providesTags: ['Workspaces']
         }),
         getWorkspace: builder.query<Workspace, string>({
@@ -138,7 +155,7 @@ export const workspacesApi = createApi({
                                         content: "",
                                         isPendingAgent: true,
                                         tool_calls: []
-                                    };
+                                    } as Message;
                                     draft.push(targetMessage);
                                 }
                                 const exists = targetMessage.tool_calls.some((tc) => tc.id === statusId);
