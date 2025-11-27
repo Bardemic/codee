@@ -15,6 +15,7 @@ interface PromptEditorProps {
 export interface PromptEditorRef {
     getMessage: () => string;
     focus: () => void;
+    clear: () => void;
 }
 
 export interface MentionState {
@@ -46,6 +47,12 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
     useImperativeHandle(ref, () => ({
         getMessage: () => editorRef.current?.innerText ?? '',
         focus: () => editorRef.current?.focus(),
+        clear: () => {
+            if (editorRef.current) {
+                editorRef.current.innerText = '';
+                prevPillSlugsRef.current = [];
+            }
+        }
     }));
 
     const extractSlugsFromPill = useCallback((pill: Element): string[] => {

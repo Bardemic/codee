@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-j3l=g_e6xvgq@bsmeqncw9hvb#dq9zm-(ub97ex(@lkb-k)5!2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -52,6 +52,7 @@ FERNET_KEY = os.getenv("FERNET_KEY")
 
 GITHUB_APP_ID = os.getenv("GITHUB_APP_ID")
 GITHUB_PRIVATE_KEY = os.getenv("GITHUB_PRIVATE_KEY")
+GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET")
 
 INSTALLED_APPS = [
     'django.contrib.admin',

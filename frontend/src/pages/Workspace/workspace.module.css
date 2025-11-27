@@ -25,6 +25,10 @@
     margin-bottom: 12px;
 }
 
+.headerLeft > h1 {
+    margin: 0;
+}
+
 .workspaceContainer {
     display: flex;
     justify-self: stretch;
@@ -78,6 +82,7 @@ h1 {
     padding: 16px;
     text-align: left;
     font-size: 14px;
+    overflow-wrap: break-word;
 }
 
 .typingIndicatorRow {

@@ -8,17 +8,75 @@ from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
 from django.http import JsonResponse, HttpResponse
 from rest_framework import viewsets
-from .models import Workspace, Message, ToolCall, WorkspaceTool
+from .models import WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool, WorkerDefinitionTool
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
-from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkspaceSerializer
+from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkerSerializer, WorkspaceSerializer, NewWorkerSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 
 
+class WorkerViews(viewsets.ViewSet):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
 
+    def list(self, request):
+        workerDefs = WorkerDefinition.objects.filter(user=request.user).prefetch_related('tools', 'workspace_set')
+        return JsonResponse(WorkerSerializer(workerDefs, many=True).data, safe=False)
+
+    @transaction.atomic
+    def create(self, request):
+        serializer = NewWorkerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        if WorkerDefinition.objects.filter(slug=data["slug"], user=request.user).exists():
+            raise APIException("You cannot have 2 workers of the same slug")
+
+        tools = Tool.objects.filter(slug_name__in=data["tool_slugs"])
+        
+        worker = WorkerDefinition.objects.create(prompt=data["prompt"], user=request.user, slug=data["slug"], key="testing")
+        
+        WorkerDefinitionTool.objects.bulk_create(
+            [WorkerDefinitionTool(worker_definition=worker, tool=tool) for tool in tools]
+        )
+        if data.get("key"):
+            worker.setKey(data["key"])
+            worker.save()
+        
+        return JsonResponse(WorkerSerializer(worker).data)
+
+    @transaction.atomic
+    def update(self, request, pk=None):
+        worker = get_object_or_404(WorkerDefinition, pk=pk, user=request.user)
+        serializer = NewWorkerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        if WorkerDefinition.objects.filter(slug=data["slug"], user=request.user).exclude(pk=worker.pk).exists():
+            raise APIException("You cannot have 2 workers of the same slug")
+
+        worker.prompt = data["prompt"]
+        worker.slug = data["slug"]
+        if data.get("key"):
+            worker.setKey(data["key"])
+        worker.save()
+
+        # Update tools
+        tools = Tool.objects.filter(slug_name__in=data["tool_slugs"])
+        WorkerDefinitionTool.objects.filter(worker_definition=worker).delete()
+        WorkerDefinitionTool.objects.bulk_create(
+            [WorkerDefinitionTool(worker_definition=worker, tool=tool) for tool in tools]
+        )
+        
+        return JsonResponse(WorkerSerializer(worker).data)
+
+    def destroy(self, request, pk=None):
+        worker = get_object_or_404(WorkerDefinition, pk=pk, user=request.user)
+        worker.delete()
+        return HttpResponse(status=204)
 
 class UserWorkspaceViews(viewsets.ViewSet):
     authentication_classes = [TokenAuthentication]
@@ -132,7 +190,7 @@ class OrchestratorViews(viewsets.ViewSet):
         workspace = Workspace.objects.filter(id=workspace_id).first()
         if not workspace:
             raise APIException("no workspace found matching id")
-        user_github = IntegrationConnection.objects.filter(user=workspace.user).first()
+        user_github = IntegrationConnection.objects.filter(user=workspace.user, provider__slug="github_app").first()
         if not user_github:
             raise APIException("user's connection not found")
         token = get_installation_token(user_github.getDataConfig()["installation_id"])

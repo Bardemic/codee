@@ -1,57 +1,59 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GoRepo } from "react-icons/go";
 import { useGetRepositoriesQuery, type Repository } from "../../app/services/integrations/integrationsService";
-import styles from '../../pages/Home/home.module.css'
+import styles from './styles.module.css';
 
-interface pillProps {
-    selected: Repository | null
-    setSelected: (repo: Repository | null) => void
+interface Props {
+    selected: Repository | null;
+    setSelected: (repo: Repository | null) => void;
+    direction?: 'up' | 'down';
 }
 
-export const RepositoriesPill = (props: pillProps) => {
-    const { selected, setSelected } = props;
+export function RepositoriesPill({ selected, setSelected, direction = 'down' }: Props) {
     const { data: repos } = useGetRepositoriesQuery();
-    const [dropDown, setDropDown] = useState(false)
-    const [searchTerm, setSearchTerm] = useState('')
-    const containerRef = useRef<HTMLDivElement>(null)
+    const [dropDown, setDropDown] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (!repos || repos.length === 0) return
+        if (!repos || repos.length === 0) return;
         if (selected === null) {
-            setSelected(repos[0])
+            setSelected(repos[0]);
         }
-    }, [repos, selected, setSelected])
+    }, [repos, selected, setSelected]);
+
     useEffect(() => {
         const onDocumentClick = (event: MouseEvent) => {
-            if (!containerRef.current) return
+            if (!containerRef.current) return;
             if (!containerRef.current.contains(event.target as Node)) {
-                setDropDown(false)
+                setDropDown(false);
             }
-        }
-        document.addEventListener('mousedown', onDocumentClick)
+        };
+        document.addEventListener('mousedown', onDocumentClick);
         return () => {
-            document.removeEventListener('mousedown', onDocumentClick)
-        }
-    }, [])
+            document.removeEventListener('mousedown', onDocumentClick);
+        };
+    }, []);
+
     useEffect(() => {
         if (!dropDown) {
-            setSearchTerm('')
+            setSearchTerm('');
         }
-    }, [dropDown])
+    }, [dropDown]);
 
     const filteredRepos = useMemo(() => {
-        if (!repos) return []
-        const sanitized = searchTerm.trim().toLowerCase()
+        if (!repos) return [];
+        const sanitized = searchTerm.trim().toLowerCase();
         return repos
             .filter(repo => repo.github_id !== selected?.github_id)
-            .filter(repo => repo.name.toLowerCase().includes(sanitized))
-    }, [repos, searchTerm, selected])
+            .filter(repo => repo.name.toLowerCase().includes(sanitized));
+    }, [repos, searchTerm, selected]);
 
     return (
         <div
             ref={containerRef}
             onClick={() => setDropDown(!dropDown)}
-            className={styles.pillContainer}
+            className={styles.container}
             role="button"
             aria-haspopup="listbox"
             aria-expanded={dropDown}
@@ -60,7 +62,7 @@ export const RepositoriesPill = (props: pillProps) => {
             {selected ? selected.name : 'Select repository'}
             {dropDown && repos && repos.length > 0 && (
                 <div
-                    className={styles.dropdownContainer}
+                    className={`${styles.dropdown} ${direction === 'up' ? styles.up : styles.down}`}
                     role="listbox"
                     onClick={(e) => e.stopPropagation()}
                 >
@@ -69,16 +71,17 @@ export const RepositoriesPill = (props: pillProps) => {
                         placeholder="Search repositories"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
                     />
                     {filteredRepos.length > 0 ? (
                         filteredRepos.map(repo => (
                             <div key={repo.github_id}
                                 onClick={(e) => {
-                                    e.stopPropagation()
-                                    setSelected(repo)
-                                    setDropDown(false)
+                                    e.stopPropagation();
+                                    setSelected(repo);
+                                    setDropDown(false);
                                 }}
-                                className={styles.dropdownOption}
+                                className={styles.option}
                                 role="option"
                                 aria-selected={false}>
                                 {repo.name}
@@ -92,3 +95,4 @@ export const RepositoriesPill = (props: pillProps) => {
         </div>
     );
 }
+

@@ -1,0 +1,97 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.checkboxOption {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--color-foreground);
+    user-select: none;
+    padding: 4px 0;
+}
+
+.checkboxOption:hover {
+    color: var(--color-accent);
+}
+
+.checkbox {
+    width: 18px;
+    height: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.checked {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    color: white;
+}
+
+.text {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--color-muted);
+    margin: 0;
+}
+
+.codeBlock {
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 12px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--color-foreground);
+    max-width: 100%;
+    position: relative;
+}
+
+.copyButton {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-muted);
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.copyButton:hover,
+.copyButton:active {
+    color: var(--color-accent);
+}
+
+.copyButton:focus {
+    outline: none;
+    border: none;
+}
+
+.codeBlock pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+

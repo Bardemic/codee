@@ -19,7 +19,7 @@ def _get_workspace_repo_path(workspace_id: int) -> Path:
 
 
 def _get_installation_token_for_workspace(workspace: Workspace) -> str:
-    connection = IntegrationConnection.objects.filter(user=workspace.user).first()
+    connection = IntegrationConnection.objects.filter(user=workspace.user, provider__slug="github_app").first()
     if not connection:
         raise APIException("no GitHub connection found for user")
     config = connection.getDataConfig()

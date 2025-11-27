@@ -36,5 +36,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
     path("integrations/", include("integrations.urls")),
+    path("webhooks/", include("integrations.webhook_urls")),
     path('api/', include("workspaces.urls"))
 ]
