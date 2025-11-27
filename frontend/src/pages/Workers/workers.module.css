@@ -57,6 +57,10 @@ h1 > button {
     font-size: 13px;
     height: 60px;
     overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
 }
 
 .previousWorkspaces {

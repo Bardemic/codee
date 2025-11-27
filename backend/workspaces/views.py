@@ -32,6 +32,9 @@ class WorkerViews(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        if WorkerDefinition.objects.filter(slug=data["slug"], user=request.user).exists():
+            raise APIException("You cannot have 2 workers of the same slug")
+
         tools = Tool.objects.filter(slug_name__in=data["tool_slugs"])
         
         worker = WorkerDefinition.objects.create(prompt=data["prompt"], user=request.user, slug=data["slug"], key="testing")
@@ -51,6 +54,9 @@ class WorkerViews(viewsets.ViewSet):
         serializer = NewWorkerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+
+        if WorkerDefinition.objects.filter(slug=data["slug"], user=request.user).exclude(pk=worker.pk).exists():
+            raise APIException("You cannot have 2 workers of the same slug")
 
         worker.prompt = data["prompt"]
         worker.slug = data["slug"]

@@ -8,7 +8,7 @@ interface Props {
 
 export function WebhookSelection({ integration, slug }: Props) {
     if (integration === 'GitHub') {
-        return <GitHubWebhook />;
+        return <GitHubWebhook slug={slug} />;
     }
     if (integration === 'PostHog') {
         return <PostHogWebhook slug={slug} />;

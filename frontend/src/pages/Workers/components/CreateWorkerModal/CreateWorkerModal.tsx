@@ -24,9 +24,11 @@ export function CreateWorkerModal({ isOpen, onClose, integrations, worker }: Cre
     const [isEditingSlug, setIsEditingSlug] = useState(false);
     const [selectedIntegration, setSelectedIntegration] = useState("GitHub");
     const [selectedTools, setSelectedTools] = useState<string[]>([]);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
+            setError(null);
             if (worker) {
                 setSlug(worker.slug);
                 setPrompt(worker.prompt);
@@ -44,6 +46,7 @@ export function CreateWorkerModal({ isOpen, onClose, integrations, worker }: Cre
     const isLoading = isCreating || isUpdating || isDeleting;
 
     const handleSubmit = async () => {
+        setError(null);
         try {
             if (worker) {
                 await updateWorker({ id: worker.id, data: { prompt, slug, tool_slugs: selectedTools } }).unwrap();
@@ -51,16 +54,25 @@ export function CreateWorkerModal({ isOpen, onClose, integrations, worker }: Cre
                 await createWorker({ prompt, slug, tool_slugs: selectedTools }).unwrap();
             }
             onClose();
-        } catch (a) {console.log(a)}
+        } catch (err: unknown) {
+            const message = err && typeof err === 'object' && 'data' in err 
+                ? String((err as { data: { detail?: string } }).data?.detail || 'Failed to save worker')
+                : 'Failed to save worker';
+            setError(message);
+        }
     };
 
     const handleDelete = async () => {
         if (!worker) return;
+        setError(null);
         try {
             await deleteWorker(worker.id).unwrap();
             onClose();
-        } catch (error) {
-            console.error("Failed to delete worker", error);
+        } catch (err: unknown) {
+            const message = err && typeof err === 'object' && 'data' in err 
+                ? String((err as { data: { detail?: string } }).data?.detail || 'Failed to delete worker')
+                : 'Failed to delete worker';
+            setError(message);
         }
     };
 
@@ -105,6 +117,7 @@ export function CreateWorkerModal({ isOpen, onClose, integrations, worker }: Cre
                             Delete
                         </button>
                     )}
+                    {error && <span className={styles.errorMessage}>{error}</span>}
                     <div className={styles.buttonsBar}/>
                     <button className={styles.cancelButton} onClick={onClose}>Cancel</button>
                     <button onClick={handleSubmit} disabled={isLoading}>
