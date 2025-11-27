@@ -22,7 +22,8 @@ export default function Workspace() {
     const hasPendingAgentMessage = messageList.some(
         (msg) => msg.sender === "AGENT" && (msg.isPendingAgent || !msg.content)
     );
-    const showTypingIndicator = messageList.length > 0 && (lastMessage?.sender === "USER" || hasPendingAgentMessage);
+    const showTypingIndicator = messageList.length > 0 && (lastMessage?.sender === "USER" || hasPendingAgentMessage) && workspace?.status !== "FAILED";
+
     useEffect(() => {
         chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight });
     }, [messages]);
@@ -73,6 +74,19 @@ export default function Workspace() {
                                 <span className={style.typingDot} />
                             </div>
                             <p className={style.sender}>Agent</p>
+                        </div>
+                    )}
+                    {workspace?.status === "FAILED" && (
+                        <div className={`${style.messageWrapper} ${style.agentWrapper}`}>
+                            <div className={`${style.failedToolCallItem} ${style.toolCallItem}`}>
+                                <div className={`${style.failedToolCallHeader} ${style.toolCallHeader}`}>
+                                    Failed
+                                </div>
+                                <div className={style.toolCallResult}>
+                                    The workspace execution has failed.
+                                </div>
+                            </div>
+                            <p className={style.sender}>System</p>
                         </div>
                     )}
                 </div>

@@ -147,6 +147,7 @@
 .focusedHeader {
     font-weight: 900;
     color: var(--color-foreground);
+    margin-left: 4px;
 }
 
 .homeContainer {

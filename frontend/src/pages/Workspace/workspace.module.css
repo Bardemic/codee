@@ -226,3 +226,12 @@ h1 {
         transform: rotate(360deg);
     }
 }
+
+.failedToolCallItem {
+    border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.failedToolCallHeader {
+    color: #ef4444;
+    font-weight: 800;
+}
