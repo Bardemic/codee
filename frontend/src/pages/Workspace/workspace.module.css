@@ -82,6 +82,7 @@ h1 {
     padding: 16px;
     text-align: left;
     font-size: 14px;
+    overflow-wrap: break-word;
 }
 
 .typingIndicatorRow {

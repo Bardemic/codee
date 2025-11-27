@@ -93,9 +93,21 @@ class PostHogWebhookViewSet(BaseWebhookViewSet):
         if not worker: raise PermissionDenied("Invalid worker key")
         repository = data.get("repository")
         if not repository: raise APIException("repository not found")
-        event.pop("worker_slug", None)
-        event.pop("key", None)
-        event.pop("repository", None)
+        allowed_keys = {
+            "name",
+            "description",
+            "fingerprint",
+            "$exception_list",
+            "$exception_types",
+            "$exception_values",
+            "exception_timestamp",
+            "$current_url",
+            "$browser",
+            "$os",
+            "distinct_id",
+            "$session_id",
+        }
+        event = {key: event[key] for key in allowed_keys if key in event}
 
         createWorkspaceFromWebhook(
             repository_name=repository,
