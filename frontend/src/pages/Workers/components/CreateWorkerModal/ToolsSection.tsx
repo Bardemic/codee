@@ -47,7 +47,7 @@ export function ToolsSection({ integrations, selectedTools, setSelectedTools }: 
 
     return (
         <div className={styles.toolsWrapper}>
-            <div className={styles.toolsHeader}>Tools</div>
+            <div className={styles.toolsHeader}>Tools <span className={styles.toolHeaderSub}>({selectedTools.length} selected)</span></div>
             <div className={styles.toolsList}>
             {integrations.map((integration) => {
                 const selectedCount = integration.tools.filter((t) => selectedSetForRender.has(t.slug_name)).length;

@@ -1,5 +1,5 @@
 import { useGetUserInfoQuery } from '../../app/services/auth/authService';
-import { RepositoriesPill } from '../../features/repositories/RepositoriesPill'
+import { RepositoriesPill } from '../../features/repositories/RepositoriesPill';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useGetIntegrationsQuery, type Repository } from "../../app/services/integrations/integrationsService";
@@ -33,7 +33,7 @@ function Home() {
                 onSubmit={createNewWorkspace}
                 isLoading={isCreatingWorkspace}
                 placeholder='Find all errors from the recent commit and fix them'
-                leftPills={<RepositoriesPill selected={selected} setSelected={setSelected}/>}
+                leftPills={<RepositoriesPill selected={selected} setSelected={setSelected} />}
             />
         </div>
         </div>

@@ -256,10 +256,15 @@
 
 .toolsHeader {
     font-size: 0.9rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--color-muted);
     letter-spacing: 0.05em;
     padding-left: 4px;
+}
+
+.toolHeaderSub {
+    color: gray;
+    font-weight: 500;
 }
 
 .integrationItem {
