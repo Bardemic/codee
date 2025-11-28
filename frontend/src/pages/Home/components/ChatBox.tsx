@@ -29,7 +29,7 @@ export function ChatBox({ integrations, onSubmit, isLoading, placeholder, leftPi
         const seen = new Set<string>();
         return integrations.reduce<DropdownOption[]>((acc, integration) => {
             const provider = integration.name;
-            if (!provider || seen.has(provider)) return acc;
+            if (!provider || seen.has(provider) || !integration.has_cloud_agent) return acc;
             seen.add(provider);
             acc.push({ id: provider, label: provider, value: provider });
             return acc;
@@ -37,7 +37,7 @@ export function ChatBox({ integrations, onSubmit, isLoading, placeholder, leftPi
     }, [integrations]);
 
     const integrationDropdownOptions = useMemo<DropdownOption[]>(() => 
-        integrations.map((integration) => ({
+        integrations.filter(integration => integration.tools.length > 0).map((integration) => ({
             id: integration.name,
             label: integration.name,
             children: integration.tools.map((tool) => ({

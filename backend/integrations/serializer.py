@@ -18,10 +18,11 @@ class IntegrationWithStatusSerializer(serializers.Serializer):
     connected = serializers.BooleanField()
     connection_id = serializers.IntegerField(allow_null=True)
     tools = ToolSerializer(many=True, read_only=True)
+    has_cloud_agent = serializers.BooleanField()
 
     class Meta:
         model = IntegrationProvider
-        fields = ("id", "display_name", "connected", "connection_id", "tools")
+        fields = ("id", "display_name", "connected", "connection_id", "tools", "has_cloud_agent")
 
 class GithubRepositorySerializer(serializers.Serializer):
     github_id = serializers.IntegerField(source='id')

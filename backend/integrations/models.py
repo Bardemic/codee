@@ -24,6 +24,7 @@ class IntegrationProvider(models.Model):
     display_name = models.CharField(max_length=200)
     schema = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    has_cloud_agent = models.BooleanField(default=False)
 
     def __str__(self):
         return self.display_name

@@ -19,6 +19,7 @@ export interface Integration {
     connected: boolean
     connection_id: number | null
     tools: Tool[]
+    has_cloud_agent: boolean
 }
 
 
