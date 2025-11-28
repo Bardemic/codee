@@ -3,12 +3,12 @@ from datetime import datetime, timezone as dt_timezone
 from django.db import transaction
 from workspaces.utils.llm import generateTitle
 from workspaces.utils.createBranch import createBranch
-from integrations.models import IntegrationConnection, Tool
+from integrations.models import IntegrationConnection, IntegrationProvider, Tool
 from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
 from django.http import JsonResponse, HttpResponse
 from rest_framework import viewsets
-from .models import WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool, WorkerDefinitionTool
+from .models import ProviderAgent, WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool, WorkerDefinitionTool
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
@@ -159,6 +159,34 @@ class UserWorkspaceViews(viewsets.ViewSet):
 
         tool_slugs = list(tools.values_list("slug_name", flat=True))
 
+        
+        print(data["cloud_providers"])
+        for provider in data["cloud_providers"]:
+            if provider == "Cursor":
+                integration_provider = IntegrationProvider.objects.filter(slug="cursor").first()
+                if not integration_provider: raise APIException("provider not found")
+                user_integration = IntegrationConnection.objects.filter(user=request.user, provider=integration_provider).first()
+                if not user_integration: raise APIException("integration not found")
+                keys = user_integration.getDataConfig()
+                if "api_key" not in keys: raise APIException("key not found")
+                api_key = keys["api_key"]
+                payload = {
+                    "prompt": {"text": data["message"]},
+                    "source": {"repository": "https://github.com/" + data["repository_full_name"]}
+                }
+                cursor_request = httpx.post(
+                    "https://api.cursor.com/v0/agents",
+                    auth=(api_key, ""),
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                )
+                print(cursor_request.json())
+                cursor_json = cursor_request.json()
+                if cursor_request.status_code >= 400 or "id" not in cursor_json:
+                    raise APIException("cursor provider error")
+                print(cursor_json, "AHHHH")
+                cursor_agent = ProviderAgent.objects.create(workspace=newWorkspaceObject, provider_type=provider, conversation_id=cursor_json["id"])
+                
         r = httpx.post('http://127.0.0.1:8000/newWorkspace', json={
             "prompt":data["message"],
             "repository_full_name":data["repository_full_name"],
@@ -166,6 +194,7 @@ class UserWorkspaceViews(viewsets.ViewSet):
             "tool_slugs": tool_slugs,
         })
         response = r.json()
+
         if response["status"] == "queued":
             return JsonResponse({"workspace_id": newWorkspaceObject.pk})
         raise APIException("worker issue")

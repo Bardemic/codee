@@ -13,7 +13,10 @@ PROVIDER_SCHEMAS = {
     },
     "posthog": {
         "api_key": {"type": str, "required": True}
-    }
+    },
+    "cursor": {
+        "api_key": {"type": str, "required": True}
+    },
 }
 
 class IntegrationProvider(models.Model):

@@ -1,4 +1,4 @@
-from .models import WorkerDefinition, Workspace, Message, ToolCall
+from .models import WorkerDefinition, Workspace, Message, ToolCall, ProviderAgent
 from rest_framework import serializers
 from integrations.serializer import ToolSerializer
 
@@ -49,6 +49,9 @@ class NewWorkspaceSerialier(serializers.Serializer):
     message = serializers.CharField()
     repository_full_name = serializers.CharField()
     tool_slugs = serializers.ListField(child=serializers.CharField())
+    cloud_providers = serializers.ListField(
+        child=serializers.ChoiceField(choices=ProviderAgent.ProviderType.choices)
+    )
 
 class NewMessageSerializer(serializers.Serializer):
     message = serializers.CharField()

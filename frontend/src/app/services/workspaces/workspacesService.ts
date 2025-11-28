@@ -43,11 +43,11 @@ export const workspacesApi = createApi({
         },
     }),
     endpoints: (builder) => ({
-        newWorkspace: builder.mutation<NewWorkspaceResponse, { message: string, repository_name: string, tool_slugs: string[]}>({
-            query: ({ message, repository_name, tool_slugs}) => ({
+        newWorkspace: builder.mutation<NewWorkspaceResponse, { message: string, repository_name: string, tool_slugs: string[], cloud_providers: string[]}>({
+            query: ({ message, repository_name, tool_slugs, cloud_providers}) => ({
                 url: 'new_workspace/',
                 method: "POST",
-                body: {message, repository_full_name:repository_name, tool_slugs}
+                body: {message, repository_full_name:repository_name, tool_slugs, cloud_providers}
             }),
             invalidatesTags: ['Workspaces']
         }),

@@ -9,13 +9,14 @@ import { ChatBox } from './components/ChatBox';
 
 function Home() {
     const [selected, setSelected] = useState<Repository | null>(null);
+    const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
     const navigate = useNavigate();
     const [newWorkspace, { isLoading: isCreatingWorkspace }] = useNewWorkspaceMutation();
     const { data: user, isLoading } = useGetUserInfoQuery();
     const { data: integrations } = useGetIntegrationsQuery();
 
     async function createNewWorkspace(userMessage: string, selectedTools: string[]) {
-        const r = await newWorkspace({message: userMessage, repository_name: selected?.name || "", tool_slugs: selectedTools}).unwrap();
+        const r = await newWorkspace({message: userMessage, repository_name: selected?.name || "", tool_slugs: selectedTools, cloud_providers: selectedProviders}).unwrap();
         if (r.workspace_id) navigate(`/workspace/${r.workspace_id}`)
     }
 
@@ -30,6 +31,8 @@ function Home() {
         <div className={styles.chatContainer}>
             <ChatBox
                 integrations={integrations ?? []}
+                selectedProviders={selectedProviders}
+                onProvidersChange={setSelectedProviders}
                 onSubmit={createNewWorkspace}
                 isLoading={isCreatingWorkspace}
                 placeholder='Find all errors from the recent commit and fix them'

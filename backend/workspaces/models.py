@@ -101,3 +101,13 @@ class WorkerDefinitionTool(models.Model):
     tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
+class ProviderAgent(models.Model):
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+    class ProviderType(models.TextChoices):
+        CURSOR = 'Cursor', 'Cursor'
+        JULES = 'Jules', 'Jules'
+
+    provider_type = models.CharField(max_length=10, choices=ProviderType.choices)
+    conversation_id = models.CharField(max_length=200)
+
+    
