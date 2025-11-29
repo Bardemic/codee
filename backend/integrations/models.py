@@ -17,6 +17,9 @@ PROVIDER_SCHEMAS = {
     "cursor": {
         "api_key": {"type": str, "required": True}
     },
+    "jules": {
+        "api_key": {"type": str, "required": True}
+    },
 }
 
 class IntegrationProvider(models.Model):
