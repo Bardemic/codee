@@ -33,11 +33,20 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = ["id", "created_at", "content", "sender", "tool_calls"]
 
+class ProviderAgentSerializer(serializers.ModelSerializer):
+    url = serializers.CharField()
+    integration = serializers.ChoiceField(choices=ProviderAgent.ProviderType.choices, source='provider_type')
+    class Meta:
+        model = ProviderAgent
+        fields = ["url", "integration"]
+
 
 class WorkspaceSerializer(serializers.ModelSerializer):
+    provider_agents = ProviderAgentSerializer(many=True, read_only=True)
+    
     class Meta:
         model = Workspace
-        fields = ["id", "created_at", "name", "default_branch", "status", "github_branch_name", "github_repository_name"]
+        fields = ["id", "created_at", "name", "default_branch", "status", "github_branch_name", "github_repository_name", "provider_agents"]
 
 class NewWorkerSerializer(serializers.Serializer):
     slug = serializers.CharField()

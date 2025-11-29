@@ -6,6 +6,7 @@ import Message from './Message';
 import CreateBranch from '../../components/CreateBranch/CreateBranch';
 import { BsSend } from 'react-icons/bs';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
+import Agent from './Agent';
 
 export default function Workspace() {
     const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -60,6 +61,12 @@ export default function Workspace() {
                     createBranch={() => {createBranch(workspaceId || "")}}
                     isLoading={isCreatingBranch}
                 />
+            </div>
+            <div className={style.providerAgents}>
+                <h3>Agents</h3>
+                {workspace.provider_agents.map((agent) => (
+                    <Agent integration={agent.integration} url={agent.url} />
+                ))}
             </div>
             <div className={style.chatContainer}>
                 <div className={style.messages} ref={chatRef}>

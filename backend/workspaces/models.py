@@ -102,12 +102,13 @@ class WorkerDefinitionTool(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 class ProviderAgent(models.Model):
-    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='provider_agents')
     class ProviderType(models.TextChoices):
         CURSOR = 'Cursor', 'Cursor'
         JULES = 'Jules', 'Jules'
 
     provider_type = models.CharField(max_length=10, choices=ProviderType.choices)
     conversation_id = models.CharField(max_length=200)
+    url = models.CharField()
 
     

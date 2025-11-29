@@ -1,5 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 
+export interface provider_agent {
+    url: string
+    integration: "Cursor"
+}
+
 export interface Workspace {
     id: number
     created_at: string
@@ -7,6 +12,7 @@ export interface Workspace {
     status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED"
     github_branch_name: string | null
     github_repository_name: string
+    provider_agents: provider_agent[]
 }
 
 export interface NewWorkspaceResponse {

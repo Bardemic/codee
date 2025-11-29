@@ -8,6 +8,7 @@ from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
 from django.http import JsonResponse, HttpResponse
 from rest_framework import viewsets
+from django.db.models import prefetch_related_objects
 from .models import ProviderAgent, WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool, WorkerDefinitionTool
 from rest_framework.decorators import action
 from rest_framework import permissions
@@ -184,8 +185,7 @@ class UserWorkspaceViews(viewsets.ViewSet):
                 cursor_json = cursor_request.json()
                 if cursor_request.status_code >= 400 or "id" not in cursor_json:
                     raise APIException("cursor provider error")
-                print(cursor_json, "AHHHH")
-                cursor_agent = ProviderAgent.objects.create(workspace=newWorkspaceObject, provider_type=provider, conversation_id=cursor_json["id"])
+                cursor_agent = ProviderAgent.objects.create(workspace=newWorkspaceObject, provider_type=provider, conversation_id=cursor_json["id"], url=cursor_json["target"]["url"])
                 
         r = httpx.post('http://127.0.0.1:8000/newWorkspace', json={
             "prompt":data["message"],
@@ -204,8 +204,9 @@ class UserWorkspaceViews(viewsets.ViewSet):
         return JsonResponse(WorkspaceSerializer(workspaces, many=True).data, safe=False)
 
     def retrieve(self, request, pk=None):
-        workspaceSet = Workspace.objects.all()
-        workspace = get_object_or_404(workspaceSet, pk=pk)
+        workspace = get_object_or_404(Workspace, pk=pk)
+        prefetch_related_objects([workspace], 'provider_agents')
+
         serializer = WorkspaceSerializer(workspace)
         return JsonResponse(serializer.data)
 

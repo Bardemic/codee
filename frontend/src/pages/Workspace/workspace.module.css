@@ -235,3 +235,16 @@ h1 {
     color: #ef4444;
     font-weight: 800;
 }
+
+.openAgent {
+    background-color: transparent;
+    border: var(--color-surface) 1px solid;
+}
+
+.providerAgents {
+    width: 70%;
+    height: 70px;
+    display: flex;
+    justify-content: start;
+    flex-direction: column;
+}
