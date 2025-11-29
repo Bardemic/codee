@@ -10,6 +10,7 @@ from django.http import JsonResponse, HttpResponse
 from rest_framework import viewsets
 from django.db.models import prefetch_related_objects
 from .models import ProviderAgent, WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool, WorkerDefinitionTool
+from .cloud_providers import get_provider_class
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
@@ -162,30 +163,17 @@ class UserWorkspaceViews(viewsets.ViewSet):
 
         
         print(data["cloud_providers"])
-        for provider in data["cloud_providers"]:
-            if provider == "Cursor":
-                integration_provider = IntegrationProvider.objects.filter(slug="cursor").first()
-                if not integration_provider: raise APIException("provider not found")
-                user_integration = IntegrationConnection.objects.filter(user=request.user, provider=integration_provider).first()
-                if not user_integration: raise APIException("integration not found")
-                keys = user_integration.getDataConfig()
-                if "api_key" not in keys: raise APIException("key not found")
-                api_key = keys["api_key"]
-                payload = {
-                    "prompt": {"text": data["message"]},
-                    "source": {"repository": "https://github.com/" + data["repository_full_name"]}
-                }
-                cursor_request = httpx.post(
-                    "https://api.cursor.com/v0/agents",
-                    auth=(api_key, ""),
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
+        for provider_name in data["cloud_providers"]:
+            print(provider_name)
+            ProviderClass = get_provider_class(provider_name)
+            if ProviderClass:
+                provider = ProviderClass()
+                provider.create_agent(
+                    user=request.user,
+                    workspace=newWorkspaceObject,
+                    repository_full_name=data["repository_full_name"],
+                    message=data["message"]
                 )
-                print(cursor_request.json())
-                cursor_json = cursor_request.json()
-                if cursor_request.status_code >= 400 or "id" not in cursor_json:
-                    raise APIException("cursor provider error")
-                cursor_agent = ProviderAgent.objects.create(workspace=newWorkspaceObject, provider_type=provider, conversation_id=cursor_json["id"], url=cursor_json["target"]["url"])
                 
         r = httpx.post('http://127.0.0.1:8000/newWorkspace', json={
             "prompt":data["message"],
