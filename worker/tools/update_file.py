@@ -8,16 +8,16 @@ from utils import emit_status, get_workspace_path
 def update_file(path: str, content: str, runtime: ToolRuntime) -> str:
     """Update a file based off path, and given content"""
     ctx = runtime.context
-    workspace_id = ctx.workspace_id
+    agent_id = ctx.agent_id
 
-    workspace_path = get_workspace_path(workspace_id)
-    if not os.path.isdir(workspace_path):
-        return "workspace not found."
+    agent_path = get_workspace_path(agent_id)
+    if not os.path.isdir(agent_path):
+        return "agent workspace not found."
 
-    emit_status(workspace_id, "running", step="tool_update_file", detail=f"updating: {path}")
+    emit_status(agent_id, "running", step="tool_update_file", detail=f"updating: {path}")
     
-    repo = Repo(workspace_path)
-    full_path = os.path.join(workspace_path, path)
+    repo = Repo(agent_path)
+    full_path = os.path.join(agent_path, path)
     os.makedirs(os.path.dirname(full_path), exist_ok=True)
     with open(full_path, "w", encoding="utf-8") as f:
         f.write(content)

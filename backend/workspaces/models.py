@@ -35,19 +35,11 @@ class WorkerDefinition(models.Model):
         return self.prompt if len(self.prompt) < 25 else self.prompt[:25] + '...'
 
 class Workspace(models.Model):
-    class Status(models.TextChoices):
-        PENDING = 'PENDING', 'Pending'
-        RUNNING = 'RUNNING', 'Running'
-        COMPLETED = 'COMPLETED', 'Completed'
-        FAILED = 'FAILED', 'Failed'
-    
     created_at = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length = 200, default="Untitled", validators=[MinLengthValidator(1)])
     default_branch = models.CharField(max_length = 100, default="main")
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     github_repository_name = models.CharField(null=False)
-    github_branch_name = models.CharField(null=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     worker = models.ForeignKey(WorkerDefinition, null=True, on_delete=models.SET_NULL)
     tools = models.ManyToManyField(
         Tool,
@@ -59,15 +51,24 @@ class Workspace(models.Model):
         return str(self.pk)
 
 class Agent(models.Model):
-    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='provider_agents')
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        RUNNING = 'RUNNING', 'Running'
+        COMPLETED = 'COMPLETED', 'Completed'
+        FAILED = 'FAILED', 'Failed'
     class ProviderType(models.TextChoices):
         CODEE = 'Codee', 'Codee'
         CURSOR = 'Cursor', 'Cursor'
         JULES = 'Jules', 'Jules'
 
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='provider_agents')
     provider_type = models.CharField(max_length=10, choices=ProviderType.choices)
     conversation_id = models.CharField(max_length=200)
     url = models.CharField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    github_branch_name = models.CharField(null=True)
+    name = models.CharField(max_length = 200, default="Untitled", validators=[MinLengthValidator(1)], )
+
 
 class Message(models.Model):
     class senderType(models.TextChoices):

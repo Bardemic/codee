@@ -30,7 +30,7 @@ function App() {
           <Route index element={<Home />} />
           <Route path="integrations" element={<Integrations />} />
           <Route path="workers" element={<Workers />} />
-          <Route path="workspace/:workspaceId" element={<Workspace />} />
+          <Route path="agent/:agentId" element={<Workspace />} />
         </Route>
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />

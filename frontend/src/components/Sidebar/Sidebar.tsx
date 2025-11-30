@@ -26,8 +26,8 @@ export default function Sidebar({ children }: SidebarProps) {
                 </div>
                 <h3>Workspaces</h3>
                 <div className={styles.workspaces}>
-                    {workspaces?.map((workspace) => (
-                        <div key={workspace.id} className={styles.button} onClick={() => navigate(`workspace/${workspace.id}`)}>
+                    {workspaces?.map((workspace) => workspace.agents.length > 0 && (
+                        <div key={workspace.id} className={styles.button} onClick={() => navigate(`agent/${workspace.agents[0].id}`)}>
                             {workspace.name}
                         </div>
                     ))}

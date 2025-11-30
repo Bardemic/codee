@@ -8,9 +8,9 @@ def grep(command: str, runtime: ToolRuntime) -> str:
     """Given a grep command, runs command in the docker environment"""
     ctx = runtime.context
     docker_name = ctx.docker_name
-    workspace_id = ctx.workspace_id
+    agent_id = ctx.agent_id
     
-    emit_status(workspace_id, "running", step="tool_grep", detail=f"grep: {command[:50]}")
+    emit_status(agent_id, "running", step="tool_grep", detail=f"grep: {command[:50]}")
     
     cmd = [
        "docker", "exec", docker_name, "sh", "-c", f"cd app && {command}"

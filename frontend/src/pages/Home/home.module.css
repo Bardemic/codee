@@ -21,7 +21,7 @@
 }
 
 .spinIcon {
-    display: inline-block;
+    animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -85,13 +85,13 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background-color: rgba(132, 204, 22, 0.15);
-    color: var(--color-accent-hover);
+    background-color: var(--color-surface-strong, rgba(255, 255, 255, 0.1));
+    color: var(--color-foreground);
     border-radius: 4px;
     padding: 0 6px;
     margin: 0 2px;
     font-weight: 500;
-    border: 1px solid rgba(132, 204, 22, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);;
     user-select: none;
     font-size: 0.9em;
 }

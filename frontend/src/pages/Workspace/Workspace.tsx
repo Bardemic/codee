@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom'
 import style from './workspace.module.css'
-import { useCreateBranchMutation, useGetWorkspaceMessagesQuery, useGetWorkspaceQuery, useNewMessageMutation } from '../../app/services/workspaces/workspacesService';
+import { useCreateBranchMutation, useGetWorkspaceMessagesQuery, useWorkspaceByAgentId, useNewMessageMutation } from '../../app/services/workspaces/workspacesService';
 import Message from './Message'; 
 import CreateBranch from '../../components/CreateBranch/CreateBranch';
 import { BsSend } from 'react-icons/bs';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
-import Agent from './Agent';
+import AgentCard from './Agent';
 
 export default function Workspace() {
-    const { workspaceId } = useParams<{ workspaceId: string }>();
+    const { agentId } = useParams<{ agentId: string }>();
     const navigate = useNavigate();
-    const { data: messages } = useGetWorkspaceMessagesQuery(workspaceId || '');
-    const { data: workspace, isLoading } = useGetWorkspaceQuery(workspaceId || "");
+    const { data: messages } = useGetWorkspaceMessagesQuery(agentId || '');
+    const { workspace, currentAgent, isLoading } = useWorkspaceByAgentId(agentId);
     const chatRef = useRef<HTMLDivElement>(null);
     const [createBranch, { isLoading: isCreatingBranch }] = useCreateBranchMutation();
     const [newMessage, { isLoading: isSendingMessage }] = useNewMessageMutation();
@@ -23,7 +23,7 @@ export default function Workspace() {
     const hasPendingAgentMessage = messageList.some(
         (msg) => msg.sender === "AGENT" && (msg.isPendingAgent || !msg.content)
     );
-    const showTypingIndicator = messageList.length > 0 && (lastMessage?.sender === "USER" || hasPendingAgentMessage) && workspace?.status !== "FAILED";
+    const showTypingIndicator = messageList.length > 0 && (lastMessage?.sender === "USER" || hasPendingAgentMessage) && currentAgent?.status !== "FAILED";
 
     useEffect(() => {
         chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight });
@@ -38,11 +38,11 @@ export default function Workspace() {
     async function sendMessage() {
         if (!userMessage.trim()) return;
         if (isSendingMessage) return;
-        await newMessage({ message: userMessage, workspace_id: Number(workspaceId) }).unwrap();
+        await newMessage({ message: userMessage, agent_id: Number(agentId) }).unwrap();
         setUserMessage("");
     }
 
-    if (isLoading || !workspace) {
+    if (isLoading || !workspace || !currentAgent) {
         return null;
     }
 
@@ -57,8 +57,8 @@ export default function Workspace() {
                 </div>
                 <CreateBranch
                     githubRepositoryName={workspace.github_repository_name}
-                    branchName={workspace.github_branch_name}
-                    createBranch={() => {createBranch(workspaceId || "")}}
+                    branchName={currentAgent.github_branch_name}
+                    createBranch={() => {createBranch(agentId || "")}}
                     isLoading={isCreatingBranch}
                 />
             </div>
@@ -67,8 +67,12 @@ export default function Workspace() {
                 <div className={style.leftSidebar}>
                     <h3 className={style.sidebarTitle}>Agents</h3>
                     <div className={style.agentList}>
-                        {workspace.provider_agents.map((agent) => (
-                            <Agent key={agent.url} integration={agent.integration} url={agent.url} />
+                        {workspace.agents.map((agent) => (
+                            <AgentCard 
+                                key={agent.id} 
+                                agent={agent} 
+                                isActive={agent.id === currentAgent.id}
+                            />
                         ))}
                     </div>
                 </div>
@@ -89,7 +93,7 @@ export default function Workspace() {
                                     <p className={style.sender}>Agent</p>
                                 </div>
                             )}
-                            {workspace?.status === "FAILED" && (
+                            {currentAgent?.status === "FAILED" && (
                                 <div className={`${style.messageWrapper} ${style.agentWrapper}`}>
                                     <div className={`${style.failedToolCallItem} ${style.toolCallItem}`}>
                                         <div className={`${style.failedToolCallHeader} ${style.toolCallHeader}`}>

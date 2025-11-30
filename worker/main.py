@@ -4,7 +4,7 @@ import json
 import asyncio
 from fastapi.responses import StreamingResponse
 import redis.asyncio as redis
-from tasks.run_repo import pipeline, process_workspace_message
+from tasks.run_repo import pipeline, process_agent_message
 from contextlib import asynccontextmanager
 
 REDIS_URL = "redis://localhost:6379/2"
@@ -33,10 +33,10 @@ def sse_pack(event: str, data: dict, id: str | None = None) -> bytes:
     lines.append(f"data: {payload}")
     return ("\n".join(lines) + "\n\n").encode("utf-8")
 
-@app.get("/stream/{workspace_id}")
-async def stream(workspace_id: str, request: Request, last_event_id: str | None = None):
+@app.get("/stream/agent/{agent_id}")
+async def stream(agent_id: str, request: Request, last_event_id: str | None = None):
     r: redis.Redis = app.state.redis
-    stream_key = f"stream:workspace:{workspace_id}"
+    stream_key = f"stream:agent:{agent_id}"
 
     header_last_id = request.headers.get("Last-Event-ID")
     start_id = header_last_id or last_event_id or "0-0"
@@ -78,25 +78,25 @@ async def root():
         "message": "codee"
     }
 
-@app.post("/newWorkspace")
-async def newWorkspace(workspace_info: dict):
-    tool_slugs = workspace_info.get("tool_slugs") or []
-    workspace = pipeline.delay(
-        workspace_info["repository_full_name"],
-        workspace_info["prompt"],
-        workspace_info["workspace_id"],
+@app.post("/newAgent")
+async def newAgent(agent_info: dict):
+    tool_slugs = agent_info.get("tool_slugs") or []
+    task = pipeline.delay(
+        agent_info["repository_full_name"],
+        agent_info["prompt"],
+        agent_info["agent_id"],
         tool_slugs,
     )
-    return {"workspace_id": workspace.id, "status": "queued"}
+    return {"task_id": task.id, "status": "queued"}
 
 
 @app.post("/newMessage")
-async def newMessage(workspace_info: dict):
-    tool_slugs = workspace_info.get("tool_slugs") or []
-    workspace = process_workspace_message.delay(
-        workspace_info["prompt"],
-        workspace_info["workspace_id"],
-        workspace_info["previous_messages"],
+async def newMessage(agent_info: dict):
+    tool_slugs = agent_info.get("tool_slugs") or []
+    task = process_agent_message.delay(
+        agent_info["prompt"],
+        agent_info["agent_id"],
+        agent_info["previous_messages"],
         tool_slugs,
     )
-    return {"workspace_id": workspace.id, "status": "queued"}
+    return {"task_id": task.id, "status": "queued"}

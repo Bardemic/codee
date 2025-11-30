@@ -8,9 +8,9 @@ def list_files(path: str, runtime: ToolRuntime) -> str:
     """List files in a given path using ls command. Use empty string or '.' to list root directory."""
     ctx = runtime.context
     docker_name = ctx.docker_name
-    workspace_id = ctx.workspace_id
+    agent_id = ctx.agent_id
     
-    emit_status(workspace_id, "running", step="tool_list_files", detail=f"listing: {path if path != '.' else 'root'}")
+    emit_status(agent_id, "running", step="tool_list_files", detail=f"listing: {path if path != '.' else 'root'}")
     
     cmd = [
         "docker", "exec", docker_name, "sh", "-c", f"cd app && ls {path}"

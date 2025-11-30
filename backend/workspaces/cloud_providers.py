@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import httpx
 from rest_framework.exceptions import APIException
 from integrations.models import IntegrationProvider, IntegrationConnection
-from .models import Agent
+from .models import Agent, Message
 
 class CloudProvider(ABC):
     slug = None
@@ -16,13 +16,34 @@ class CloudProvider(ABC):
         return user_integration
 
     @abstractmethod
-    def create_agent(self, user, workspace, repository_full_name, message):
+    def create_agent(self, user, workspace, repository_full_name, message, tool_slugs):
         pass
+
+class CodeeProvider(CloudProvider):
+    slug = "Codee"
+
+    def create_agent(self, user, workspace, repository_full_name, message, tool_slugs):
+        agent = Agent.objects.create(workspace=workspace, provider_type=self.slug, conversation_id="codee", url="", name=message[:50] if len(message) > 50 else message)
+        Message.objects.create(agent=agent, content=message, sender="USER")
+
+        codee_request = httpx.post('http://127.0.0.1:8000/newAgent', json={
+            "prompt": message,
+            "repository_full_name": repository_full_name,
+            "agent_id": agent.id,
+            "tool_slugs": tool_slugs,
+        })
+        codee_response = codee_request.json()
+
+        if codee_response.get("status") == "queued":
+            agent.status = "PENDING"
+        agent.save()
+
+        return agent
 
 class CursorProvider(CloudProvider):
     slug = "Cursor"
 
-    def create_agent(self, user, workspace, repository_full_name, message):
+    def create_agent(self, user, workspace, repository_full_name, message, tool_slugs):
         user_integration = self.get_user_integration(user=user, slug=self.slug)
         
         keys = user_integration.getDataConfig()
@@ -49,13 +70,14 @@ class CursorProvider(CloudProvider):
             workspace=workspace, 
             provider_type=self.slug, 
             conversation_id=cursor_json["id"], 
-            url=cursor_json["target"]["url"]
+            url=cursor_json["target"]["url"],
+            name=message[:50] if len(message) > 50 else message
         )
 
 class JulesProvider(CloudProvider):
     slug = "Jules"
 
-    def create_agent(self, user, workspace, repository_full_name, message):
+    def create_agent(self, user, workspace, repository_full_name, message, tool_slugs):
         user_integration = self.get_user_integration(user=user, slug=self.slug)
         
         keys = user_integration.getDataConfig()
@@ -80,18 +102,20 @@ class JulesProvider(CloudProvider):
         
         jules_json = jules_request.json()
         if jules_request.status_code >= 400 or "id" not in jules_json:
-            raise APIException("cursor provider error")
+            raise APIException("jules provider error")
             
         return Agent.objects.create(
             workspace=workspace, 
             provider_type=self.slug, 
             conversation_id=jules_json["id"], 
-            url=jules_json["url"]
+            url=jules_json["url"],
+            name=message[:50] if len(message) > 50 else message
         )
 
 PROVIDERS = {
     "Cursor": CursorProvider,
     "Jules": JulesProvider,
+    "Codee": CodeeProvider
 }
 
 def get_provider_class(name):

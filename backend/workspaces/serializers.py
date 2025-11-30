@@ -38,15 +38,15 @@ class AgentSerializer(serializers.ModelSerializer):
     integration = serializers.ChoiceField(choices=Agent.ProviderType.choices, source='provider_type')
     class Meta:
         model = Agent
-        fields = ["url", "integration"]
+        fields = ["url", "integration", "id", "name", "status", "github_branch_name"]
 
 
 class WorkspaceSerializer(serializers.ModelSerializer):
-    provider_agents = AgentSerializer(many=True, read_only=True)
+    agents = AgentSerializer(many=True, read_only=True, source='provider_agents')
     
     class Meta:
         model = Workspace
-        fields = ["id", "created_at", "name", "default_branch", "status", "github_branch_name", "github_repository_name", "provider_agents"]
+        fields = ["id", "created_at", "name", "default_branch", "github_repository_name", "agents"]
 
 class NewWorkerSerializer(serializers.Serializer):
     slug = serializers.CharField()
@@ -59,7 +59,8 @@ class NewWorkspaceSerialier(serializers.Serializer):
     repository_full_name = serializers.CharField()
     tool_slugs = serializers.ListField(child=serializers.CharField())
     cloud_providers = serializers.ListField(
-        child=serializers.ChoiceField(choices=Agent.ProviderType.choices)
+        child=serializers.ChoiceField(choices=Agent.ProviderType.choices),
+        min_length=1
     )
 
 class NewMessageSerializer(serializers.Serializer):
@@ -67,4 +68,4 @@ class NewMessageSerializer(serializers.Serializer):
 
 class NewAiMessage(serializers.Serializer):
     message = serializers.CharField()
-    workspace_id = serializers.IntegerField()
+    agent_id = serializers.IntegerField()
