@@ -1,4 +1,3 @@
-
 .sendButton {
     all: unset;
     border-radius: 50%;
@@ -7,20 +6,22 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: var(--color-foreground);
+    color: var(--color-accent);
 
     &:hover {
-        color: rgba(255, 255, 255, 0.7);
+        background-color: var(--color-surface-strong);
+        color: var(--color-accent-hover);
     }
 
     &:disabled {
         cursor: not-allowed;
-        opacity: 0.6;
+        opacity: 0.5;
+        color: var(--color-muted);
     }
 }
 
 .spinIcon {
-    animation: spin 1s linear infinite;
+    display: inline-block;
 }
 
 @keyframes spin {
@@ -34,8 +35,8 @@
 
 .chatContainer {
     position: relative;
-    width: min(640px, 90%);
-    margin: auto;
+    width: min(700px, 90%);
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
 }
@@ -43,28 +44,31 @@
 .chatBox {
     display: flex;
     flex-direction: column;
-    border-radius: 8px;
-    background: var(--color-background);
-    border: 1px solid var(--color-border, #333);
+    border-radius: 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
 }
 
 .chatBox:focus-within {
-    outline: 1px solid var(--color-link-hover);
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 .editor {
-    min-height: 240px;
-    padding: 12px;
+    min-height: 120px;
+    padding: 16px;
     box-sizing: border-box;
     width: 100%;
     background: transparent;
     border: none;
     color: var(--color-foreground);
     font-family: inherit;
-    font-size: inherit;
+    font-size: 16px;
+    line-height: 1.6;
     white-space: pre-wrap;
     outline: none;
     text-align: left;
+    resize: none;
 }
 
 .editor:focus {
@@ -73,38 +77,38 @@
 
 .editor:empty:before {
     content: attr(placeholder);
-    color: var(--color-muted, #777);
+    color: var(--color-muted);
     pointer-events: none;
-    /* display: block; - removed as per previous optimization, but standard reset uses it. Leaving it off is fine if flex works. */
 }
 
 .mentionPill {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background-color: var(--color-surface-strong, rgba(255, 255, 255, 0.1));
-    color: var(--color-foreground);
+    background-color: rgba(132, 204, 22, 0.15);
+    color: var(--color-accent-hover);
     border-radius: 4px;
-    padding: 0 4px;
+    padding: 0 6px;
     margin: 0 2px;
     font-weight: 500;
-    border: 1px solid var(--color-border, #444);
+    border: 1px solid rgba(132, 204, 22, 0.3);
     user-select: none;
+    font-size: 0.9em;
 }
 
 .mentionsDropdown {
     position: fixed;
-    background: var(--color-surface, #1e1e1e);
-    border: 1px solid var(--color-border, #333);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: 8px;
     width: 240px;
     max-height: 200px;
     overflow-y: auto;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
     z-index: 2000;
     display: flex;
     flex-direction: column;
-    padding: 4px 0;
+    padding: 4px;
 }
 
 .mentionOption {
@@ -114,51 +118,59 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    color: var(--color-muted, #aaa);
+    color: var(--color-muted);
+    border-radius: 4px;
 }
 
 .mentionOption.active {
-    background-color: var(--color-surface-strong, rgba(255, 255, 255, 0.1));
+    background-color: var(--color-surface-strong);
     color: var(--color-foreground);
 }
 
 .mentionOption:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--color-surface-strong);
     color: var(--color-foreground);
 }
 
 .mentionType {
     font-size: 10px;
-    opacity: 0.6;
+    opacity: 0.8;
     margin-left: auto;
     text-transform: uppercase;
-    border: 1px solid currentColor;
-    padding: 1px 4px;
+    border: 1px solid var(--color-border);
+    padding: 2px 5px;
     border-radius: 4px;
+    font-weight: 600;
 }
 
 .header {
-    font-size: 28px;
-    margin-bottom: 36px;
-    font-weight: 500;
-    color: var(--color-link-hover)
+    font-size: 3rem;
+    margin-bottom: 48px;
+    font-weight: 300;
+    color: var(--color-muted);
+    letter-spacing: -0.02em;
+    text-align: center;
 }
 
 .focusedHeader {
-    font-weight: 900;
-    color: var(--color-foreground);
-    margin-left: 4px;
+    font-weight: 700;
+    color: var(--color-accent);
+    margin-left: 0.2em;
 }
 
 .homeContainer {
-    padding: 24px;
+    padding: 48px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 80vh;
 }
 
 .chatFooter {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px;
+    padding: 6px;
 }
 
 .pillsContainer {
@@ -174,41 +186,44 @@
     border-radius: 6px;
     cursor: pointer;
     user-select: none;
-    border: 1px solid transparent;
-    transition: background-color 0.2s, border-color 0.2s;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    color: var(--color-muted);
+    font-weight: 500;
 }
 
 .pillContainer:hover {
-    background-color: var(--color-background-secondary, rgba(255, 255, 255, 0.05));
+    background-color: var(--color-surface-strong);
+    border-color: var(--color-accent);
+    color: var(--color-foreground);
 }
 
 .dropdownContainer {
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
-    background: var(--color-surface, #1e1e1e);
-    border: 1px solid var(--color-border, #333);
+    bottom: auto;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: 8px;
-    width: 200px;
+    width: 220px;
     max-height: 300px;
     overflow-y: auto;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
     z-index: 1000;
-    padding: 4px 0;
+    padding: 6px;
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 2px;
 }
 
 .dropdownOption {
-    padding: 6px 12px;
-    min-height: 16px;
+    padding: 8px 12px;
     cursor: pointer;
-    font-size: 12px;
-    color: var(--color-muted, #aaa);
+    font-size: 13px;
+    color: var(--color-muted);
+    border-radius: 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -218,43 +233,44 @@
 }
 
 .dropdownOption:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--color-surface-strong);
     color: var(--color-foreground);
 }
 
 .searchInput {
-    margin: 4px 8px 8px 8px;
-    padding: 6px 8px;
-    border-radius: 4px;
-    border: 1px solid var(--color-border, #333);
-    background: rgba(0, 0, 0, 0.2);
+    margin: 0 0 6px 0;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    background: var(--color-background);
     color: var(--color-foreground);
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .searchInput:focus {
     outline: none;
-    border-color: var(--color-link-hover, #3b82f6);
+    border-color: var(--color-accent);
 }
 
 .emptyState {
-    padding: 8px 12px;
-    font-size: 12px;
-    color: var(--color-muted, #777);
+    padding: 12px;
+    font-size: 13px;
+    color: var(--color-muted);
     text-align: center;
+    font-style: italic;
 }
 
 .toolsDropdown {
     position: fixed;
-    background: var(--color-surface, #1e1e1e);
-    border: 1px solid var(--color-border, #333);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: 8px;
-    width: 220px;
+    width: 240px;
     max-height: 320px;
     overflow-y: auto;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
     z-index: 2000;
-    padding: 4px 0;
+    padding: 6px;
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -263,6 +279,10 @@
 .integrationItem {
     display: flex;
     flex-direction: column;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 4px;
 }
 
 .integrationHeader {
@@ -272,17 +292,19 @@
     padding: 8px 12px;
     cursor: pointer;
     font-size: 13px;
+    background-color: rgba(255, 255, 255, 0.02);
 }
 
 .integrationHeader:hover {
-    background-color: var(--color-surface-strong, rgba(255, 255, 255, 0.1));
+    background-color: var(--color-surface-strong);
 }
 
 .integrationName {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-weight: 500;
+    font-weight: 600;
+    color: var(--color-foreground);
 }
 
 .toolList {
@@ -294,11 +316,11 @@
 .toolItem {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 12px 6px 32px;
+    gap: 10px;
+    padding: 8px 12px 8px 32px;
     cursor: pointer;
     font-size: 12px;
-    color: var(--color-muted, #aaa);
+    color: var(--color-muted);
 }
 
 .toolItem:hover {
@@ -309,21 +331,22 @@
 .checkbox {
     width: 14px;
     height: 14px;
-    border: 1px solid #555;
+    border: 1px solid var(--color-muted);
     border-radius: 3px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.1s, border-color 0.1s;
+    flex-shrink: 0;
 }
 
 .checkbox.checked {
-    background-color: var(--color-link-hover, #3b82f6);
-    border-color: var(--color-link-hover, #3b82f6);
-    color: white;
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-background);
 }
 
 .expandIcon {
-    color: var(--color-muted, #777);
+    color: var(--color-muted);
     font-size: 12px;
+    transition: transform 0.2s;
 }

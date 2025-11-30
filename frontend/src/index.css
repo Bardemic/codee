@@ -5,17 +5,22 @@
   line-height: 1.5;
   font-weight: 400;
 
-  --color-background: #1b1610;
-  --color-surface: #2a231a;
-  --color-surface-strong: #2f281f;
-  --color-foreground: #fff9f0;
-  --color-muted: #d1c1a7;
-  --color-accent: #c29129;
-  --color-accent-strong: #966e18;
-  --color-accent-hover: #f1c843;
-  --color-link: #e0b844;
-  --color-link-hover: #f7d676;
-  --color-sidebar-bg: rgb(54, 47, 33);
+  --color-background: #1a1510;
+  --color-surface: #292119;
+  --color-surface-strong: #382e24;
+  --color-foreground: #fffbeb;
+  --color-muted: #d6ccbe;
+  
+  --color-accent: #eab308;
+  --color-accent-strong: #ca8a04;
+  --color-accent-hover: #facc15;
+  
+  --color-link: #eab308;
+  --color-link-hover: #fcd34d;
+  
+  --color-sidebar-bg: #14100c;
+  
+  --color-border: #382e24;
 
   color: var(--color-foreground);
   background-color: var(--color-background);
@@ -48,7 +53,7 @@ body {
 }
 
 h1 {
-  font-size: 2.4em;
+  font-size: 32px;
   line-height: 1.1;
 }
 
@@ -60,9 +65,8 @@ button {
   font-weight: 500;
   font-family: inherit;
   background-color: var(--color-accent);
-  color: var(--color-foreground);
+  color: var(--color-background);
   cursor: pointer;
-  transition: border-color 0.25s, background-color 0.25s;
 }
 
 button:hover {
@@ -88,7 +92,7 @@ button:disabled:hover {
 }
 
 input {
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--color-border);
   color: var(--color-muted);
   background-color: var(--color-surface);
 }
@@ -99,7 +103,7 @@ input:focus {
 }
 
 textarea {
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--color-border);
   color: var(--color-muted);
   background-color: var(--color-surface);
   resize: none;

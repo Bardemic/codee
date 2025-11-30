@@ -172,7 +172,6 @@ export function DropdownSelector({
         >
             {icon}
             {label}
-            <BsChevronDown size={12} />
             {dropdownContent}
         </div>
     );

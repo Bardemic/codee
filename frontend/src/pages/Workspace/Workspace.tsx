@@ -48,7 +48,7 @@ export default function Workspace() {
 
     return (
         <div className={style.workspaceContainer}>
-            <div className={style.workspaceHeader}>
+            <div className={style.header}>
                 <div className={style.headerLeft}>
                     <h1>{workspace.name}</h1>
                     {workspace.github_repository_name && (
@@ -62,58 +62,70 @@ export default function Workspace() {
                     isLoading={isCreatingBranch}
                 />
             </div>
-            <div className={style.providerAgents}>
-                <h3>Agents</h3>
-                {workspace.provider_agents.map((agent) => (
-                    <Agent integration={agent.integration} url={agent.url} />
-                ))}
-            </div>
-            <div className={style.chatContainer}>
-                <div className={style.messages} ref={chatRef}>
-                    {messageList.map((message) => (
-                        <Message key={message.id} message={message} />
-                    ))}
-                    {showTypingIndicator && (
-                        <div className={style.typingIndicatorRow}>
-                            <div className={style.typingIndicatorDots}>
-                                <span className={style.typingDot} />
-                                <span className={style.typingDot} />
-                                <span className={style.typingDot} />
-                            </div>
-                            <p className={style.sender}>Agent</p>
-                        </div>
-                    )}
-                    {workspace?.status === "FAILED" && (
-                        <div className={`${style.messageWrapper} ${style.agentWrapper}`}>
-                            <div className={`${style.failedToolCallItem} ${style.toolCallItem}`}>
-                                <div className={`${style.failedToolCallHeader} ${style.toolCallHeader}`}>
-                                    Failed
-                                </div>
-                                <div className={style.toolCallResult}>
-                                    The workspace execution has failed.
-                                </div>
-                            </div>
-                            <p className={style.sender}>System</p>
-                        </div>
-                    )}
+
+            <div className={style.mainContent}>
+                <div className={style.leftSidebar}>
+                    <h3 className={style.sidebarTitle}>Agents</h3>
+                    <div className={style.agentList}>
+                        {workspace.provider_agents.map((agent) => (
+                            <Agent key={agent.url} integration={agent.integration} url={agent.url} />
+                        ))}
+                    </div>
                 </div>
-                <div className={style.inputWrapper}>
-                    <textarea 
-                        className={style.chat} 
-                        value={userMessage}
-                        onChange={(e) => setUserMessage(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey && userMessage.length > 0 && !isSendingMessage) {
-                                e.preventDefault();
-                                sendMessage();
-                            }
-                        }}
-                    />
-                    {userMessage.length > 0 && (
-                        <button className={style.sendButton} onClick={sendMessage} disabled={isSendingMessage}>
-                            {isSendingMessage ? <AiOutlineLoading3Quarters size={16} className={style.spinIcon} /> : <BsSend size={16} />}
-                        </button>
-                    )}
+
+                <div className={style.chatContainer}>
+                    <div className={style.messagesScrollArea} ref={chatRef}>
+                        <div className={style.messagesContent}>
+                            {messageList.map((message) => (
+                                <Message key={message.id} message={message} />
+                            ))}
+                            {showTypingIndicator && (
+                                <div className={style.typingIndicatorRow}>
+                                    <div className={style.typingIndicatorDots}>
+                                        <span className={style.typingDot} />
+                                        <span className={style.typingDot} />
+                                        <span className={style.typingDot} />
+                                    </div>
+                                    <p className={style.sender}>Agent</p>
+                                </div>
+                            )}
+                            {workspace?.status === "FAILED" && (
+                                <div className={`${style.messageWrapper} ${style.agentWrapper}`}>
+                                    <div className={`${style.failedToolCallItem} ${style.toolCallItem}`}>
+                                        <div className={`${style.failedToolCallHeader} ${style.toolCallHeader}`}>
+                                            Failed
+                                        </div>
+                                        <div className={style.toolCallResult}>
+                                            The workspace execution has failed.
+                                        </div>
+                                    </div>
+                                    <p className={style.sender}>System</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    <div className={style.inputContainer}>
+                        <div className={style.inputWrapper}>
+                            <textarea 
+                                className={style.chat} 
+                                value={userMessage}
+                                placeholder="Type a message to your agent..."
+                                onChange={(e) => setUserMessage(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey && userMessage.length > 0 && !isSendingMessage) {
+                                        e.preventDefault();
+                                        sendMessage();
+                                    }
+                                }}
+                            />
+                            {userMessage.length > 0 && (
+                                <button className={style.sendButton} onClick={sendMessage} disabled={isSendingMessage}>
+                                    {isSendingMessage ? <AiOutlineLoading3Quarters size={16} className={style.spinIcon} /> : <BsSend size={16} />}
+                                </button>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
