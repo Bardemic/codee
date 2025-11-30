@@ -10,7 +10,7 @@ class ApiKeyIntegrationSerializer(serializers.Serializer):
 class ToolSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tool
-        fields = ("id", "display_name", "slug_name")
+        fields = ("id", "display_name", "slug_name", "is_model")
 
 class IntegrationWithStatusSerializer(serializers.Serializer):
     id = serializers.IntegerField()

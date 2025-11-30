@@ -58,7 +58,7 @@ export default function Integrations() {
                 Integrations
             </h1>
             <div className={styles.integrationsContainer}>
-                {integrations?.map((integration) => (
+                {integrations?.map((integration) => integration.name != "Codee" && (
                         <IntegrationCard 
                             key={integration.id} 
                             integration={integration} 

@@ -11,6 +11,7 @@ export interface Tool {
     id: number
     display_name: string
     slug_name: string
+    is_model: boolean
 }
 
 export interface Integration {
