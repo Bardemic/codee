@@ -68,6 +68,7 @@ class Agent(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     github_branch_name = models.CharField(null=True)
     name = models.CharField(max_length = 200, default="Untitled", validators=[MinLengthValidator(1)], )
+    model = models.CharField(max_length=200, null=True)
 
 
 class Message(models.Model):

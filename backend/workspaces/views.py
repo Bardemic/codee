@@ -165,18 +165,22 @@ class UserWorkspaceViews(viewsets.ViewSet):
         
         print(data["cloud_providers"])
         first = None
-        for provider_name in data["cloud_providers"]:
+        for provider_config in data["cloud_providers"]:
+            provider_name = provider_config["name"]
             ProviderClass = get_provider_class(provider_name)
+            
             if ProviderClass:
                 provider = ProviderClass()
-                agent = provider.create_agent(
-                    user=request.user,
-                    workspace=newWorkspaceObject,
-                    repository_full_name=data["repository_full_name"],
-                    message=data["message"],
-                    tool_slugs=tool_slugs
-                )
-                if not first and agent: first = agent
+                for agent_config in provider_config["agents"]:
+                    agent = provider.create_agent(
+                        user=request.user,
+                        workspace=newWorkspaceObject,
+                        repository_full_name=data["repository_full_name"],
+                        message=data["message"],
+                        tool_slugs=tool_slugs,
+                        model=agent_config.get("model")
+                    )
+                    if not first and agent: first = agent
         if not first: raise APIException("worker issue")
         return JsonResponse({"agent_id": first.pk})
     

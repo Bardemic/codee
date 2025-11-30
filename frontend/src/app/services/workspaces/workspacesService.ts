@@ -41,6 +41,15 @@ export interface Message {
     isPendingAgent?: boolean
 }
 
+export interface AgentConfig {
+    model: string
+}
+
+export interface ProviderConfig {
+    name: string
+    agents: AgentConfig[]
+}
+
 export const workspacesApi = createApi({
     reducerPath: 'workspacesApi',
     tagTypes: ['WorkspaceMessages', 'Workspaces', 'Workspace'],
@@ -52,7 +61,7 @@ export const workspacesApi = createApi({
         },
     }),
     endpoints: (builder) => ({
-        newWorkspace: builder.mutation<NewWorkspaceResponse, { message: string, repository_name: string, tool_slugs: string[], cloud_providers: string[]}>({
+        newWorkspace: builder.mutation<NewWorkspaceResponse, { message: string, repository_name: string, tool_slugs: string[], cloud_providers: ProviderConfig[]}>({
             query: ({ message, repository_name, tool_slugs, cloud_providers}) => ({
                 url: 'new_workspace/',
                 method: "POST",

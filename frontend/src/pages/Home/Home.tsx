@@ -16,16 +16,17 @@ function Home() {
     const { data: user, isLoading } = useGetUserInfoQuery();
     const { data: integrations } = useGetIntegrationsQuery();
 
-    const selectedProviders = useMemo(() => {
-        const set = new Set<string>();
-        for (const p of cloudAgents.providers) {
-            if ((p.agents?.length ?? 0) > 0) set.add(p.name);
-        }
-        return Array.from(set);
+    const activeProviders = useMemo(() => {
+        return cloudAgents.providers
+            .filter(p => (p.agents?.length ?? 0) > 0)
+            .map(p => ({
+                name: p.name,
+                agents: p.agents.map(a => ({ model: a.model }))
+            }));
     }, [cloudAgents]);
 
     async function createNewWorkspace(userMessage: string, selectedTools: string[]) {
-        const r = await newWorkspace({message: userMessage, repository_name: selected?.name || "", tool_slugs: selectedTools, cloud_providers: selectedProviders}).unwrap();
+        const r = await newWorkspace({message: userMessage, repository_name: selected?.name || "", tool_slugs: selectedTools, cloud_providers: activeProviders}).unwrap();
         if (r.agent_id) navigate(`/agent/${r.agent_id}`);
     }
 

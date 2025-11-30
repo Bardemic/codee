@@ -16,14 +16,21 @@ class CloudProvider(ABC):
         return user_integration
 
     @abstractmethod
-    def create_agent(self, user, workspace, repository_full_name, message, tool_slugs):
+    def create_agent(self, user, workspace, repository_full_name, message, tool_slugs, model=None):
         pass
 
 class CodeeProvider(CloudProvider):
     slug = "Codee"
 
-    def create_agent(self, user, workspace, repository_full_name, message, tool_slugs):
-        agent = Agent.objects.create(workspace=workspace, provider_type=self.slug, conversation_id="codee", url="", name=message[:50] if len(message) > 50 else message)
+    def create_agent(self, user, workspace, repository_full_name, message, tool_slugs, model=None):
+        agent = Agent.objects.create(
+            workspace=workspace, 
+            provider_type=self.slug, 
+            conversation_id="codee", 
+            url="", 
+            name=self.slug + " Agent" + (f", {model}" if model else ""),
+            model=model
+        )
         Message.objects.create(agent=agent, content=message, sender="USER")
 
         codee_request = httpx.post('http://127.0.0.1:8000/newAgent', json={
@@ -31,6 +38,7 @@ class CodeeProvider(CloudProvider):
             "repository_full_name": repository_full_name,
             "agent_id": agent.id,
             "tool_slugs": tool_slugs,
+            "model": model,
         })
         codee_response = codee_request.json()
 
@@ -43,7 +51,7 @@ class CodeeProvider(CloudProvider):
 class CursorProvider(CloudProvider):
     slug = "Cursor"
 
-    def create_agent(self, user, workspace, repository_full_name, message, tool_slugs):
+    def create_agent(self, user, workspace, repository_full_name, message, tool_slugs, model=None):
         user_integration = self.get_user_integration(user=user, slug=self.slug)
         
         keys = user_integration.getDataConfig()
@@ -52,7 +60,8 @@ class CursorProvider(CloudProvider):
         
         payload = {
             "prompt": {"text": message},
-            "source": {"repository": "https://github.com/" + repository_full_name}
+            "source": {"repository": "https://github.com/" + repository_full_name},
+            "model": model,
         }
         
         cursor_request = httpx.post(
@@ -71,13 +80,14 @@ class CursorProvider(CloudProvider):
             provider_type=self.slug, 
             conversation_id=cursor_json["id"], 
             url=cursor_json["target"]["url"],
-            name=message[:50] if len(message) > 50 else message
+            name=self.slug + " Agent" + (f", {model}" if model else ""),
+            model=model
         )
 
 class JulesProvider(CloudProvider):
     slug = "Jules"
 
-    def create_agent(self, user, workspace, repository_full_name, message, tool_slugs):
+    def create_agent(self, user, workspace, repository_full_name, message, tool_slugs, model=None):
         user_integration = self.get_user_integration(user=user, slug=self.slug)
         
         keys = user_integration.getDataConfig()
@@ -109,7 +119,7 @@ class JulesProvider(CloudProvider):
             provider_type=self.slug, 
             conversation_id=jules_json["id"], 
             url=jules_json["url"],
-            name=message[:50] if len(message) > 50 else message
+            name=self.slug + " Agent" + (f", {model}" if model else ""),
         )
 
 PROVIDERS = {

@@ -54,12 +54,19 @@ class NewWorkerSerializer(serializers.Serializer):
     tool_slugs = serializers.ListField(child=serializers.CharField())
     key = serializers.CharField(required=False)
 
+class AgentConfigSerializer(serializers.Serializer):
+    model = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+class ProviderConfigSerializer(serializers.Serializer):
+    name = serializers.ChoiceField(choices=Agent.ProviderType.choices)
+    agents = serializers.ListField(child=AgentConfigSerializer())
+
 class NewWorkspaceSerialier(serializers.Serializer):
     message = serializers.CharField()
     repository_full_name = serializers.CharField()
     tool_slugs = serializers.ListField(child=serializers.CharField())
     cloud_providers = serializers.ListField(
-        child=serializers.ChoiceField(choices=Agent.ProviderType.choices),
+        child=ProviderConfigSerializer(),
         min_length=1
     )
 
