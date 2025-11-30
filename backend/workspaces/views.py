@@ -9,7 +9,7 @@ from rest_framework.exceptions import APIException
 from django.http import JsonResponse, HttpResponse
 from rest_framework import viewsets
 from django.db.models import prefetch_related_objects
-from .models import ProviderAgent, WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool, WorkerDefinitionTool
+from .models import Agent, WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool, WorkerDefinitionTool
 from .cloud_providers import get_provider_class
 from rest_framework.decorators import action
 from rest_framework import permissions

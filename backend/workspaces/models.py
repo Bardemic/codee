@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator
 from utils.encryption import encrypt_data, decrypt_data
-
 from integrations.models import Tool
 
 class WorkerDefinition(models.Model):
@@ -59,12 +58,23 @@ class Workspace(models.Model):
     def __str__(self):
         return str(self.pk)
 
+class Agent(models.Model):
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='provider_agents')
+    class ProviderType(models.TextChoices):
+        CODEE = 'Codee', 'Codee'
+        CURSOR = 'Cursor', 'Cursor'
+        JULES = 'Jules', 'Jules'
+
+    provider_type = models.CharField(max_length=10, choices=ProviderType.choices)
+    conversation_id = models.CharField(max_length=200)
+    url = models.CharField()
+
 class Message(models.Model):
     class senderType(models.TextChoices):
         USER = 'USER', 'User'
         AGENT = 'AGENT', 'Agent'
     created_at = models.DateTimeField(auto_now_add=True)
-    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='messages')
     content = models.CharField()
     sender = models.CharField(max_length=5, choices=senderType.choices, null=False)
     #later: stuff like tools included, prev messages, etc
@@ -76,7 +86,7 @@ class Message(models.Model):
 
 
 class ToolCall(models.Model):
-    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='tool_calls')
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='tool_calls')
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='tool_calls')
     created_at = models.DateTimeField()
     tool_name = models.CharField(max_length=100)
@@ -100,15 +110,3 @@ class WorkerDefinitionTool(models.Model):
     worker_definition = models.ForeignKey(WorkerDefinition, on_delete=models.CASCADE)
     tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-
-class ProviderAgent(models.Model):
-    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='provider_agents')
-    class ProviderType(models.TextChoices):
-        CURSOR = 'Cursor', 'Cursor'
-        JULES = 'Jules', 'Jules'
-
-    provider_type = models.CharField(max_length=10, choices=ProviderType.choices)
-    conversation_id = models.CharField(max_length=200)
-    url = models.CharField()
-
-    

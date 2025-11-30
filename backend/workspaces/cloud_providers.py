@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import httpx
 from rest_framework.exceptions import APIException
 from integrations.models import IntegrationProvider, IntegrationConnection
-from .models import ProviderAgent
+from .models import Agent
 
 class CloudProvider(ABC):
     slug = None
@@ -45,7 +45,7 @@ class CursorProvider(CloudProvider):
         if cursor_request.status_code >= 400 or "id" not in cursor_json:
             raise APIException("cursor provider error")
             
-        return ProviderAgent.objects.create(
+        return Agent.objects.create(
             workspace=workspace, 
             provider_type=self.slug, 
             conversation_id=cursor_json["id"], 
@@ -82,7 +82,7 @@ class JulesProvider(CloudProvider):
         if jules_request.status_code >= 400 or "id" not in jules_json:
             raise APIException("cursor provider error")
             
-        return ProviderAgent.objects.create(
+        return Agent.objects.create(
             workspace=workspace, 
             provider_type=self.slug, 
             conversation_id=jules_json["id"], 

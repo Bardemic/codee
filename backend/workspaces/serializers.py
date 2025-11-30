@@ -1,4 +1,4 @@
-from .models import WorkerDefinition, Workspace, Message, ToolCall, ProviderAgent
+from .models import WorkerDefinition, Workspace, Message, ToolCall, Agent
 from rest_framework import serializers
 from integrations.serializer import ToolSerializer
 
@@ -33,16 +33,16 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = ["id", "created_at", "content", "sender", "tool_calls"]
 
-class ProviderAgentSerializer(serializers.ModelSerializer):
+class AgentSerializer(serializers.ModelSerializer):
     url = serializers.CharField()
-    integration = serializers.ChoiceField(choices=ProviderAgent.ProviderType.choices, source='provider_type')
+    integration = serializers.ChoiceField(choices=Agent.ProviderType.choices, source='provider_type')
     class Meta:
-        model = ProviderAgent
+        model = Agent
         fields = ["url", "integration"]
 
 
 class WorkspaceSerializer(serializers.ModelSerializer):
-    provider_agents = ProviderAgentSerializer(many=True, read_only=True)
+    provider_agents = AgentSerializer(many=True, read_only=True)
     
     class Meta:
         model = Workspace
@@ -59,7 +59,7 @@ class NewWorkspaceSerialier(serializers.Serializer):
     repository_full_name = serializers.CharField()
     tool_slugs = serializers.ListField(child=serializers.CharField())
     cloud_providers = serializers.ListField(
-        child=serializers.ChoiceField(choices=ProviderAgent.ProviderType.choices)
+        child=serializers.ChoiceField(choices=Agent.ProviderType.choices)
     )
 
 class NewMessageSerializer(serializers.Serializer):
