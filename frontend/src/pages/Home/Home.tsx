@@ -9,7 +9,7 @@ import { ChatBox } from './components/ChatBox';
 
 function Home() {
     const [selected, setSelected] = useState<Repository | null>(null);
-    const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
+    const [selectedProviders, setSelectedProviders] = useState<string[]>(['Codee']);
     const navigate = useNavigate();
     const [newWorkspace, { isLoading: isCreatingWorkspace }] = useNewWorkspaceMutation();
     const { data: user, isLoading } = useGetUserInfoQuery();
@@ -17,7 +17,7 @@ function Home() {
 
     async function createNewWorkspace(userMessage: string, selectedTools: string[]) {
         const r = await newWorkspace({message: userMessage, repository_name: selected?.name || "", tool_slugs: selectedTools, cloud_providers: selectedProviders}).unwrap();
-        if (r.workspace_id) navigate(`/workspace/${r.workspace_id}`)
+        if (r.agent_id) navigate(`/agent/${r.agent_id}`);
     }
 
     useEffect(() => {

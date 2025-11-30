@@ -164,8 +164,8 @@ class UserWorkspaceViews(viewsets.ViewSet):
 
         
         print(data["cloud_providers"])
+        first = None
         for provider_name in data["cloud_providers"]:
-            print(provider_name)
             ProviderClass = get_provider_class(provider_name)
             if ProviderClass:
                 provider = ProviderClass()
@@ -176,9 +176,9 @@ class UserWorkspaceViews(viewsets.ViewSet):
                     message=data["message"],
                     tool_slugs=tool_slugs
                 )
-        return JsonResponse({"workspace_id": newWorkspaceObject.pk})
-                
-        raise APIException("worker issue")
+                if not first and agent: first = agent
+        if not first: raise APIException("worker issue")
+        return JsonResponse({"agent_id": first.pk})
     
     def list(self, request):
         workspaces = Workspace.objects.filter(user=request.user).prefetch_related('provider_agents').order_by('-created_at')

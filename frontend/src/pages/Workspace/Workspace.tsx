@@ -12,7 +12,7 @@ export default function Workspace() {
     const { agentId } = useParams<{ agentId: string }>();
     const navigate = useNavigate();
     const { data: messages } = useGetWorkspaceMessagesQuery(agentId || '');
-    const { workspace, currentAgent, isLoading } = useWorkspaceByAgentId(agentId);
+    const { workspace, currentAgent, isLoading, isFetching } = useWorkspaceByAgentId(agentId);
     const chatRef = useRef<HTMLDivElement>(null);
     const [createBranch, { isLoading: isCreatingBranch }] = useCreateBranchMutation();
     const [newMessage, { isLoading: isSendingMessage }] = useNewMessageMutation();
@@ -30,10 +30,10 @@ export default function Workspace() {
     }, [messages]);
 
     useEffect(() => {
-        if (!isLoading && !workspace) {
+        if (!isLoading && !isFetching && !workspace) {
             navigate("/");
         }
-    }, [isLoading, workspace, navigate]);
+    }, [isLoading, isFetching, workspace, navigate]);
 
     async function sendMessage() {
         if (!userMessage.trim()) return;

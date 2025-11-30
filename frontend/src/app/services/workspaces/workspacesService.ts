@@ -19,7 +19,7 @@ export interface Workspace {
 }
 
 export interface NewWorkspaceResponse {
-    workspace_id: number
+    agent_id: number
 }
 
 export interface ToolCall {
@@ -184,12 +184,12 @@ export const workspacesApi = createApi({
 export const { useNewWorkspaceMutation, useGetWorkspacesQuery, useGetWorkspaceMessagesQuery, useCreateBranchMutation, useNewMessageMutation } = workspacesApi;
 
 export function useWorkspaceByAgentId(agentId: string | undefined) {
-    const { data: workspaces, isLoading } = useGetWorkspacesQuery();
+    const { data: workspaces, isLoading, isFetching } = useGetWorkspacesQuery();
     
     const workspace = workspaces?.find(w => 
         w.agents.some(a => a.id === Number(agentId))
     );
     const currentAgent = workspace?.agents.find(a => a.id === Number(agentId));
     
-    return { workspace, currentAgent, isLoading };
+    return { workspace, currentAgent, isLoading, isFetching };
 }
