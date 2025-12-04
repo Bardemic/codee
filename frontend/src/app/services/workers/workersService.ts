@@ -1,11 +1,17 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { Tool } from "../integrations/integrationsService";
+import type { Agent } from "../workspaces/workspacesService";
 
 export interface LinkedWorkspace {
     id: number;
     name: string;
-    status: string;
     created_at: string;
+    agents: Agent[];
+}
+
+export interface ProviderConfig {
+    name: string;
+    agents: Array<{ model: string | null }>;
 }
 
 export interface Worker {
@@ -14,12 +20,14 @@ export interface Worker {
     prompt: string;
     tools: Tool[];
     workspaces: LinkedWorkspace[];
+    cloud_providers: ProviderConfig[];
 }
 
 export interface NewWorkerRequest {
     slug: string;
     prompt: string;
     tool_slugs: string[];
+    cloud_providers: ProviderConfig[];
 }
 
 export const workersApi = createApi({

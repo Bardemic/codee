@@ -18,7 +18,7 @@ export default function WorkerCard({ worker, openView }: props) {
                 {worker.workspaces.length == 0 && <div className={styles.noWorkspaces}>No workspaces yet</div>}
                 {worker.workspaces.map((workspace) => (
                     <Link 
-                        to={`/workspace/${workspace.id}`} 
+                        to={`/agent/${workspace.agents[0].id}`} 
                         className={styles.prevWorkspace} 
                         key={workspace.id}
                         onClick={(e) => e.stopPropagation()}

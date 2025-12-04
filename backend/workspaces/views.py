@@ -3,14 +3,14 @@ from datetime import datetime, timezone as dt_timezone
 from django.db import transaction
 from workspaces.utils.llm import generateTitle
 from workspaces.utils.createBranch import createBranch
-from integrations.models import IntegrationConnection, IntegrationProvider, Tool
+from workspaces.utils.providers import create_agents_from_providers
+from integrations.models import IntegrationConnection, Tool
 from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
 from django.http import JsonResponse, HttpResponse
 from rest_framework import viewsets
 from django.db.models import prefetch_related_objects
 from .models import Agent, WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool, WorkerDefinitionTool
-from .cloud_providers import get_provider_class
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
@@ -25,7 +25,7 @@ class WorkerViews(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
-        workerDefs = WorkerDefinition.objects.filter(user=request.user).prefetch_related('tools', 'workspace_set')
+        workerDefs = WorkerDefinition.objects.filter(user=request.user).prefetch_related('tools', 'workspace_set__provider_agents')
         return JsonResponse(WorkerSerializer(workerDefs, many=True).data, safe=False)
 
     @transaction.atomic
@@ -39,7 +39,13 @@ class WorkerViews(viewsets.ViewSet):
 
         tools = Tool.objects.filter(slug_name__in=data["tool_slugs"])
         
-        worker = WorkerDefinition.objects.create(prompt=data["prompt"], user=request.user, slug=data["slug"], key="testing")
+        worker = WorkerDefinition.objects.create(
+            prompt=data["prompt"], 
+            user=request.user, 
+            slug=data["slug"], 
+            key="testing",
+            cloud_providers=data["cloud_providers"]
+        )
         
         WorkerDefinitionTool.objects.bulk_create(
             [WorkerDefinitionTool(worker_definition=worker, tool=tool) for tool in tools]
@@ -62,6 +68,7 @@ class WorkerViews(viewsets.ViewSet):
 
         worker.prompt = data["prompt"]
         worker.slug = data["slug"]
+        worker.cloud_providers = data["cloud_providers"]
         if data.get("key"):
             worker.setKey(data["key"])
         worker.save()
@@ -181,27 +188,15 @@ class UserWorkspaceViews(viewsets.ViewSet):
 
         tool_slugs = list(tools.values_list("slug_name", flat=True))
 
-        
-        print(data["cloud_providers"])
-        first = None
-        for provider_config in data["cloud_providers"]:
-            provider_name = provider_config["name"]
-            ProviderClass = get_provider_class(provider_name)
-            
-            if ProviderClass:
-                provider = ProviderClass()
-                for agent_config in provider_config["agents"]:
-                    agent = provider.create_agent(
-                        user=request.user,
-                        workspace=newWorkspaceObject,
-                        repository_full_name=data["repository_full_name"],
-                        message=data["message"],
-                        tool_slugs=tool_slugs,
-                        model=agent_config.get("model")
-                    )
-                    if not first and agent: first = agent
-        if not first: raise APIException("worker issue")
-        return JsonResponse({"agent_id": first.pk})
+        first_agent = create_agents_from_providers(
+            user=request.user,
+            workspace=newWorkspaceObject,
+            repository_full_name=data["repository_full_name"],
+            message=data["message"],
+            tool_slugs=tool_slugs,
+            cloud_providers=data["cloud_providers"]
+        )
+        return JsonResponse({"agent_id": first_agent.pk})
     
     def list(self, request):
         workspaces = Workspace.objects.filter(user=request.user).prefetch_related('provider_agents').order_by('-created_at')

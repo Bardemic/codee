@@ -15,6 +15,7 @@ class WorkerDefinition(models.Model):
     )
     slug = models.CharField(max_length=200)
     key = models.CharField(null=True)
+    cloud_providers = models.JSONField(default=list)
 
     def setKey(self, input: str) -> None:
         # self.key = encrypt_data(input)
