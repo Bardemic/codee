@@ -14,7 +14,7 @@ from .cloud_providers import get_provider_class
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
-from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkerSerializer, WorkspaceSerializer, NewWorkerSerializer
+from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkerSerializer, WorkspaceSerializer, NewWorkerSerializer, CursorMessageSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -86,18 +86,37 @@ class UserWorkspaceViews(viewsets.ViewSet):
 
     @action(detail=False, methods=["GET"], url_path="messages/(?P<agent_id>\d+)")
     def getMessages(self, request, agent_id):
-        agent = Agent.objects.filter(pk=agent_id, workspace__user=request.user).first()
+        agent = Agent.objects.filter(pk=agent_id, workspace__user=request.user).select_related('workspace').first()
         if not agent:
             raise APIException("no agent found")
-        messages = Message.objects.filter(agent=agent).order_by('created_at').prefetch_related('tool_calls')
-        return JsonResponse(MessageSerializer(messages, many=True).data, safe=False)
+        
+        if agent.provider_type == Agent.ProviderType.CODEE:
+            messages = Message.objects.filter(agent=agent).order_by('created_at').prefetch_related('tool_calls')
+            return JsonResponse(MessageSerializer(messages, many=True).data, safe=False)
+        
+        if agent.provider_type == Agent.ProviderType.CURSOR:
+            connection = IntegrationConnection.objects.filter(provider__slug="cursor", user=request.user).first()
+            if not connection:
+                raise APIException("cursor connection not found")
+            api_key = connection.getDataConfig().get("api_key")
+            response = httpx.get(
+                f"https://api.cursor.com/v0/agents/{agent.conversation_id}/conversation",
+                auth=(api_key, "")
+            )
+            if response.status_code != 200:
+                raise APIException("failed to fetch cursor messages")
+            data = response.json()
+            print(data)
+            return JsonResponse(CursorMessageSerializer(data.get("messages", []), many=True).data, safe=False)
+        
+        raise APIException("unsupported provider type")
     
     @action(detail=False, methods=["GET"], url_path="(?P<agent_id>\d+)/status")
     def getAgentStatus(self, request, agent_id):
         agent = Agent.objects.filter(pk=agent_id, workspace__user=request.user).first()
         if not agent:
             raise APIException("no agent found")
-        return JsonResponse({"status": agent.status})
+        return JsonResponse({"status": agent.status, "provider_type": agent.provider_type})
 
     @action(detail=False, methods=["POST"], url_path="(?P<agent_id>\d+)/create-branch")
     def createAgentBranch(self, request, agent_id):

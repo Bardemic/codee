@@ -18,7 +18,7 @@ export function CloudAgentsDropdown({ integrations, value, onChange, label }: Cl
     const [isOpen, setIsOpen] = useState(false);
     const [expanded, setExpanded] = useState<string[]>([]);
     const [openModelKey, setOpenModelKey] = useState<string | null>(null);
-    const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+    const [menuPos, setMenuPos] = useState<{ top?: number; bottom?: number; left: number } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -62,6 +62,7 @@ export function CloudAgentsDropdown({ integrations, value, onChange, label }: Cl
     }, [value, label]);
 
     const updateAgents = (name: string, delta: number) => {
+        setOpenModelKey(null);
         const models = providerModels.get(name);
         const defaultModel = models?.[0]?.slug_name ?? "";
         const existing = value.providers.find(p => p.name === name);
@@ -89,9 +90,13 @@ export function CloudAgentsDropdown({ integrations, value, onChange, label }: Cl
     const openMenu = (e: React.MouseEvent, key: string) => {
         e.stopPropagation();
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const top = rect.bottom + 6 + 240 > window.innerHeight ? Math.max(8, rect.top - 246) : rect.bottom + 6;
         const left = Math.min(rect.left, window.innerWidth - 248);
-        setMenuPos({ top, left });
+
+        if (rect.bottom + 6 + 240 > window.innerHeight) {
+            setMenuPos({ bottom: window.innerHeight - rect.top + 6, left });
+        } else {
+            setMenuPos({ top: rect.bottom + 6, left });
+        }
         setOpenModelKey(prev => prev === key ? null : key);
     };
 
@@ -105,7 +110,7 @@ export function CloudAgentsDropdown({ integrations, value, onChange, label }: Cl
                         const agents = value.providers.find(p => p.name === name)?.agents ?? [];
                         return (
                             <div key={name} className={styles.integrationItem}>
-                                <div className={styles.integrationHeader} onClick={e => { e.stopPropagation(); setExpanded(prev => isExp ? prev.filter(x => x !== name) : [...prev, name]); }}>
+                                <div className={styles.integrationHeader} onClick={e => { e.stopPropagation(); setOpenModelKey(null); setExpanded(prev => isExp ? prev.filter(x => x !== name) : [...prev, name]); }}>
                                     <div className={styles.integrationName}>{name}</div>
                                     <div className={styles.headerControls} onClick={e => e.stopPropagation()}>
                                         <div className={styles.numberControl}>
@@ -130,7 +135,7 @@ export function CloudAgentsDropdown({ integrations, value, onChange, label }: Cl
                                                                     <BsChevronDown size={12} />
                                                                 </button>
                                                                 {openModelKey === `${name}:${idx}` && menuPos && createPortal(
-                                                                    <div ref={menuRef} className={styles.modelMenu} style={{ top: menuPos.top, left: menuPos.left }} onMouseDown={e => { e.stopPropagation(); e.preventDefault(); }} onClick={e => e.stopPropagation()}>
+                                                                    <div ref={menuRef} className={styles.modelMenu} style={{ top: menuPos.top, bottom: menuPos.bottom, left: menuPos.left }} onMouseDown={e => { e.stopPropagation(); e.preventDefault(); }} onClick={e => e.stopPropagation()}>
                                                                         {models.map(m => (
                                                                             <div key={m.slug_name} className={`${styles.dropdownOption} ${agent.model === m.slug_name ? styles.selectedOption : ""}`} onClick={() => { setModel(name, idx, m.slug_name); setOpenModelKey(null); }}>
                                                                                 <div className={`${styles.checkbox} ${agent.model === m.slug_name ? styles.checked : ""}`}>{agent.model === m.slug_name && <BsCheck size={12} />}</div>

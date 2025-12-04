@@ -107,6 +107,7 @@ export const workspacesApi = createApi({
 
                     const baseStreamUrl = `http://localhost:8000/stream/agent/${agent_id}`;
                     let streamUrl = baseStreamUrl;
+                    let shouldStream = true;
 
                     try {
                         const statusResponse = await fetch(`http://127.0.0.1:5001/api/workspace/${agent_id}/status/`, {
@@ -117,15 +118,25 @@ export const workspacesApi = createApi({
 
                         if (statusResponse.ok) {
                             const statusData = await statusResponse.json();
-                            const isActive = statusData.status === 'PENDING' || statusData.status === 'RUNNING';
-                            if (!isActive) {
-                                streamUrl = `${baseStreamUrl}?last_event_id=%24`;
+                            if (statusData.provider_type !== 'Codee') {
+                                shouldStream = false;
+                            } else {
+                                const isActive = statusData.status === 'PENDING' || statusData.status === 'RUNNING';
+                                if (!isActive) {
+                                    streamUrl = `${baseStreamUrl}?last_event_id=%24`;
+                                }
                             }
                         } else {
-                            streamUrl = `${baseStreamUrl}?last_event_id=%24`;
+                            shouldStream = false;
                         }
                     } catch (statusError) {
                         console.warn('Unable to determine agent status for stream start', statusError);
+                        shouldStream = false;
+                    }
+
+                    if (!shouldStream) {
+                        await cacheEntryRemoved;
+                        return;
                     }
 
                     const eventSource = new EventSource(streamUrl);

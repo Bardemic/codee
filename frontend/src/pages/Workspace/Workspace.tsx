@@ -11,7 +11,7 @@ import AgentCard from './Agent';
 export default function Workspace() {
     const { agentId } = useParams<{ agentId: string }>();
     const navigate = useNavigate();
-    const { data: messages } = useGetWorkspaceMessagesQuery(agentId || '');
+    const { currentData: messages } = useGetWorkspaceMessagesQuery(agentId || '');
     const { workspace, currentAgent, isLoading, isFetching } = useWorkspaceByAgentId(agentId);
     const chatRef = useRef<HTMLDivElement>(null);
     const [createBranch, { isLoading: isCreatingBranch }] = useCreateBranchMutation();
@@ -80,9 +80,13 @@ export default function Workspace() {
                 <div className={style.chatContainer}>
                     <div className={style.messagesScrollArea} ref={chatRef}>
                         <div className={style.messagesContent}>
-                            {messageList.map((message) => (
-                                <Message key={message.id} message={message} />
-                            ))}
+                            {messageList.map((message, index) => {
+                                const nextMessage = messageList[index + 1];
+                                const isLastInGroup = !nextMessage || nextMessage.sender !== message.sender;
+                                return (
+                                    <Message key={message.id} message={message} isLastInGroup={isLastInGroup} />
+                                );
+                            })}
                             {showTypingIndicator && (
                                 <div className={style.typingIndicatorRow}>
                                     <div className={style.typingIndicatorDots}>

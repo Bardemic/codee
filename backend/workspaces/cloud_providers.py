@@ -57,11 +57,19 @@ class CursorProvider(CloudProvider):
         keys = user_integration.getDataConfig()
         if "api_key" not in keys: raise APIException("key not found")
         api_key = keys["api_key"]
+
+        agent = Agent.objects.create(
+            workspace=workspace, 
+            provider_type=self.slug, 
+            name=self.slug + " Agent" + (f", {model}" if model else ""),
+            model=model
+        )
         
         payload = {
             "prompt": {"text": message},
             "source": {"repository": "https://github.com/" + repository_full_name},
             "model": model,
+            "webhook": {"url": f"https://be55eb7d67a3.ngrok-free.app/webhooks/cursor/complete/{agent.id}/"}
         }
         
         cursor_request = httpx.post(
@@ -74,15 +82,14 @@ class CursorProvider(CloudProvider):
         cursor_json = cursor_request.json()
         if cursor_request.status_code >= 400 or "id" not in cursor_json:
             raise APIException("cursor provider error")
-            
-        return Agent.objects.create(
-            workspace=workspace, 
-            provider_type=self.slug, 
-            conversation_id=cursor_json["id"], 
-            url=cursor_json["target"]["url"],
-            name=self.slug + " Agent" + (f", {model}" if model else ""),
-            model=model
-        )
+        
+        agent.conversation_id = cursor_json["id"]
+        agent.url = cursor_json["target"]["url"]
+        agent.github_branch_name = cursor_json["target"]["branchName"]
+        agent.status = "RUNNING"
+        agent.save()
+        
+        return agent
 
 class JulesProvider(CloudProvider):
     slug = "Jules"

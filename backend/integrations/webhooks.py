@@ -19,6 +19,7 @@ from workspaces.models import WorkerDefinition, Workspace, Message, WorkspaceToo
 from .models import IntegrationProvider, IntegrationConnection
 from .services.github_app import get_installation_token
 from workspaces.utils.llm import generateTitle
+from workspaces.models import Agent, Message
 
 
 def createWorkspaceFromWebhook(workerDefinition: WorkerDefinition, repository_name: str, data: dict, title: str):
@@ -72,7 +73,33 @@ class BaseWebhookViewSet(viewsets.ViewSet):
     def build_response(self):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class CursorWebhookViewSet(BaseWebhookViewSet):
+    provider_slug = "cursor"
 
+    @action(detail=False, methods=["post"], url_path="complete/(?P<agent_id>[0-9]+)")
+    def complete(self, request, agent_id):
+        data = self.parse_body(request)
+        agent = Agent.objects.filter(pk=agent_id).first()
+        if not agent:
+            raise APIException("cannot find agent")
+        agent_status = data.get("status")
+        # summary = data.get("summary")
+        # if not summary: raise APIException("no summary found")
+        if agent_status == "FINISHED":
+            agent.status = "COMPLETED"
+            agent.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_api_key(self, agent):
+        user = agent.workspace.user
+        connection = IntegrationConnection.objects.filter(
+            provider__slug=self.provider_slug,
+            user=user
+        ).first()
+        if not connection:
+            return None
+        config = connection.getDataConfig()
+        return config.get("api_key")
 
 class PostHogWebhookViewSet(BaseWebhookViewSet):
     provider_slug = "posthog"

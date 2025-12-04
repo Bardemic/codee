@@ -1,14 +1,22 @@
 import type { Message } from "../../app/services/workspaces/workspacesService";
 import style from './workspace.module.css'
-export default function Message({ message }: { message: Message }) {
+
+interface MessageProps {
+    message: Message;
+    isLastInGroup: boolean;
+}
+
+export default function Message({ message, isLastInGroup }: MessageProps) {
     const isUser = message.sender === "USER";
     const senderLabel = isUser ? "You" : "Agent";
     const hasToolCalls = message.tool_calls && message.tool_calls.length > 0;
     const showBubble = Boolean(message.content);
-    const showSenderLabel = !message.isPendingAgent;
+    const showSenderLabel = !message.isPendingAgent && isLastInGroup;
+
+    const notLastClass = !isLastInGroup ? style.notLastInGroup : '';
 
     return (
-        <div className={`${style.messageWrapper} ${isUser ? style.userWrapper : style.agentWrapper}`}>
+        <div className={`${style.messageWrapper} ${isUser ? style.userWrapper : style.agentWrapper} ${notLastClass}`}>
             {!isUser && hasToolCalls && (
                 <div className={style.toolCallStack}>
                     {message.tool_calls.map((toolCall) => (
@@ -25,7 +33,7 @@ export default function Message({ message }: { message: Message }) {
                 </div>
             )}
             {showBubble && (
-                <div className={`${isUser ? style.userMessage : style.agentMessage} ${style.message}`}>
+                <div className={`${isUser ? style.userMessage : style.agentMessage} ${style.message} ${notLastClass}`}>
                     <div className={style.messageContent}>{message.content}</div>
                 </div>
             )}

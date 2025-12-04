@@ -110,6 +110,7 @@
 .statusIndicator {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 6px;
 }
 
@@ -234,6 +235,10 @@
     width: 100%;
 }
 
+.messageWrapper.notLastInGroup {
+    margin-bottom: -20px;
+}
+
 .userWrapper {
     align-items: flex-end;
 }
@@ -264,10 +269,18 @@
     border-bottom-right-radius: 2px;
 }
 
+.userMessage.notLastInGroup {
+    border-bottom-right-radius: 12px;
+}
+
 .agentMessage {
     background-color: var(--color-surface);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-bottom-left-radius: 2px;
+}
+
+.agentMessage.notLastInGroup {
+    border-bottom-left-radius: 12px;
 }
 
 .messageContent {

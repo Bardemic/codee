@@ -33,6 +33,20 @@ class MessageSerializer(serializers.ModelSerializer):
         model = Message
         fields = ["id", "created_at", "content", "sender", "tool_calls"]
 
+class CursorMessageSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    type = serializers.CharField()
+    text = serializers.CharField(default="")
+
+    def to_representation(self, instance):
+        return {
+            "id": instance.get("id"),
+            "created_at": None,
+            "content": instance.get("text", ""),
+            "sender": "USER" if instance.get("type") == "user_message" else "AGENT",
+            "tool_calls": []
+        }
+
 class AgentSerializer(serializers.ModelSerializer):
     url = serializers.CharField()
     integration = serializers.ChoiceField(choices=Agent.ProviderType.choices, source='provider_type')
