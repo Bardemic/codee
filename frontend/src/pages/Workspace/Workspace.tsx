@@ -93,7 +93,7 @@ export default function Workspace() {
                 <div className={style.chatContainer}>
                     <div className={style.messagesScrollArea} ref={chatRef}>
                         <div className={style.messagesContent}>
-                            {isFetchingMessages ? (
+                            {isFetchingMessages && !messages ? (
                                 <>
                                     <MessageSkeleton isUser={true} length={Math.floor(Math.random() * 4) + 1} />
                                     <MessageSkeleton isUser={false} length={Math.floor(Math.random() * 5) + 1} />

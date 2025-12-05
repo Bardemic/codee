@@ -3,6 +3,7 @@ import httpx
 from rest_framework.exceptions import APIException
 from integrations.models import IntegrationProvider, IntegrationConnection
 from .models import Agent, Message
+from .serializers import MessageSerializer, CursorMessageSerializer, JulesMessageSerializer
 
 class CloudProvider(ABC):
     slug = None
@@ -17,6 +18,14 @@ class CloudProvider(ABC):
 
     @abstractmethod
     def create_agent(self, user, workspace, repository_full_name, message, tool_slugs, model=None):
+        pass
+
+    @abstractmethod
+    def get_messages(self, user, agent):
+        pass
+
+    @abstractmethod
+    def send_message(self, user, agent, message):
         pass
 
 class CodeeProvider(CloudProvider):
@@ -47,6 +56,30 @@ class CodeeProvider(CloudProvider):
         agent.save()
 
         return agent
+
+    def get_messages(self, user, agent):
+        messages = Message.objects.filter(agent=agent).order_by('created_at').prefetch_related('tool_calls')
+        return MessageSerializer(messages, many=True).data
+
+    def send_message(self, user, agent, message):
+        prev_messages = Message.objects.filter(agent=agent).order_by('created_at').prefetch_related('tool_calls')
+        serialized_messages = MessageSerializer(prev_messages, many=True).data
+        user_message = Message.objects.create(agent=agent, content=message, sender="USER")
+        tool_slugs = list(agent.workspace.tools.values_list("slug_name", flat=True))
+
+        response = httpx.post('http://127.0.0.1:8000/newMessage', json={
+            "prompt": message,
+            "agent_id": agent.id,
+            "previous_messages": serialized_messages,
+            "tool_slugs": tool_slugs,
+        })
+        data = response.json()
+        if data.get("status") == "queued":
+            agent.status = "RUNNING"
+            agent.save()
+            return True
+        user_message.delete()
+        raise APIException("worker issue")
 
 class CursorProvider(CloudProvider):
     slug = "Cursor"
@@ -91,6 +124,36 @@ class CursorProvider(CloudProvider):
         
         return agent
 
+    def get_messages(self, user, agent):
+        user_integration = self.get_user_integration(user=user, slug=self.slug)
+        api_key = user_integration.getDataConfig().get("api_key")
+        response = httpx.get(
+            f"https://api.cursor.com/v0/agents/{agent.conversation_id}/conversation",
+            auth=(api_key, "")
+        )
+        if response.status_code != 200:
+            raise APIException("failed to fetch cursor messages")
+        data = response.json()
+        return CursorMessageSerializer(data.get("messages", []), many=True).data
+
+    def send_message(self, user, agent, message):
+        user_integration = self.get_user_integration(user=user, slug=self.slug)
+        api_key = user_integration.getDataConfig().get("api_key")
+        
+        response = httpx.post(
+            f"https://api.cursor.com/v0/agents/{agent.conversation_id}/followup",
+            auth=(api_key, ""),
+            json={"prompt": {"text": message}},
+            headers={"Content-Type": "application/json"},
+        )
+        
+        if response.status_code >= 400:
+            raise APIException("failed to send cursor followup")
+        
+        agent.status = "RUNNING"
+        agent.save()
+        return True
+
 class JulesProvider(CloudProvider):
     slug = "Jules"
 
@@ -128,6 +191,49 @@ class JulesProvider(CloudProvider):
             url=jules_json["url"],
             name=self.slug + " Agent" + (f", {model}" if model else ""),
         )
+
+    def get_messages(self, user, agent):
+        user_integration = self.get_user_integration(user=user, slug=self.slug)
+        api_key = user_integration.getDataConfig().get("api_key")
+        response1 = httpx.get(
+            f"https://jules.googleapis.com/v1alpha/sessions/{agent.conversation_id}",
+            headers={"Content-Type": "application/json", "X-Goog-Api-Key": api_key},
+        )
+        response2 = httpx.get(
+            f"https://jules.googleapis.com/v1alpha/sessions/{agent.conversation_id}/activities?pageSize=30",
+            headers={"Content-Type": "application/json", "X-Goog-Api-Key": api_key},
+        )
+        if response1.status_code != 200 or response2.status_code != 200:
+            raise APIException("failed to fetch jules messages")
+        data1 = response1.json()
+        data2 = response2.json()
+        initialPrompt = {
+            "id": agent.conversation_id,
+            "originator": "user",
+            "createTime": data1.get("createTime"),
+            "userMessaged": {
+                "userMessage": data1.get("prompt", "")
+            }
+        }
+        activities = [initialPrompt] + data2.get("activities", [])
+        return JulesMessageSerializer(activities, many=True).data
+
+    def send_message(self, user, agent, message):
+        user_integration = self.get_user_integration(user=user, slug=self.slug)
+        api_key = user_integration.getDataConfig().get("api_key")
+        
+        response = httpx.post(
+            f"https://jules.googleapis.com/v1alpha/sessions/{agent.conversation_id}:sendMessage",
+            json={"prompt": message},
+            headers={"Content-Type": "application/json", "X-Goog-Api-Key": api_key},
+        )
+        
+        if response.status_code >= 400:
+            raise APIException("failed to send jules message")
+        
+        agent.status = "RUNNING"
+        agent.save()
+        return True
 
 PROVIDERS = {
     "Cursor": CursorProvider,

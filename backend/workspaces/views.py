@@ -4,6 +4,7 @@ from django.db import transaction
 from workspaces.utils.llm import generateTitle
 from workspaces.utils.createBranch import createBranch
 from workspaces.utils.providers import create_agents_from_providers
+from workspaces.cloud_providers import get_provider_class
 from integrations.models import IntegrationConnection, Tool
 from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
@@ -14,7 +15,7 @@ from .models import Agent, WorkerDefinition, Workspace, Message, ToolCall, Works
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
-from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkerSerializer, WorkspaceSerializer, NewWorkerSerializer, CursorMessageSerializer, JulesMessageSerializer
+from .serializers import NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkerSerializer, WorkspaceSerializer, NewWorkerSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -97,54 +98,13 @@ class UserWorkspaceViews(viewsets.ViewSet):
         if not agent:
             raise APIException("no agent found")
         
-        if agent.provider_type == Agent.ProviderType.CODEE:
-            messages = Message.objects.filter(agent=agent).order_by('created_at').prefetch_related('tool_calls')
-            return JsonResponse(MessageSerializer(messages, many=True).data, safe=False)
+        provider_class = get_provider_class(agent.provider_type)
+        if not provider_class:
+            raise APIException("unsupported provider type")
         
-        if agent.provider_type == Agent.ProviderType.CURSOR:
-            connection = IntegrationConnection.objects.filter(provider__slug="cursor", user=request.user).first()
-            if not connection:
-                raise APIException("cursor connection not found")
-            api_key = connection.getDataConfig().get("api_key")
-            response = httpx.get(
-                f"https://api.cursor.com/v0/agents/{agent.conversation_id}/conversation",
-                auth=(api_key, "")
-            )
-            if response.status_code != 200:
-                raise APIException("failed to fetch cursor messages")
-            data = response.json()
-            print(data)
-            return JsonResponse(CursorMessageSerializer(data.get("messages", []), many=True).data, safe=False)
-        if agent.provider_type == Agent.ProviderType.JULES:
-            connection = IntegrationConnection.objects.filter(provider__slug="jules", user=request.user).first()
-            if not connection:
-                raise APIException("cursor connection not found")
-            api_key = connection.getDataConfig().get("api_key")
-            response1 = httpx.get(
-                 f"https://jules.googleapis.com/v1alpha/sessions/{agent.conversation_id}",
-                headers={"Content-Type": "application/json", "X-Goog-Api-Key": api_key},
-            )
-            response2 = httpx.get(
-                f"https://jules.googleapis.com/v1alpha/sessions/{agent.conversation_id}/activities?pageSize=30",
-                headers={"Content-Type": "application/json", "X-Goog-Api-Key": api_key},
-            )
-            if response1.status_code != 200 or response2.status_code != 200:
-                raise APIException("failed to fetch jules messages")
-            data1 = response1.json()
-            data2 = response2.json()
-            initialPrompt = {
-                "id": agent.conversation_id,
-                "originator": "user",
-                "createTime": data1.get("createTime"),
-                "userMessaged": {
-                    "userMessage": data1.get("prompt", "")
-                }
-            }
-            activities = [initialPrompt] + data2.get("activities", [])
-            return JsonResponse(JulesMessageSerializer(activities, many=True).data, safe=False)
-
-        
-        raise APIException("unsupported provider type")
+        provider = provider_class()
+        messages = provider.get_messages(user=request.user, agent=agent)
+        return JsonResponse(messages, safe=False)
     
     @action(detail=False, methods=["GET"], url_path="(?P<agent_id>\d+)/status")
     def getAgentStatus(self, request, agent_id):
@@ -171,26 +131,13 @@ class UserWorkspaceViews(viewsets.ViewSet):
         if not agent:
             raise APIException("agent not found")
 
-        prevMessages = Message.objects.filter(agent=agent).order_by('created_at').prefetch_related('tool_calls')
-        serializedMessages = MessageSerializer(prevMessages, many=True).data
+        provider_class = get_provider_class(agent.provider_type)
+        if not provider_class:
+            raise APIException("unsupported provider type")
 
-        userMessageObject = Message.objects.create(agent=agent, content=data["message"], sender="USER")
-
-        tool_slugs = list(agent.workspace.tools.values_list("slug_name", flat=True))
-
-        r = httpx.post('http://127.0.0.1:8000/newMessage', json={
-            "prompt": data["message"],
-            "agent_id": agent.id,
-            "previous_messages": serializedMessages,
-            "tool_slugs": tool_slugs,
-        })
-        response = r.json()
-        if response["status"] == "queued":
-            agent.status = "RUNNING"
-            agent.save()
-            return HttpResponse(status=204)
-        userMessageObject.delete()
-        raise APIException("worker issue")
+        provider = provider_class()
+        provider.send_message(user=request.user, agent=agent, message=data["message"])
+        return HttpResponse(status=204)
 
         
     @action(detail=False, methods=["POST"], url_path="new_workspace")
