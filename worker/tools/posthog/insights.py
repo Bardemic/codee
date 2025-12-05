@@ -1,7 +1,5 @@
 from . import get_toolkit
 
-toolkit = get_toolkit()
-
 prompt = """
 <posthog/insights>
 
@@ -24,7 +22,8 @@ tools:
 </posthog/insights>
 """
 
-async def get_tools():
+async def get_tools(agent_id: int):
+    toolkit = get_toolkit(agent_id)
     names = [
         "insight-create-from-query",
         "insight-delete",

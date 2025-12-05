@@ -1,7 +1,5 @@
 from . import get_toolkit
 
-toolkit = get_toolkit()
-
 prompt = """
 <posthog/documentation>
 
@@ -15,10 +13,9 @@ tools:
 </posthog/documentation>
 """
 
-async def get_tools():
+async def get_tools(agent_id: int):
+    toolkit = get_toolkit(agent_id)
     names = ["docs-search"]
     tools = await toolkit.get_tools()
     doc_tools = [tool for tool in tools if tool.name in names]
     return doc_tools
-
-

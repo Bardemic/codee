@@ -1,13 +1,19 @@
-import os
-from functools import lru_cache
+import httpx
 from posthog_agent_toolkit.integrations.langchain.toolkit import PostHogAgentToolkit
 
+_toolkit_cache = {}
 
-@lru_cache(maxsize=1)
-def get_toolkit():
-    return PostHogAgentToolkit(
-        personal_api_key=os.environ["POSTHOG_PERSONAL_API_KEY"],
-    )
+def get_posthog_key(agent_id: int) -> str:
+    r = httpx.get(f"http://127.0.0.1:5001/api/internals/agents/{agent_id}/posthog-key/")
+    return r.json()["api_key"]
+
+def get_toolkit(agent_id: int):
+    if agent_id in _toolkit_cache:
+        return _toolkit_cache[agent_id]
+    api_key = get_posthog_key(agent_id)
+    toolkit = PostHogAgentToolkit(personal_api_key=api_key)
+    _toolkit_cache[agent_id] = toolkit
+    return toolkit
 
 #   dashboard-create
 #   dashboard-delete

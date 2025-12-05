@@ -73,7 +73,7 @@ def _ensure_sync_tool(tool):
     return tool
 
 
-async def load_tools(slugs: list[str]) -> tuple[list, list]:
+async def load_tools(slugs: list[str], agent_id: int = None) -> tuple[list, list]:
     loaded = []
     prompts = []
     for slug in slugs:
@@ -86,7 +86,11 @@ async def load_tools(slugs: list[str]) -> tuple[list, list]:
         if not (prompt := getattr(mod, "prompt", None)):
             raise AttributeError(f"{mod.__name__} missing prompts")
         
-        tools = getter()
+        sig = inspect.signature(getter)
+        if "agent_id" in sig.parameters and agent_id is not None:
+            tools = getter(agent_id=agent_id)
+        else:
+            tools = getter()
         if inspect.isawaitable(tools):
             tools = await tools
         loaded.extend(_ensure_sync_tool(t) for t in tools)

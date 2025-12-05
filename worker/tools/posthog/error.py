@@ -1,7 +1,5 @@
 from . import get_toolkit
 
-toolkit = get_toolkit()
-
 prompt = """
 <posthog/error>
 
@@ -16,7 +14,8 @@ tools:
 </posthog/error>
 """
 
-async def get_tools():
+async def get_tools(agent_id: int):
+    toolkit = get_toolkit(agent_id)
     names = ["error-details", "list-errors"]
     tools = await toolkit.get_tools()
     error_tools = [tool for tool in tools if tool.name in names]

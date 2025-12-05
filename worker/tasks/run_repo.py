@@ -158,7 +158,7 @@ Use these prompts to understand the point of certain included prompts, and how t
 """
 
 def _run_agent_session(agent_id: int, docker_id: str, prompt: str, tool_slugs: list[str], previousMessages: list | None = None):
-    dynamic_tools, prompts = asyncio.run(load_tools(tool_slugs))
+    dynamic_tools, prompts = asyncio.run(load_tools(tool_slugs, agent_id=agent_id))
     posthog = Posthog(
         (os.environ.get("POSTHOG_API_KEY", "")),
         host=os.environ.get("POSTHOG_HOST", "https://us.i.posthog.com"),

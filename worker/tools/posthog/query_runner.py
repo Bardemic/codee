@@ -1,7 +1,5 @@
 from . import get_toolkit
 
-toolkit = get_toolkit()
-
 prompt = """
 <posthog/query_runner>
 
@@ -18,7 +16,8 @@ tools:
 </posthog/query_runner>
 """
 
-async def get_tools():
+async def get_tools(agent_id: int):
+    toolkit = get_toolkit(agent_id)
     names = ["query-run", "query-generate-hogql-from-question", "docs-search"]
     tools = await toolkit.get_tools()
     query_tools = [tool for tool in tools if tool.name in names]
