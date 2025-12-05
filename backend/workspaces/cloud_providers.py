@@ -215,6 +215,10 @@ class JulesProvider(CloudProvider):
                 "userMessage": data1.get("prompt", "")
             }
         }
+        status = data1.get("state")
+        if status == "COMPLETED" and agent.status != "COMPLETED":
+            agent.status = "COMPLETED"
+            agent.save()
         activities = [initialPrompt] + data2.get("activities", [])
         return JulesMessageSerializer(activities, many=True).data
 
