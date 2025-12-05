@@ -38,10 +38,10 @@ def _prepare_result_snapshot(result: Any) -> Any:
     )
 
 
-def _emit_tool_record(workspace_id: int | None, tool_name: str, phase: str, arguments: Any, result: Any):
-    if workspace_id:
+def _emit_tool_record(agent_id: int | None, tool_name: str, phase: str, arguments: Any, result: Any):
+    if agent_id:
         emit_status(
-            workspace_id,
+            agent_id,
             phase,
             step=f"tool_{tool_name}",
             detail=_stringify_payload(result),
@@ -54,19 +54,19 @@ def _ensure_sync_tool(tool):
         return tool
 
     def _sync_func(*args, config: RunnableConfig, **kwargs):
-        workspace_id = config.get("configurable").get("workspace_id")
+        agent_id = config.get("configurable").get("agent_id")
         args_snapshot = _prepare_arguments_snapshot(args, kwargs)
 
         try:
             res = asyncio.run(tool.coroutine(*args, **kwargs))
-            _emit_tool_record(workspace_id, tool.name, "success", args_snapshot, _prepare_result_snapshot(res))
+            _emit_tool_record(agent_id, tool.name, "success", args_snapshot, _prepare_result_snapshot(res))
             return res
         except McpError as exc:
             msg = f"MCP tool '{tool.name}' failed: {exc}"
-            _emit_tool_record(workspace_id, tool.name, "failed", args_snapshot, {"error": msg})
+            _emit_tool_record(agent_id, tool.name, "failed", args_snapshot, {"error": msg})
             return (msg, None) if getattr(tool, "response_format", "content") == "content_and_artifact" else msg
         except Exception as exc:
-            _emit_tool_record(workspace_id, tool.name, "failed", args_snapshot, {"error": str(exc)})
+            _emit_tool_record(agent_id, tool.name, "failed", args_snapshot, {"error": str(exc)})
             raise
 
     tool.func = _sync_func

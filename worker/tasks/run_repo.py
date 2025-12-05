@@ -18,22 +18,21 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class ToolContext:
-    workspace_id: int
+    agent_id: int
     docker_name: str
 
-def update_workspace_status(workspace_id: int, status: str):
-    """Update the workspace status in Django"""
+def update_agent_status(agent_id: int, status: str):
     try:
-        httpx.post(f"http://127.0.0.1:5001/api/internals/workspaces/{workspace_id}/status/", json={
+        httpx.post(f"http://127.0.0.1:5001/api/internals/agents/{agent_id}/status/", json={
             "status": status
         }, timeout=10.0)
     except Exception as exc:
-        logger.warning("failed to update workspace status: %s", exc)
+        logger.warning("failed to update agent status: %s", exc)
 
 
-def persist_tool_calls_from_redis(workspace_id: int, message_id: int):
+def persist_tool_calls_from_redis(agent_id: int, message_id: int):
     try:
-        stream_key = f"stream:workspace:{workspace_id}"
+        stream_key = f"stream:agent:{agent_id}"
         events = get_stream_client().xrange(stream_key, min='-', max='+')
         
         tool_calls_data = []
@@ -62,7 +61,7 @@ def persist_tool_calls_from_redis(workspace_id: int, message_id: int):
         
         if tool_calls_data:
             httpx.post(
-                f"http://127.0.0.1:5001/api/internals/workspaces/{workspace_id}/bulk-tool-calls/",
+                f"http://127.0.0.1:5001/api/internals/agents/{agent_id}/bulk-tool-calls/",
                 json={'message_id': message_id, 'tool_calls': tool_calls_data},
                 timeout=30.0
             )
@@ -70,41 +69,42 @@ def persist_tool_calls_from_redis(workspace_id: int, message_id: int):
         logger.warning("persist issue: %s", exc)
 
 
-def reset_workspace_stream(workspace_id: int):
+def reset_agent_stream(agent_id: int):
     try:
-        get_stream_client().delete(f"stream:workspace:{workspace_id}")
+        get_stream_client().delete(f"stream:agent:{agent_id}")
     except Exception as exc:
         logger.warning("reset stream error: %s", exc)
 
-def getToken(workspace_id: int):
-    r = httpx.get(f"http://127.0.0.1:5001/api/internals/workspaces/{workspace_id}/token/")
+def getToken(agent_id: int):
+    r = httpx.get(f"http://127.0.0.1:5001/api/internals/agents/{agent_id}/token/")
     #need to implement error handling for when !token
     return r.json()["token"]
 
-def _generate_branch_name(workspace_id: int) -> str:
-    return f"codee/workspace-{workspace_id}-{uuid.uuid4().hex[:8]}"
+def _generate_branch_name(agent_id: int) -> str:
+    return f"codee/agent-{agent_id}-{uuid.uuid4().hex[:8]}"
 
 
-def createWorkspace(full_name: str, workspace_id: int):
-    repo_url = f"https://x-access-token:{getToken(workspace_id)}@github.com/{full_name}.git"
-    clone_directory = get_workspace_path(workspace_id)
+def createAgentWorkspace(full_name: str, agent_id: int):
+    repo_url = f"https://x-access-token:{getToken(agent_id)}@github.com/{full_name}.git"
+    clone_directory = get_workspace_path(agent_id)
+    os.makedirs(clone_directory, exist_ok=True)
     porcelain.clone(repo_url, clone_directory)
     repo = porcelain.open_repo(clone_directory)
     branch_name = None
     if repo:
-        branch_name = _generate_branch_name(workspace_id)
+        branch_name = _generate_branch_name(agent_id)
         porcelain.branch_create(repo, branch_name)
         porcelain.checkout_branch(repo, branch_name)
-    return workspace_id, branch_name
+    return agent_id, branch_name
 
-def getWorkspacePath(workspace_id: int):
-    path = get_workspace_path(workspace_id)
+def getAgentWorkspacePath(agent_id: int):
+    path = get_workspace_path(agent_id)
     if not os.path.isdir(path): 
         return None
     return path
 
-def mountWorkspaceToDocker(workspace_id: int, docker_name: str):
-    path = getWorkspacePath(workspace_id)
+def mountAgentToDocker(agent_id: int, docker_name: str):
+    path = getAgentWorkspacePath(agent_id)
     if not path: 
         return -1
     cmd = [
@@ -118,7 +118,7 @@ def mountWorkspaceToDocker(workspace_id: int, docker_name: str):
     except subprocess.CalledProcessError:
         return -1
 
-def unmountDockerWorkspace(docker_name: str):
+def unmountDocker(docker_name: str):
     cmd1 = ["docker", "stop", docker_name]
     cmd2 = ["docker", "rm", docker_name]
     try:
@@ -157,7 +157,7 @@ includes one or multiple tools. The prompt for each function is styled similarly
 Use these prompts to understand the point of certain included prompts, and how they relate to the user's request.
 """
 
-def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, tool_slugs: list[str], previousMessages: list | None = None):
+def _run_agent_session(agent_id: int, docker_id: str, prompt: str, tool_slugs: list[str], previousMessages: list | None = None):
     dynamic_tools, prompts = asyncio.run(load_tools(tool_slugs))
     posthog = Posthog(
         (os.environ.get("POSTHOG_API_KEY", "")),
@@ -166,7 +166,7 @@ def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, tool_slug
 
     callback_handler = CallbackHandler(
         client=posthog,
-        properties={"workspace_id": workspace_id},
+        properties={"agent_id": agent_id},
     )
     
     agent = create_agent(
@@ -175,7 +175,7 @@ def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, tool_slug
         system_prompt=AGENT_SYSTEM_PROMPT,
         context_schema=ToolContext
     )
-    emit_status(workspace_id, "running", step="agent_start", detail="agent execution started")
+    emit_status(agent_id, "running", step="agent_start", detail="agent execution started")
 
     messages = [{"role": "user", "content": prompt}]
 
@@ -191,63 +191,63 @@ def _run_agent_session(workspace_id: int, docker_id: str, prompt: str, tool_slug
     response = agent.invoke(
         {"messages": messages},
         context=ToolContext(
-            workspace_id=workspace_id,
+            agent_id=agent_id,
             docker_name=docker_id,
         ),
-        config={"callbacks": [callback_handler], "configurable": {"workspace_id": workspace_id}},
+        config={"callbacks": [callback_handler], "configurable": {"agent_id": agent_id}},
     )
     final_message = response["messages"][-1].content
 
     msg_response = httpx.post(
-        f"http://127.0.0.1:5001/api/internals/workspaces/message/",
-        json={"message": final_message, "workspace_id": workspace_id}
+        f"http://127.0.0.1:5001/api/internals/agents/message/",
+        json={"message": final_message, "agent_id": agent_id}
     )
     message_id = msg_response.json().get("message_id")
 
     if message_id:
-        persist_tool_calls_from_redis(workspace_id, message_id)
+        persist_tool_calls_from_redis(agent_id, message_id)
 
-    emit_status(workspace_id, "complete", step="done", detail="Response ready")
-    update_workspace_status(workspace_id, "COMPLETED")
+    emit_status(agent_id, "complete", step="done", detail="Response ready")
+    update_agent_status(agent_id, "COMPLETED")
     return {"response": str(response["messages"][-1])}
 
 
-def _run_workspace_job(workspace_id: int, prompt: str,tool_slugs: list[str], github_repo_name: str | None = None, previous_messages: list | None = None):
+def _run_agent_job(agent_id: int, prompt: str, tool_slugs: list[str], github_repo_name: str | None = None, previous_messages: list | None = None):
     docker_id = str(uuid.uuid4())
-    reset_workspace_stream(workspace_id)
-    init_detail = "preparing workspace" if github_repo_name else "processing workspace message"
-    emit_status(workspace_id, "starting", step="init", detail=init_detail)
-    update_workspace_status(workspace_id, "RUNNING")
+    reset_agent_stream(agent_id)
+    init_detail = "preparing agent workspace" if github_repo_name else "processing agent message"
+    emit_status(agent_id, "starting", step="init", detail=init_detail)
+    update_agent_status(agent_id, "RUNNING")
     success = False
     try:
         if github_repo_name:
-            workspaceId, branch_name = createWorkspace(github_repo_name, workspace_id)
-            if not workspaceId:
-                emit_error(workspace_id, "workspace_not_found", "repository not found", step="create_workspace")
-                update_workspace_status(workspace_id, "FAILED")
+            created_agent_id, branch_name = createAgentWorkspace(github_repo_name, agent_id)
+            if not created_agent_id:
+                emit_error(agent_id, "workspace_not_found", "repository not found", step="create_workspace")
+                update_agent_status(agent_id, "FAILED")
                 return {"error": "repository not found"}
             if not branch_name:
-                emit_error(workspace_id, "branch_creation_failed", "failed to create workspace branch", step="create_workspace")
-                update_workspace_status(workspace_id, "FAILED")
+                emit_error(agent_id, "branch_creation_failed", "failed to create agent branch", step="create_workspace")
+                update_agent_status(agent_id, "FAILED")
                 return {"error": "branch creation failed"}
         else:
-            if not getWorkspacePath(workspace_id):
+            if not getAgentWorkspacePath(agent_id):
                 emit_error(
-                    workspace_id,
+                    agent_id,
                     "workspace_not_initialized",
-                    "workspace not initialized. create a workspace first",
+                    "agent workspace not initialized. create a workspace first",
                     step="load_workspace"
                 )
-                update_workspace_status(workspace_id, "FAILED")
+                update_agent_status(agent_id, "FAILED")
                 return {"error": "workspace not initialized"}
 
-        if mountWorkspaceToDocker(workspace_id, docker_id) < 0:
-            emit_error(workspace_id, "docker_mount_failed", "docker mount failed", step="mount_workspace")
-            update_workspace_status(workspace_id, "FAILED")
+        if mountAgentToDocker(agent_id, docker_id) < 0:
+            emit_error(agent_id, "docker_mount_failed", "docker mount failed", step="mount_workspace")
+            update_agent_status(agent_id, "FAILED")
             return {"error": "docker mount failed"}
 
         result = _run_agent_session(
-            workspace_id,
+            agent_id,
             docker_id,
             prompt,
             tool_slugs,
@@ -256,28 +256,28 @@ def _run_workspace_job(workspace_id: int, prompt: str,tool_slugs: list[str], git
         success = True
         return result
     except Exception as exc:
-        emit_error(workspace_id, "pipeline_failure", str(exc))
-        update_workspace_status(workspace_id, "FAILED")
+        emit_error(agent_id, "pipeline_failure", str(exc))
+        update_agent_status(agent_id, "FAILED")
         raise
     finally:
-        emit_done(workspace_id, "success" if success else "error")
-        unmountDockerWorkspace(docker_id)
+        emit_done(agent_id, "success" if success else "error")
+        unmountDocker(docker_id)
 
 
 @celery_app.task(name="tasks.pipeline", bind=True)
-def pipeline(self, github_repo_name: str, prompt: str, workspace_id: int, tool_slugs: list[str]):
-    return _run_workspace_job(
-        workspace_id=workspace_id,
+def pipeline(self, github_repo_name: str, prompt: str, agent_id: int, tool_slugs: list[str]):
+    return _run_agent_job(
+        agent_id=agent_id,
         prompt=prompt,
         github_repo_name=github_repo_name,
         tool_slugs=tool_slugs,
     )
 
 
-@celery_app.task(name="tasks.process_workspace_message", bind=True)
-def process_workspace_message(self, prompt: str, workspace_id: int, previous_messages, tool_slugs: list[str]):
-    return _run_workspace_job(
-        workspace_id=workspace_id,
+@celery_app.task(name="tasks.process_agent_message", bind=True)
+def process_agent_message(self, prompt: str, agent_id: int, previous_messages, tool_slugs: list[str]):
+    return _run_agent_job(
+        agent_id=agent_id,
         prompt=prompt,
         previous_messages=previous_messages,
         tool_slugs=tool_slugs,

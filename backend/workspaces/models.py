@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator
 from utils.encryption import encrypt_data, decrypt_data
-
 from integrations.models import Tool
 
 class WorkerDefinition(models.Model):
@@ -16,6 +15,7 @@ class WorkerDefinition(models.Model):
     )
     slug = models.CharField(max_length=200)
     key = models.CharField(null=True)
+    cloud_providers = models.JSONField(default=list)
 
     def setKey(self, input: str) -> None:
         # self.key = encrypt_data(input)
@@ -36,19 +36,11 @@ class WorkerDefinition(models.Model):
         return self.prompt if len(self.prompt) < 25 else self.prompt[:25] + '...'
 
 class Workspace(models.Model):
-    class Status(models.TextChoices):
-        PENDING = 'PENDING', 'Pending'
-        RUNNING = 'RUNNING', 'Running'
-        COMPLETED = 'COMPLETED', 'Completed'
-        FAILED = 'FAILED', 'Failed'
-    
     created_at = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length = 200, default="Untitled", validators=[MinLengthValidator(1)])
     default_branch = models.CharField(max_length = 100, default="main")
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     github_repository_name = models.CharField(null=False)
-    github_branch_name = models.CharField(null=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     worker = models.ForeignKey(WorkerDefinition, null=True, on_delete=models.SET_NULL)
     tools = models.ManyToManyField(
         Tool,
@@ -59,12 +51,33 @@ class Workspace(models.Model):
     def __str__(self):
         return str(self.pk)
 
+class Agent(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        RUNNING = 'RUNNING', 'Running'
+        COMPLETED = 'COMPLETED', 'Completed'
+        FAILED = 'FAILED', 'Failed'
+    class ProviderType(models.TextChoices):
+        CODEE = 'Codee', 'Codee'
+        CURSOR = 'Cursor', 'Cursor'
+        JULES = 'Jules', 'Jules'
+
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='provider_agents')
+    provider_type = models.CharField(max_length=10, choices=ProviderType.choices)
+    conversation_id = models.CharField(max_length=200)
+    url = models.CharField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    github_branch_name = models.CharField(null=True)
+    name = models.CharField(max_length = 200, default="Untitled", validators=[MinLengthValidator(1)], )
+    model = models.CharField(max_length=200, null=True)
+
+
 class Message(models.Model):
     class senderType(models.TextChoices):
         USER = 'USER', 'User'
         AGENT = 'AGENT', 'Agent'
     created_at = models.DateTimeField(auto_now_add=True)
-    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='messages')
     content = models.CharField()
     sender = models.CharField(max_length=5, choices=senderType.choices, null=False)
     #later: stuff like tools included, prev messages, etc
@@ -76,7 +89,7 @@ class Message(models.Model):
 
 
 class ToolCall(models.Model):
-    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name='tool_calls')
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='tool_calls')
     message = models.ForeignKey(Message, on_delete=models.CASCADE, related_name='tool_calls')
     created_at = models.DateTimeField()
     tool_name = models.CharField(max_length=100)
@@ -100,4 +113,3 @@ class WorkerDefinitionTool(models.Model):
     worker_definition = models.ForeignKey(WorkerDefinition, on_delete=models.CASCADE)
     tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
-

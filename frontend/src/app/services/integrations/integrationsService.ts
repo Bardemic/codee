@@ -11,6 +11,7 @@ export interface Tool {
     id: number
     display_name: string
     slug_name: string
+    is_model: boolean
 }
 
 export interface Integration {
@@ -19,6 +20,7 @@ export interface Integration {
     connected: boolean
     connection_id: number | null
     tools: Tool[]
+    has_cloud_agent: boolean
 }
 
 

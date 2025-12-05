@@ -1,12 +1,11 @@
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import type React from 'react';
 import type { Integration } from '../../../app/services/integrations/integrationsService';
-import type { SelectedTools } from '../Home';
 import styles from '../home.module.css';
 
 interface PromptEditorProps {
     integrations: Integration[];
-    onSelectedToolsChange: (next: SelectedTools | ((prev: SelectedTools) => SelectedTools)) => void;
+    onSelectedToolsChange: (next: string[] | ((prev: string[]) => string[])) => void;
     onSubmit: (message: string) => void;
     disabled?: boolean;
     placeholder?: string;

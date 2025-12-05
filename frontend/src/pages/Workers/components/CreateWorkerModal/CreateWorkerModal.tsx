@@ -1,11 +1,24 @@
-import { useCreateWorkerMutation, useUpdateWorkerMutation, useDeleteWorkerMutation, type Worker } from "../../../../app/services/workers/workersService";
+import { useCreateWorkerMutation, useUpdateWorkerMutation, useDeleteWorkerMutation, type Worker, type ProviderConfig } from "../../../../app/services/workers/workersService";
 import type { Integration } from "../../../../app/services/integrations/integrationsService";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import styles from "./styles.module.css";
 import { WorkerSlugHeader } from "./WorkerSlugHeader";
 import { PromptSection } from "./PromptSection";
 import { WebhookSection } from "./WebhookSection";
 import { ToolsSection } from "./ToolsSection";
+import type { CloudAgentsSelection } from "../../../Home/components/CloudAgentsDropdown";
+
+const DEFAULT_CLOUD_AGENTS: CloudAgentsSelection = { providers: [{agents: [{model: "auto.5", tools: []}], name: "Codee"}] };
+
+function toCloudAgentsSelection(providers: ProviderConfig[] | undefined): CloudAgentsSelection {
+    if (!providers || providers.length === 0) return DEFAULT_CLOUD_AGENTS;
+    return {
+        providers: providers.map(p => ({
+            name: p.name,
+            agents: p.agents.map(a => ({ model: a.model || "", tools: [] }))
+        }))
+    };
+}
 
 interface CreateWorkerModalProps {
     isOpen: boolean;
@@ -24,6 +37,7 @@ export function CreateWorkerModal({ isOpen, onClose, integrations, worker }: Cre
     const [isEditingSlug, setIsEditingSlug] = useState(false);
     const [selectedIntegration, setSelectedIntegration] = useState("GitHub");
     const [selectedTools, setSelectedTools] = useState<string[]>([]);
+    const [cloudAgents, setCloudAgents] = useState<CloudAgentsSelection>(DEFAULT_CLOUD_AGENTS);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -33,13 +47,24 @@ export function CreateWorkerModal({ isOpen, onClose, integrations, worker }: Cre
                 setSlug(worker.slug);
                 setPrompt(worker.prompt);
                 setSelectedTools(worker.tools.map(tool => tool.slug_name));
+                setCloudAgents(toCloudAgentsSelection(worker.cloud_providers));
             } else {
                 setSlug("new-worker-slug");
                 setPrompt("");
                 setSelectedTools([]);
+                setCloudAgents(DEFAULT_CLOUD_AGENTS);
             }
         }
     }, [isOpen, worker]);
+
+    const activeProviders = useMemo(() => {
+        return cloudAgents.providers
+            .filter(p => (p.agents?.length ?? 0) > 0)
+            .map(p => ({
+                name: p.name,
+                agents: p.agents.map(a => ({ model: a.model || null }))
+            }));
+    }, [cloudAgents]);
 
     if (!isOpen) return null;
 
@@ -48,10 +73,11 @@ export function CreateWorkerModal({ isOpen, onClose, integrations, worker }: Cre
     const handleSubmit = async () => {
         setError(null);
         try {
+            const payload = { prompt, slug, tool_slugs: selectedTools, cloud_providers: activeProviders };
             if (worker) {
-                await updateWorker({ id: worker.id, data: { prompt, slug, tool_slugs: selectedTools } }).unwrap();
+                await updateWorker({ id: worker.id, data: payload }).unwrap();
             } else {
-                await createWorker({ prompt, slug, tool_slugs: selectedTools }).unwrap();
+                await createWorker(payload).unwrap();
             }
             onClose();
         } catch (err: unknown) {
@@ -89,7 +115,10 @@ export function CreateWorkerModal({ isOpen, onClose, integrations, worker }: Cre
                     slug={slug} 
                     setSlug={setSlug} 
                     isEditingSlug={isEditingSlug} 
-                    setIsEditingSlug={setIsEditingSlug} 
+                    setIsEditingSlug={setIsEditingSlug}
+                    cloudAgents={cloudAgents}
+                    setCloudAgents={setCloudAgents}
+                    integrations={integrations}
                 />
 
                 <div className={styles.gridSection}>

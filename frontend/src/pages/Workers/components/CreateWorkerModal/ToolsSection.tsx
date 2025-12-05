@@ -50,6 +50,7 @@ export function ToolsSection({ integrations, selectedTools, setSelectedTools }: 
             <div className={styles.toolsHeader}>Tools <span className={styles.toolHeaderSub}>({selectedTools.length} selected)</span></div>
             <div className={styles.toolsList}>
             {integrations.map((integration) => {
+                if (integration.has_cloud_agent) return null;
                 const selectedCount = integration.tools.filter((t) => selectedSetForRender.has(t.slug_name)).length;
                 const isAllSelected = integration.tools.length > 0 && selectedCount === integration.tools.length;
                 const isPartial = selectedCount > 0 && !isAllSelected;

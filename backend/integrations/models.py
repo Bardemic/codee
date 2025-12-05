@@ -13,7 +13,13 @@ PROVIDER_SCHEMAS = {
     },
     "posthog": {
         "api_key": {"type": str, "required": True}
-    }
+    },
+    "cursor": {
+        "api_key": {"type": str, "required": True}
+    },
+    "jules": {
+        "api_key": {"type": str, "required": True}
+    },
 }
 
 class IntegrationProvider(models.Model):
@@ -21,6 +27,7 @@ class IntegrationProvider(models.Model):
     display_name = models.CharField(max_length=200)
     schema = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    has_cloud_agent = models.BooleanField(default=False)
 
     def __str__(self):
         return self.display_name
@@ -66,6 +73,7 @@ class Tool(models.Model):
     display_name = models.CharField(max_length=200)
     provider = models.ForeignKey(IntegrationProvider, on_delete=models.CASCADE, related_name="tools", null=True)
     slug_name = models.CharField(max_length=200)
+    is_model = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ("display_name", "provider", "slug_name")

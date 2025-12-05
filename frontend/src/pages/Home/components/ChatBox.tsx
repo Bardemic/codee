@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect, type ReactNode } from "react";
-import { BsSend } from "react-icons/bs";
+import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
+import { BsSend, BsTools } from "react-icons/bs";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import type { Integration } from "../../../app/services/integrations/integrationsService";
 import { PromptEditor, type PromptEditorRef } from "./PromptEditor";
-import { ToolsSelector } from "./ToolsSelector";
+import { DropdownSelector, type DropdownOption } from "./DropdownSelector";
+import { CloudAgentsDropdown, type CloudAgentsSelection } from "./CloudAgentsDropdown";
 import styles from "../home.module.css";
 
 interface ChatBoxProps {
@@ -13,15 +14,35 @@ interface ChatBoxProps {
     placeholder?: string;
     leftPills?: ReactNode;
     resetKey?: number;
+    cloudAgents: CloudAgentsSelection;
+    onCloudAgentsChange: (sel: CloudAgentsSelection) => void;
 }
 
 export interface ChatBoxRef {
     clear: () => void;
 }
 
-export function ChatBox({ integrations, onSubmit, isLoading, placeholder, leftPills, resetKey }: ChatBoxProps) {
+export function ChatBox({ integrations, onSubmit, isLoading, placeholder, leftPills, resetKey, cloudAgents, onCloudAgentsChange }: ChatBoxProps) {
     const [selectedTools, setSelectedTools] = useState<string[]>([]);
     const editorRef = useRef<PromptEditorRef>(null);
+
+    const integrationDropdownOptions = useMemo<DropdownOption[]>(() => 
+        integrations
+            .filter(integration => !integration.has_cloud_agent && integration.tools.length > 0)
+            .map((integration) => ({
+            id: integration.name,
+            label: integration.name,
+            children: integration.tools.map((tool) => ({
+                id: tool.slug_name,
+                label: tool.display_name,
+                value: tool.slug_name,
+            })),
+        }))
+    , [integrations]);
+
+    const toolsLabel = selectedTools.length === 0
+        ? "Select Tools"
+        : `${selectedTools.length} Tool${selectedTools.length > 1 ? "s" : ""} Selected`;
 
     useEffect(() => {
         if (resetKey !== undefined) {
@@ -47,10 +68,18 @@ export function ChatBox({ integrations, onSubmit, isLoading, placeholder, leftPi
             <div className={styles.chatFooter}>
                 <div className={styles.pillsContainer}>
                     {leftPills}
-                    <ToolsSelector
+                    <CloudAgentsDropdown
                         integrations={integrations}
-                        selectedTools={selectedTools}
+                        value={cloudAgents}
+                        onChange={onCloudAgentsChange}
+                    />
+                    <DropdownSelector
+                        icon={<BsTools size={14} />}
+                        options={integrationDropdownOptions}
+                        selectedValues={selectedTools}
                         onChange={setSelectedTools}
+                        label={toolsLabel}
+                        dropdownVariant="floating"
                     />
                 </div>
                 <button
@@ -67,4 +96,3 @@ export function ChatBox({ integrations, onSubmit, isLoading, placeholder, leftPi
         </div>
     );
 }
-

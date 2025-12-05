@@ -5,21 +5,21 @@ from dulwich.repo import Repo
 from rest_framework.exceptions import APIException
 from integrations.models import IntegrationConnection
 from integrations.services.github_app import get_installation_token
-from workspaces.models import Workspace
+from workspaces.models import Agent
 
 
-WORKSPACES_ROOT = Path("/Users/brandonpieczka/repos/codee/.data/workspaces")
+WORKSPACES_ROOT = Path("/Users/brandonpieczka/repos/codee/.data/agents")
 
 
-def _get_workspace_repo_path(workspace_id: int) -> Path:
-    repo_path = WORKSPACES_ROOT / str(workspace_id)
+def _get_agent_repo_path(agent_id: int) -> Path:
+    repo_path = WORKSPACES_ROOT / str(agent_id)
     if not repo_path.is_dir():
-        raise APIException("workspace directory not found")
+        raise APIException("agent directory not found")
     return repo_path
 
 
-def _get_installation_token_for_workspace(workspace: Workspace) -> str:
-    connection = IntegrationConnection.objects.filter(user=workspace.user, provider__slug="github_app").first()
+def _get_installation_token_for_agent(agent: Agent) -> str:
+    connection = IntegrationConnection.objects.filter(user=agent.workspace.user, provider__slug="github_app").first()
     if not connection:
         raise APIException("no GitHub connection found for user")
     config = connection.getDataConfig()
@@ -32,8 +32,8 @@ def _get_installation_token_for_workspace(workspace: Workspace) -> str:
     return token
 
 
-def createBranch(workspace: Workspace, commit_message: str | None = None) -> str:
-    repo_path = _get_workspace_repo_path(workspace.id)
+def createBranch(agent: Agent, commit_message: str | None = None) -> str:
+    repo_path = _get_agent_repo_path(agent.id)
     repo = Repo(str(repo_path))
 
     head_ref = repo.refs.get_symrefs().get(b'HEAD')
@@ -42,11 +42,11 @@ def createBranch(workspace: Workspace, commit_message: str | None = None) -> str
     branch_name = head_ref.decode().removeprefix("refs/heads/")
 
     porcelain.add(str(repo_path))
-    message = commit_message or f"Codee changes for workspace {workspace.id}"
+    message = commit_message or f"Codee changes for agent {agent.id}"
     repo.get_worktree().commit(message.encode())
 
-    token = _get_installation_token_for_workspace(workspace)
-    repo_url = f"https://x-access-token:{token}@github.com/{workspace.github_repository_name}.git"
+    token = _get_installation_token_for_agent(agent)
+    repo_url = f"https://x-access-token:{token}@github.com/{agent.workspace.github_repository_name}.git"
     
     config = repo.get_config()
     config.set((b'remote', b'origin'), b'url', repo_url.encode())
@@ -56,7 +56,7 @@ def createBranch(workspace: Workspace, commit_message: str | None = None) -> str
 
     porcelain.push(repo, 'origin', refspecs=[f"{head_ref.decode()}:{head_ref.decode()}"])
 
-    workspace.github_branch_name = branch_name
-    workspace.save(update_fields=['github_branch_name'])
+    agent.github_branch_name = branch_name
+    agent.save(update_fields=['github_branch_name'])
     return branch_name
 

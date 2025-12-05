@@ -72,7 +72,22 @@ class IntegrationViews(viewsets.ViewSet):
             ),
         )
         serializer = IntegrationWithStatusSerializer(providers, many=True)
-        return JsonResponse(serializer.data, safe=False)
+        data = serializer.data
+
+        if cursor_conn := IntegrationConnection.objects.filter(user=request.user, provider__slug="cursor").first():
+            if api_key := cursor_conn.getDataConfig().get("api_key"):
+                try:
+                    resp = requests.get("https://api.cursor.com/v0/models", auth=(api_key, ""), timeout=5)
+                    if resp.status_code == 200:
+                        extra_tools = [{"id": None, "display_name": model, "slug_name": model, "is_model": True} for model in resp.json().get("models", [])]
+                        for p in data:
+                            if p["id"] == cursor_conn.provider_id:
+                                p["tools"].extend(extra_tools)
+                                break
+                except Exception:
+                    pass
+
+        return JsonResponse(data, safe=False)
 
     
     

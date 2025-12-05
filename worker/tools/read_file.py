@@ -8,9 +8,9 @@ def read_file(path: str, runtime: ToolRuntime) -> str:
     """Read a full file's contents using 'cat' from the path"""
     ctx = runtime.context
     docker_name = ctx.docker_name
-    workspace_id = ctx.workspace_id
+    agent_id = ctx.agent_id
     
-    emit_status(workspace_id, "running", step="tool_read_file", detail=f"reading: {path}")
+    emit_status(agent_id, "running", step="tool_read_file", detail=f"reading: {path}")
     
     cmd = [
         "docker", "exec", docker_name, "sh", "-c", f"cd app && cat {path}"

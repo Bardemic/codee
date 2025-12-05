@@ -9,15 +9,15 @@ from utils import get_workspace_path, emit_status
 @tool
 def list_commits(n: int, config: RunnableConfig) -> str:
     """List the recent n commits (up to 10)."""
-    workspace_id = config.get("configurable", {}).get("workspace_id")
-    if not workspace_id:
-        return "Error: workspace_id missing"
+    agent_id = config.get("configurable", {}).get("agent_id")
+    if not agent_id:
+        return "Error: agent_id missing"
     
     n = min(n, 10)
     
-    emit_status(workspace_id, "running", step="tool_list_commits", detail=f"listing last {n} commits")
+    emit_status(agent_id, "running", step="tool_list_commits", detail=f"listing last {n} commits")
 
-    path = get_workspace_path(workspace_id)
+    path = get_workspace_path(agent_id)
     try:
         repo = Repo(path)
         commits = []
@@ -40,13 +40,13 @@ def list_commits(n: int, config: RunnableConfig) -> str:
 @tool
 def view_commit_details(commit_sha: str, config: RunnableConfig) -> str:
     """View details (diff) of a specific commit."""
-    workspace_id = config.get("configurable", {}).get("workspace_id")
-    if not workspace_id:
-        return "Error: workspace_id missing"
+    agent_id = config.get("configurable", {}).get("agent_id")
+    if not agent_id:
+        return "Error: agent_id missing"
         
-    emit_status(workspace_id, "running", step="tool_view_commit", detail=f"viewing commit {commit_sha}")
+    emit_status(agent_id, "running", step="tool_view_commit", detail=f"viewing commit {commit_sha}")
 
-    path = get_workspace_path(workspace_id)
+    path = get_workspace_path(agent_id)
     try:
         repo = Repo(path)
         out = StringIO()

@@ -17,16 +17,16 @@ def get_stream_client() -> redis.Redis:
     return _stream_client
 
 
-def publish_stream_event(workspace_id: int, event: str, **fields):
+def publish_stream_event(agent_id: int, event: str, **fields):
     payload = {
         "event": event,
-        "workspace_id": str(workspace_id),
+        "agent_id": str(agent_id),
         "ts": str(int(time.time() * 1000)),
         **{key: str(val) for key, val in fields.items() if val is not None}
     }
     try:
         get_stream_client().xadd(
-            f"stream:workspace:{workspace_id}",
+            f"stream:agent:{agent_id}",
             payload,
             maxlen=5000,
             approximate=True
@@ -36,14 +36,14 @@ def publish_stream_event(workspace_id: int, event: str, **fields):
 
 
 def emit_status(
-    workspace_id: int,
+    agent_id: int,
     phase: str,
     step: str | None = None,
     detail: str | None = None,
     **extra_fields,
 ):
     publish_stream_event(
-        workspace_id,
+        agent_id,
         "status",
         phase=phase,
         step=step,
@@ -52,15 +52,14 @@ def emit_status(
     )
 
 
-def emit_error(workspace_id: int, code: str, message: str, step: str | None = None):
-    publish_stream_event(workspace_id, "error", code=code, message=message, step=step)
+def emit_error(agent_id: int, code: str, message: str, step: str | None = None):
+    publish_stream_event(agent_id, "error", code=code, message=message, step=step)
 
 
-def emit_done(workspace_id: int, reason: str):
-    publish_stream_event(workspace_id, "done", reason=reason)
+def emit_done(agent_id: int, reason: str):
+    publish_stream_event(agent_id, "done", reason=reason)
 
 
-def get_workspace_path(workspace_id: int) -> str:
-    """Get the filesystem path for a workspace"""
-    return f"/Users/brandonpieczka/repos/codee/.data/workspaces/{workspace_id}"
+def get_workspace_path(agent_id: int) -> str:
+    return f"/Users/brandonpieczka/repos/codee/.data/agents/{agent_id}"
 

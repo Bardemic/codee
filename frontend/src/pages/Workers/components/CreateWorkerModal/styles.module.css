@@ -109,9 +109,14 @@
     margin: 0;
     font-size: 1.25rem;
     color: var(--color-foreground);
+    height: 32px;
+}
+
+.headerRow {
     display: flex;
     align-items: center;
-    height: 32px; /* Fixed height to prevent shifts */
+    justify-content: space-between;
+    gap: 16px;
 }
 
 .editSlugButton {
@@ -238,6 +243,13 @@
 }
 
 .toolsWrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    gap: 8px;
+}
+
+.cloudAgentsSection {
     display: flex;
     flex-direction: column;
     min-height: 0;

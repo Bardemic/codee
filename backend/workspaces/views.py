@@ -3,16 +3,19 @@ from datetime import datetime, timezone as dt_timezone
 from django.db import transaction
 from workspaces.utils.llm import generateTitle
 from workspaces.utils.createBranch import createBranch
+from workspaces.utils.providers import create_agents_from_providers
+from workspaces.cloud_providers import get_provider_class
 from integrations.models import IntegrationConnection, Tool
 from integrations.services.github_app import get_installation_token
 from rest_framework.exceptions import APIException
 from django.http import JsonResponse, HttpResponse
 from rest_framework import viewsets
-from .models import WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool, WorkerDefinitionTool
+from django.db.models import prefetch_related_objects
+from .models import Agent, WorkerDefinition, Workspace, Message, ToolCall, WorkspaceTool, WorkerDefinitionTool
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
-from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkerSerializer, WorkspaceSerializer, NewWorkerSerializer
+from .serializers import NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkerSerializer, WorkspaceSerializer, NewWorkerSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -23,7 +26,7 @@ class WorkerViews(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
     def list(self, request):
-        workerDefs = WorkerDefinition.objects.filter(user=request.user).prefetch_related('tools', 'workspace_set')
+        workerDefs = WorkerDefinition.objects.filter(user=request.user).prefetch_related('tools', 'workspace_set__provider_agents')
         return JsonResponse(WorkerSerializer(workerDefs, many=True).data, safe=False)
 
     @transaction.atomic
@@ -37,7 +40,13 @@ class WorkerViews(viewsets.ViewSet):
 
         tools = Tool.objects.filter(slug_name__in=data["tool_slugs"])
         
-        worker = WorkerDefinition.objects.create(prompt=data["prompt"], user=request.user, slug=data["slug"], key="testing")
+        worker = WorkerDefinition.objects.create(
+            prompt=data["prompt"], 
+            user=request.user, 
+            slug=data["slug"], 
+            key="testing",
+            cloud_providers=data["cloud_providers"]
+        )
         
         WorkerDefinitionTool.objects.bulk_create(
             [WorkerDefinitionTool(worker_definition=worker, tool=tool) for tool in tools]
@@ -60,6 +69,7 @@ class WorkerViews(viewsets.ViewSet):
 
         worker.prompt = data["prompt"]
         worker.slug = data["slug"]
+        worker.cloud_providers = data["cloud_providers"]
         if data.get("key"):
             worker.setKey(data["key"])
         worker.save()
@@ -82,62 +92,54 @@ class UserWorkspaceViews(viewsets.ViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    @action(detail=False, methods=["GET"], url_path="messages/(?P<workspace_id>\d+)")
-    def getMessages(self, request, workspace_id):
-        workspace = Workspace.objects.filter(pk=workspace_id, user=request.user).first()
-        if not workspace:
-            raise APIException("no workspace found")
-        messages = Message.objects.filter(workspace=workspace).order_by('created_at').prefetch_related('tool_calls')
-        return JsonResponse(MessageSerializer(messages, many=True).data, safe=False)
+    @action(detail=False, methods=["GET"], url_path="messages/(?P<agent_id>\d+)")
+    def getMessages(self, request, agent_id):
+        agent = Agent.objects.filter(pk=agent_id, workspace__user=request.user).select_related('workspace').first()
+        if not agent:
+            raise APIException("no agent found")
+        
+        provider_class = get_provider_class(agent.provider_type)
+        if not provider_class:
+            raise APIException("unsupported provider type")
+        
+        provider = provider_class()
+        messages = provider.get_messages(user=request.user, agent=agent)
+        return JsonResponse(messages, safe=False)
     
-    @action(detail=False, methods=["GET"], url_path="(?P<workspace_id>\d+)/status")
-    def getWorkspaceStatus(self, request, workspace_id):
-        workspace = Workspace.objects.filter(pk=workspace_id, user=request.user).first()
-        if not workspace:
-            raise APIException("no workspace found")
-        return JsonResponse({"status": workspace.status})
+    @action(detail=False, methods=["GET"], url_path="(?P<agent_id>\d+)/status")
+    def getAgentStatus(self, request, agent_id):
+        agent = Agent.objects.filter(pk=agent_id, workspace__user=request.user).first()
+        if not agent:
+            raise APIException("no agent found")
+        return JsonResponse({"status": agent.status, "provider_type": agent.provider_type})
 
-    @action(detail=False, methods=["POST"], url_path="(?P<workspace_id>\d+)/create-branch")
-    def createBranch(self, request, workspace_id):
-        workspace = Workspace.objects.filter(pk=workspace_id, user=request.user).first()
-        if not workspace:
-            raise APIException("no workspace found")
-        branch_name = createBranch(workspace)
+    @action(detail=False, methods=["POST"], url_path="(?P<agent_id>\d+)/create-branch")
+    def createAgentBranch(self, request, agent_id):
+        agent = Agent.objects.filter(pk=agent_id, workspace__user=request.user).select_related('workspace').first()
+        if not agent:
+            raise APIException("no agent found")
+        branch_name = createBranch(agent)
         return JsonResponse({"branch_name": branch_name})
 
-    @action(detail=False, methods=["POST"], url_path="(?P<workspace_id>\d+)/message")
-    def newMessage(self, request, workspace_id):
+    @action(detail=False, methods=["POST"], url_path="(?P<agent_id>\d+)/message")
+    def newMessage(self, request, agent_id):
         serializer = NewMessageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        workspace = Workspace.objects.filter(pk=workspace_id).first()
-        if not workspace:
-            raise APIException("workspace not found")
+        agent = Agent.objects.filter(pk=agent_id, workspace__user=request.user).select_related('workspace').first()
+        if not agent:
+            raise APIException("agent not found")
 
-        prevMessages = Message.objects.filter(workspace=workspace).order_by('created_at').prefetch_related('tool_calls')
-        serializedMessages = MessageSerializer(prevMessages, many=True).data
+        provider_class = get_provider_class(agent.provider_type)
+        if not provider_class:
+            raise APIException("unsupported provider type")
 
-        userMessageObject = Message.objects.create(workspace=workspace, content=data["message"], sender="USER")
-
-        tool_slugs = list(workspace.tools.values_list("slug_name", flat=True))
-
-        r = httpx.post('http://127.0.0.1:8000/newMessage', json={
-            "prompt": data["message"],
-            "workspace_id": workspace.id,
-            "previous_messages": serializedMessages,
-            "tool_slugs": tool_slugs,
-        })
-        response = r.json()
-        if response["status"] == "queued":
-            workspace.status = "RUNNING"
-            workspace.save()
-            return HttpResponse(status=204)
-        userMessageObject.delete()
-        raise APIException("worker issue")
+        provider = provider_class()
+        provider.send_message(user=request.user, agent=agent, message=data["message"])
+        return HttpResponse(status=204)
 
         
-    @transaction.atomic
     @action(detail=False, methods=["POST"], url_path="new_workspace")
     def newWorkspace(self, request):
         serializer = NewWorkspaceSerialier(data=request.data)
@@ -147,7 +149,7 @@ class UserWorkspaceViews(viewsets.ViewSet):
         title = generateTitle(data["message"])
 
         newWorkspaceObject = Workspace.objects.create(github_repository_name=data["repository_full_name"], user=request.user, name=title)
-        Message.objects.create(workspace=newWorkspaceObject, content=data["message"], sender="USER")
+        newWorkspaceObject.save()
 
         tools = Tool.objects.filter(slug_name__in=data["tool_slugs"])
         if len(set(tools.values_list("slug_name", flat=True))) < len(set(data["tool_slugs"])):
@@ -159,77 +161,77 @@ class UserWorkspaceViews(viewsets.ViewSet):
 
         tool_slugs = list(tools.values_list("slug_name", flat=True))
 
-        r = httpx.post('http://127.0.0.1:8000/newWorkspace', json={
-            "prompt":data["message"],
-            "repository_full_name":data["repository_full_name"],
-            "workspace_id": newWorkspaceObject.pk,
-            "tool_slugs": tool_slugs,
-        })
-        response = r.json()
-        if response["status"] == "queued":
-            return JsonResponse({"workspace_id": newWorkspaceObject.pk})
-        raise APIException("worker issue")
+        first_agent = create_agents_from_providers(
+            user=request.user,
+            workspace=newWorkspaceObject,
+            repository_full_name=data["repository_full_name"],
+            message=data["message"],
+            tool_slugs=tool_slugs,
+            cloud_providers=data["cloud_providers"]
+        )
+        return JsonResponse({"agent_id": first_agent.pk})
     
     def list(self, request):
-        workspaces = Workspace.objects.filter(user=request.user).order_by('created_at').reverse()
+        workspaces = Workspace.objects.filter(user=request.user).prefetch_related('provider_agents').order_by('-created_at')
         return JsonResponse(WorkspaceSerializer(workspaces, many=True).data, safe=False)
 
     def retrieve(self, request, pk=None):
-        workspaceSet = Workspace.objects.all()
-        workspace = get_object_or_404(workspaceSet, pk=pk)
+        workspace = get_object_or_404(Workspace, pk=pk)
+        prefetch_related_objects([workspace], 'provider_agents')
+
         serializer = WorkspaceSerializer(workspace)
         return JsonResponse(serializer.data)
 
     
 
 class OrchestratorViews(viewsets.ViewSet):
-    @action(detail=False, methods=["GET"], url_path="workspaces/(?P<workspace_id>[^/.]+)/token", permission_classes=[permissions.AllowAny])
-    def getGithubTokenForWorkspace(self, request, workspace_id=None):
-        if not workspace_id:
-            raise APIException("no workspace_id")
-        workspace = Workspace.objects.filter(id=workspace_id).first()
-        if not workspace:
-            raise APIException("no workspace found matching id")
-        user_github = IntegrationConnection.objects.filter(user=workspace.user, provider__slug="github_app").first()
+    @action(detail=False, methods=["GET"], url_path="agents/(?P<agent_id>[^/.]+)/token", permission_classes=[permissions.AllowAny])
+    def getGithubTokenForAgent(self, request, agent_id=None):
+        if not agent_id:
+            raise APIException("no agent_id")
+        agent = Agent.objects.filter(id=agent_id).select_related('workspace__user').first()
+        if not agent:
+            raise APIException("no agent found matching id")
+        user_github = IntegrationConnection.objects.filter(user=agent.workspace.user, provider__slug="github_app").first()
         if not user_github:
             raise APIException("user's connection not found")
         token = get_installation_token(user_github.getDataConfig()["installation_id"])
         return JsonResponse({"token": token})
 
-    @action(detail=False, methods=["POST"], url_path="workspaces/message", permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=["POST"], url_path="agents/message", permission_classes=[permissions.AllowAny])
     def addAiMessage(self, request):
         serializer = NewAiMessage(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
-        workspace = Workspace.objects.filter(id=data["workspace_id"]).first()
-        if not workspace:
-            raise APIException("no workspace found matching id")
-        newMessage = Message.objects.create(sender="AGENT", workspace=workspace, content=data["message"])
+        agent = Agent.objects.filter(id=data["agent_id"]).first()
+        if not agent:
+            raise APIException("no agent found matching id")
+        newMessage = Message.objects.create(sender="AGENT", agent=agent, content=data["message"])
         return JsonResponse({"message_id": newMessage.id})
     
-    @action(detail=False, methods=["POST"], url_path="workspaces/(?P<workspace_id>[^/.]+)/status", permission_classes=[permissions.AllowAny])
-    def updateWorkspaceStatus(self, request, workspace_id=None):
-        workspace = Workspace.objects.filter(id=workspace_id).first()
-        if not workspace:
-            raise APIException("no workspace found")
+    @action(detail=False, methods=["POST"], url_path="agents/(?P<agent_id>[^/.]+)/status", permission_classes=[permissions.AllowAny])
+    def updateAgentStatus(self, request, agent_id=None):
+        agent = Agent.objects.filter(id=agent_id).first()
+        if not agent:
+            raise APIException("no agent found")
         status = request.data.get("status")
-        if status not in [choice[0] for choice in Workspace.Status.choices]:
+        if status not in [choice[0] for choice in Agent.Status.choices]:
             raise APIException("invalid status")
-        workspace.status = status
-        workspace.save()
+        agent.status = status
+        agent.save()
         return HttpResponse(status=204)
     
-    @action(detail=False, methods=["POST"], url_path="workspaces/(?P<workspace_id>[^/.]+)/bulk-tool-calls", permission_classes=[permissions.AllowAny])
-    def bulkAddToolCalls(self, request, workspace_id=None):
-        workspace = Workspace.objects.filter(id=workspace_id).first()
-        if not workspace:
-            raise APIException("no workspace found")
+    @action(detail=False, methods=["POST"], url_path="agents/(?P<agent_id>[^/.]+)/bulk-tool-calls", permission_classes=[permissions.AllowAny])
+    def bulkAddToolCalls(self, request, agent_id=None):
+        agent = Agent.objects.filter(id=agent_id).first()
+        if not agent:
+            raise APIException("no agent found")
         
         message_id = request.data.get("message_id")
         if not message_id:
             raise APIException("message_id required")
 
-        message = Message.objects.filter(id=message_id, workspace=workspace, sender='AGENT').first()
+        message = Message.objects.filter(id=message_id, agent=agent, sender='AGENT').first()
         if not message:
             raise APIException("agent message not found")
         
@@ -247,7 +249,7 @@ class OrchestratorViews(viewsets.ViewSet):
 
             tool_calls.append(
                 ToolCall(
-                    workspace=workspace,
+                    agent=agent,
                     message=message,
                     created_at=created_at,
                     tool_name=tool_name,

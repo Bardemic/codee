@@ -14,18 +14,18 @@ from rest_framework.exceptions import APIException, PermissionDenied, Validation
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from workspaces.models import WorkerDefinition, Workspace, Message, WorkspaceTool
+from workspaces.models import WorkerDefinition, Workspace, WorkspaceTool
 
 from .models import IntegrationProvider, IntegrationConnection
-from .services.github_app import get_installation_token
 from workspaces.utils.llm import generateTitle
+from workspaces.utils.providers import create_agents_from_providers
+from workspaces.models import Agent
 
 
 def createWorkspaceFromWebhook(workerDefinition: WorkerDefinition, repository_name: str, data: dict, title: str):
         prompt = workerDefinition.prompt + "\n\n\n" + f"Here is data from the service: {str(data)}"
 
         newWorkspaceObject = Workspace.objects.create(github_repository_name=repository_name, user=workerDefinition.user, name=title, worker=workerDefinition)
-        Message.objects.create(workspace=newWorkspaceObject, content=prompt, sender="USER")
 
         tools = workerDefinition.tools.all()
         WorkspaceTool.objects.bulk_create(
@@ -35,16 +35,16 @@ def createWorkspaceFromWebhook(workerDefinition: WorkerDefinition, repository_na
 
         tool_slugs = list(tools.values_list("slug_name", flat=True))
 
-        r = httpx.post('http://127.0.0.1:8000/newWorkspace', json={
-            "prompt": prompt,
-            "repository_full_name":repository_name,
-            "workspace_id": newWorkspaceObject.pk,
-            "tool_slugs": tool_slugs,
-        })
-        response = r.json()
-        if response["status"] == "queued":
-            return JsonResponse({"workspace_id": newWorkspaceObject.pk})
-        raise APIException("worker issue")
+        create_agents_from_providers(
+            user=workerDefinition.user,
+            workspace=newWorkspaceObject,
+            repository_full_name=repository_name,
+            message=prompt,
+            tool_slugs=tool_slugs,
+            cloud_providers=workerDefinition.cloud_providers
+        )
+        
+        return JsonResponse({"workspace_id": newWorkspaceObject.pk})
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -72,7 +72,33 @@ class BaseWebhookViewSet(viewsets.ViewSet):
     def build_response(self):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+class CursorWebhookViewSet(BaseWebhookViewSet):
+    provider_slug = "cursor"
 
+    @action(detail=False, methods=["post"], url_path="complete/(?P<agent_id>[0-9]+)")
+    def complete(self, request, agent_id):
+        data = self.parse_body(request)
+        agent = Agent.objects.filter(pk=agent_id).first()
+        if not agent:
+            raise APIException("cannot find agent")
+        agent_status = data.get("status")
+        # summary = data.get("summary")
+        # if not summary: raise APIException("no summary found")
+        if agent_status == "FINISHED":
+            agent.status = "COMPLETED"
+            agent.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_api_key(self, agent):
+        user = agent.workspace.user
+        connection = IntegrationConnection.objects.filter(
+            provider__slug=self.provider_slug,
+            user=user
+        ).first()
+        if not connection:
+            return None
+        config = connection.getDataConfig()
+        return config.get("api_key")
 
 class PostHogWebhookViewSet(BaseWebhookViewSet):
     provider_slug = "posthog"
