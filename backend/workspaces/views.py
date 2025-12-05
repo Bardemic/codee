@@ -14,7 +14,7 @@ from .models import Agent, WorkerDefinition, Workspace, Message, ToolCall, Works
 from rest_framework.decorators import action
 from rest_framework import permissions
 import httpx
-from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkerSerializer, WorkspaceSerializer, NewWorkerSerializer, CursorMessageSerializer
+from .serializers import MessageSerializer, NewMessageSerializer, NewAiMessage, NewWorkspaceSerialier, WorkerSerializer, WorkspaceSerializer, NewWorkerSerializer, CursorMessageSerializer, JulesMessageSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -115,6 +115,34 @@ class UserWorkspaceViews(viewsets.ViewSet):
             data = response.json()
             print(data)
             return JsonResponse(CursorMessageSerializer(data.get("messages", []), many=True).data, safe=False)
+        if agent.provider_type == Agent.ProviderType.JULES:
+            connection = IntegrationConnection.objects.filter(provider__slug="jules", user=request.user).first()
+            if not connection:
+                raise APIException("cursor connection not found")
+            api_key = connection.getDataConfig().get("api_key")
+            response1 = httpx.get(
+                 f"https://jules.googleapis.com/v1alpha/sessions/{agent.conversation_id}",
+                headers={"Content-Type": "application/json", "X-Goog-Api-Key": api_key},
+            )
+            response2 = httpx.get(
+                f"https://jules.googleapis.com/v1alpha/sessions/{agent.conversation_id}/activities?pageSize=30",
+                headers={"Content-Type": "application/json", "X-Goog-Api-Key": api_key},
+            )
+            if response1.status_code != 200 or response2.status_code != 200:
+                raise APIException("failed to fetch jules messages")
+            data1 = response1.json()
+            data2 = response2.json()
+            initialPrompt = {
+                "id": agent.conversation_id,
+                "originator": "user",
+                "createTime": data1.get("createTime"),
+                "userMessaged": {
+                    "userMessage": data1.get("prompt", "")
+                }
+            }
+            activities = [initialPrompt] + data2.get("activities", [])
+            return JsonResponse(JulesMessageSerializer(activities, many=True).data, safe=False)
+
         
         raise APIException("unsupported provider type")
     
@@ -130,9 +158,7 @@ class UserWorkspaceViews(viewsets.ViewSet):
         agent = Agent.objects.filter(pk=agent_id, workspace__user=request.user).select_related('workspace').first()
         if not agent:
             raise APIException("no agent found")
-        branch_name = createBranch(agent.workspace)
-        agent.github_branch_name = branch_name
-        agent.save()
+        branch_name = createBranch(agent)
         return JsonResponse({"branch_name": branch_name})
 
     @action(detail=False, methods=["POST"], url_path="(?P<agent_id>\d+)/message")

@@ -8,10 +8,23 @@ import { BsSend } from 'react-icons/bs';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import AgentCard from './Agent';
 
+function MessageSkeleton({ isUser, length }: { isUser: boolean, length: number }) {
+    return (
+        <div className={`${style.messageWrapper} ${isUser ? style.userWrapper : style.agentWrapper}`}>
+            <div className={`${style.skeletonMessage} ${isUser ? style.skeletonUser : style.skeletonAgent}`}>
+                {Array.from({ length }, (_, i) => (
+                    <div key={i} className={style.skeletonLine} />
+                ))}
+            </div>
+            <div className={`${style.skeletonSender} ${isUser ? style.skeletonSenderRight : ''}`} />
+        </div>
+    );
+}
+
 export default function Workspace() {
     const { agentId } = useParams<{ agentId: string }>();
     const navigate = useNavigate();
-    const { currentData: messages } = useGetWorkspaceMessagesQuery(agentId || '');
+    const { currentData: messages, isFetching: isFetchingMessages } = useGetWorkspaceMessagesQuery(agentId || '');
     const { workspace, currentAgent, isLoading, isFetching } = useWorkspaceByAgentId(agentId);
     const chatRef = useRef<HTMLDivElement>(null);
     const [createBranch, { isLoading: isCreatingBranch }] = useCreateBranchMutation();
@@ -80,7 +93,14 @@ export default function Workspace() {
                 <div className={style.chatContainer}>
                     <div className={style.messagesScrollArea} ref={chatRef}>
                         <div className={style.messagesContent}>
-                            {messageList.map((message, index) => {
+                            {isFetchingMessages ? (
+                                <>
+                                    <MessageSkeleton isUser={true} length={Math.floor(Math.random() * 4) + 1} />
+                                    <MessageSkeleton isUser={false} length={Math.floor(Math.random() * 5) + 1} />
+                                    <MessageSkeleton isUser={true} length={Math.floor(Math.random() * 4) + 1} />
+                                    <MessageSkeleton isUser={false} length={Math.floor(Math.random() * 5) + 1} />
+                                </>
+                            ) : messageList.map((message, index) => {
                                 const nextMessage = messageList[index + 1];
                                 const isLastInGroup = !nextMessage || nextMessage.sender !== message.sender;
                                 return (

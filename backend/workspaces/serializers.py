@@ -29,6 +29,27 @@ class CursorMessageSerializer(serializers.Serializer):
             "tool_calls": []
         }
 
+class JulesMessageSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    createTime = serializers.CharField()
+    originator = serializers.CharField()
+
+    def to_representation(self, instance):
+        originator = instance.get("originator")
+        if originator == "user":
+            content = instance.get("userMessaged", {}).get("userMessage", "")
+            sender = "USER"
+        else:
+            content = instance.get("agentMessaged", {}).get("agentMessage", "")
+            sender = "AGENT"
+        return {
+            "id": instance.get("id"),
+            "created_at": instance.get("createTime"),
+            "content": content,
+            "sender": sender,
+            "tool_calls": []
+        }
+
 class AgentSerializer(serializers.ModelSerializer):
     url = serializers.CharField()
     integration = serializers.ChoiceField(choices=Agent.ProviderType.choices, source='provider_type')
