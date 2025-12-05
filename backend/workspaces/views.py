@@ -198,6 +198,21 @@ class OrchestratorViews(viewsets.ViewSet):
         token = get_installation_token(user_github.getDataConfig()["installation_id"])
         return JsonResponse({"token": token})
 
+    @action(detail=False, methods=["GET"], url_path="agents/(?P<agent_id>[^/.]+)/posthog-key", permission_classes=[permissions.AllowAny])
+    def getPosthogKeyForAgent(self, request, agent_id=None):
+        if not agent_id:
+            raise APIException("no agent_id")
+        agent = Agent.objects.filter(id=agent_id).select_related('workspace__user').first()
+        if not agent:
+            raise APIException("no agent found matching id")
+        user_posthog = IntegrationConnection.objects.filter(user=agent.workspace.user, provider__slug="posthog").first()
+        if not user_posthog:
+            raise APIException("user's posthog connection not found")
+        api_key = user_posthog.getDataConfig().get("api_key")
+        if not api_key:
+            raise APIException("posthog api key not found")
+        return JsonResponse({"api_key": api_key})
+
     @action(detail=False, methods=["POST"], url_path="agents/message", permission_classes=[permissions.AllowAny])
     def addAiMessage(self, request):
         serializer = NewAiMessage(data=request.data)
