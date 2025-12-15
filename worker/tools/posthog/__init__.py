@@ -5,7 +5,11 @@ _toolkit_cache = {}
 
 def get_posthog_key(agent_id: int) -> str:
     r = httpx.get(f"http://127.0.0.1:5001/api/internals/agents/{agent_id}/posthog-key/")
-    return r.json()["api_key"]
+    r.raise_for_status()
+    data = r.json()
+    if "api_key" not in data:
+        raise ValueError(f"PostHog API key not found for agent {agent_id}")
+    return data["api_key"]
 
 def get_toolkit(agent_id: int):
     if agent_id in _toolkit_cache:

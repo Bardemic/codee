@@ -87,7 +87,7 @@ async def load_tools(slugs: list[str], agent_id: int = None) -> tuple[list, list
             raise AttributeError(f"{mod.__name__} missing prompts")
         
         sig = inspect.signature(getter)
-        if "agent_id" in sig.parameters and agent_id is not None:
+        if "agent_id" in sig.parameters:
             tools = getter(agent_id=agent_id)
         else:
             tools = getter()
