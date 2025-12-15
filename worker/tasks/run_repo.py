@@ -170,7 +170,7 @@ def _run_agent_session(agent_id: int, docker_id: str, prompt: str, tool_slugs: l
     )
     
     agent = create_agent(
-        model="gpt-5-mini",
+        model="gpt-4o-mini",
         tools=[update_file, grep, list_files, read_file, *dynamic_tools],
         system_prompt=AGENT_SYSTEM_PROMPT,
         context_schema=ToolContext
