@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 
 from dulwich import porcelain
 from dulwich.repo import Repo
@@ -8,7 +9,9 @@ from integrations.services.github_app import get_installation_token
 from workspaces.models import Agent
 
 
-WORKSPACES_ROOT = Path("/Users/brandonpieczka/repos/codee/.data/agents")
+current_file = Path(__file__).resolve()
+default_root = current_file.parents[3] if len(current_file.parents) > 3 else current_file.parent
+WORKSPACES_ROOT = Path(os.getenv("WORKSPACES_ROOT", str(default_root / ".data/agents")))
 
 
 def _get_agent_repo_path(agent_id: int) -> Path:

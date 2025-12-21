@@ -3,11 +3,16 @@ import os
 import time
 import logging
 from typing import Optional
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 STREAM_REDIS_URL = os.getenv("STREAM_REDIS_URL", "redis://localhost:6379/2")
 _stream_client: Optional[redis.Redis] = None
+
+current_file = Path(__file__).resolve()
+default_root = current_file.parents[1] if len(current_file.parents) > 1 else current_file.parent
+WORKSPACES_ROOT = Path(os.getenv("WORKSPACES_ROOT", str(default_root / ".data/agents")))
 
 
 def get_stream_client() -> redis.Redis:
@@ -61,5 +66,5 @@ def emit_done(agent_id: int, reason: str):
 
 
 def get_workspace_path(agent_id: int) -> str:
-    return f"/Users/brandonpieczka/repos/codee/.data/agents/{agent_id}"
+    return str(WORKSPACES_ROOT / str(agent_id))
 
