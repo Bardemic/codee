@@ -27,10 +27,15 @@ const PROVIDER_SEEDS: ProviderSeed[] = [
         displayName: 'PostHog',
         hasCloudAgent: false,
         tools: [
-            { displayName: 'PostHog Insights', slugName: 'posthog/insights' },
+            { displayName: 'Insights', slugName: 'posthog/insights' },
             {
-                displayName: 'PostHog Query Runner',
+                displayName: 'Query Runner',
                 slugName: 'posthog/query_runner',
+            },
+            { displayName: 'Error Tools', slugName: 'posthog/errors' },
+            {
+                displayName: 'Documentation',
+                slugName: 'posthog/documentation',
             },
         ],
     },

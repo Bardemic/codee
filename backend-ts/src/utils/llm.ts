@@ -1,8 +1,7 @@
 import { generateObject } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
-import { withTracing } from '@posthog/ai';
 import { z } from 'zod';
-import { getPostHog } from './posthog';
+// import { getPostHog } from './posthog';
 
 const openaiClient = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -10,11 +9,8 @@ const openaiClient = createOpenAI({
 });
 
 export async function generateTitle(prompt: string): Promise<string> {
-    const postHogClient = getPostHog();
-    const model = withTracing(openaiClient('gpt-5-nano'), postHogClient, {
-        posthogDistinctId: 'system',
-        posthogProperties: { purpose: 'generate_title' },
-    });
+    const model = openaiClient('gpt-5-nano');
+    // const posthog = getPostHog(); setup posthog later if I want to bother w/ distinct id tracking
 
     try {
         const result = await generateObject({
@@ -30,9 +26,13 @@ export async function generateTitle(prompt: string): Promise<string> {
             }),
         });
         const title = result.object.title.trim();
-        if (title.length > 0) return title;
+        if (title.length > 0) {
+            // posthog.capture({ event: 'generateTitle', distinctId: '' });
+            return title;
+        }
     } catch (err) {
         console.warn('title generation fallback', err);
+        // posthog.capture({ event: 'generateTitleError', distinctId: '', properties: { prompt, error: err } });
     }
     return 'Default Title';
 }
