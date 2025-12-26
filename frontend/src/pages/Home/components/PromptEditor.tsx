@@ -1,6 +1,6 @@
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import type React from 'react';
-import type { Integration } from '../../../app/services/integrations/integrationsService';
+import type { Integration } from '../../../lib/types';
 import styles from '../home.module.css';
 
 interface PromptEditorProps {
@@ -33,8 +33,6 @@ export interface MentionOption {
     type: 'integration' | 'tool';
 }
 
-
-
 export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(function PromptEditor(
     { integrations, onSelectedToolsChange, onSubmit, disabled = false, placeholder },
     ref
@@ -51,11 +49,16 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
                 editorRef.current.innerText = '';
                 prevPillSlugsRef.current = [];
             }
-        }
+        },
     }));
 
     const extractSlugsFromPill = useCallback((pill: Element): string[] => {
-        const el = pill as HTMLSpanElement & { dataset: { toolSlug?: string; integrationSlugs?: string } };
+        const el = pill as HTMLSpanElement & {
+            dataset: {
+                toolSlug?: string;
+                integrationSlugs?: string;
+            };
+        };
         if (el.dataset.toolSlug) return [el.dataset.toolSlug];
         if (el.dataset.integrationSlugs) {
             try {
@@ -97,39 +100,53 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
         const baseState = {
             anchorNode: range.startContainer,
             anchorOffset: atIndex,
-            position: { top: rect.bottom, left: rect.left },
+            position: {
+                top: rect.bottom,
+                left: rect.left,
+            },
             selectedIndex: 0,
         };
 
         return slashIndex !== -1
-            ? { ...baseState, type: 'tool', query: content.slice(slashIndex + 1), integrationName: content.slice(0, slashIndex) }
-            : { ...baseState, type: 'integration', query: content };
+            ? {
+                  ...baseState,
+                  type: 'tool',
+                  query: content.slice(slashIndex + 1),
+                  integrationName: content.slice(0, slashIndex),
+              }
+            : {
+                  ...baseState,
+                  type: 'integration',
+                  query: content,
+              };
     }, []);
 
     const handleInput = useCallback(() => {
         if (!editorRef.current) return;
 
-        const currentSlugsFromPills = Array.from(editorRef.current.querySelectorAll(`.${styles.mentionPill}`))
-            .flatMap(extractSlugsFromPill);
+        const currentSlugsFromPills = Array.from(editorRef.current.querySelectorAll(`.${styles.mentionPill}`)).flatMap(extractSlugsFromPill);
 
         syncToolsFromPills(currentSlugsFromPills);
         prevPillSlugsRef.current = currentSlugsFromPills;
         setMentionState(detectMentionTrigger());
     }, [detectMentionTrigger, extractSlugsFromPill, syncToolsFromPills]);
 
-    const handlePaste = useCallback((event: React.ClipboardEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        const text = event.clipboardData.getData('text/plain');
-        const selection = window.getSelection();
-        if (!selection || !selection.rangeCount) return;
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
-        range.insertNode(document.createTextNode(text));
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        handleInput();
-    }, [handleInput]);
+    const handlePaste = useCallback(
+        (event: React.ClipboardEvent<HTMLDivElement>) => {
+            event.preventDefault();
+            const text = event.clipboardData.getData('text/plain');
+            const selection = window.getSelection();
+            if (!selection || !selection.rangeCount) return;
+            const range = selection.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(document.createTextNode(text));
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            handleInput();
+        },
+        [handleInput]
+    );
 
     const handleSelectMention = useCallback(
         (value: string, type: 'integration' | 'tool') => {
@@ -187,14 +204,22 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
         if (mentionState.type === 'integration') {
             return integrations
                 .filter((integration) => integration.name.toLowerCase().includes(mentionState.query.toLowerCase()))
-                .map((integration) => ({ label: integration.name, value: integration.name, type: 'integration' }));
+                .map((integration) => ({
+                    label: integration.name,
+                    value: integration.name,
+                    type: 'integration',
+                }));
         }
 
         const integration = integrations.find((item) => item.name.toLowerCase() === mentionState.integrationName?.toLowerCase());
         return (
             integration?.tools
                 .filter((tool) => tool.display_name.toLowerCase().includes(mentionState.query.toLowerCase()))
-                .map((tool) => ({ label: tool.display_name, value: `${integration.name}/${tool.display_name}`, type: 'tool' })) || []
+                .map((tool) => ({
+                    label: tool.display_name,
+                    value: `${integration.name}/${tool.display_name}`,
+                    type: 'tool',
+                })) || []
         );
     }, [integrations, mentionState]);
 
@@ -202,10 +227,30 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
         (event: React.KeyboardEvent<HTMLDivElement>) => {
             if (mentionState && mentionOptions.length > 0) {
                 const handlers: Record<string, () => void> = {
-                    ArrowDown: () => setMentionState((prev) => prev ? { ...prev, selectedIndex: (prev.selectedIndex + 1) % mentionOptions.length } : null),
-                    ArrowUp: () => setMentionState((prev) => prev ? { ...prev, selectedIndex: (prev.selectedIndex - 1 + mentionOptions.length) % mentionOptions.length } : null),
-                    Tab: () => mentionOptions[mentionState.selectedIndex] && handleSelectMention(mentionOptions[mentionState.selectedIndex].value, mentionOptions[mentionState.selectedIndex].type),
-                    Enter: () => mentionOptions[mentionState.selectedIndex] && handleSelectMention(mentionOptions[mentionState.selectedIndex].value, mentionOptions[mentionState.selectedIndex].type),
+                    ArrowDown: () =>
+                        setMentionState((prev) =>
+                            prev
+                                ? {
+                                      ...prev,
+                                      selectedIndex: (prev.selectedIndex + 1) % mentionOptions.length,
+                                  }
+                                : null
+                        ),
+                    ArrowUp: () =>
+                        setMentionState((prev) =>
+                            prev
+                                ? {
+                                      ...prev,
+                                      selectedIndex: (prev.selectedIndex - 1 + mentionOptions.length) % mentionOptions.length,
+                                  }
+                                : null
+                        ),
+                    Tab: () =>
+                        mentionOptions[mentionState.selectedIndex] &&
+                        handleSelectMention(mentionOptions[mentionState.selectedIndex].value, mentionOptions[mentionState.selectedIndex].type),
+                    Enter: () =>
+                        mentionOptions[mentionState.selectedIndex] &&
+                        handleSelectMention(mentionOptions[mentionState.selectedIndex].value, mentionOptions[mentionState.selectedIndex].type),
                     Escape: () => setMentionState(null),
                 };
 
@@ -240,7 +285,10 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
             {mentionState && mentionOptions.length > 0 && (
                 <div
                     className={styles.mentionsDropdown}
-                    style={{ top: mentionState.position.top + 8, left: mentionState.position.left }}
+                    style={{
+                        top: mentionState.position.top + 8,
+                        left: mentionState.position.left,
+                    }}
                 >
                     {mentionOptions.map((option, index) => (
                         <div

@@ -1,24 +1,11 @@
-import { useCreateWorkerMutation, useUpdateWorkerMutation, useDeleteWorkerMutation, type Worker, type ProviderConfig } from "../../../../app/services/workers/workersService";
-import type { Integration } from "../../../../app/services/integrations/integrationsService";
-import { useState, useEffect, useMemo } from "react";
-import styles from "./styles.module.css";
-import { WorkerSlugHeader } from "./WorkerSlugHeader";
-import { PromptSection } from "./PromptSection";
-import { WebhookSection } from "./WebhookSection";
-import { ToolsSection } from "./ToolsSection";
-import type { CloudAgentsSelection } from "../../../Home/components/CloudAgentsDropdown";
-
-const DEFAULT_CLOUD_AGENTS: CloudAgentsSelection = { providers: [{agents: [{model: "auto.5", tools: []}], name: "Codee"}] };
-
-function toCloudAgentsSelection(providers: ProviderConfig[] | undefined): CloudAgentsSelection {
-    if (!providers || providers.length === 0) return DEFAULT_CLOUD_AGENTS;
-    return {
-        providers: providers.map(p => ({
-            name: p.name,
-            agents: p.agents.map(a => ({ model: a.model || "", tools: [] }))
-        }))
-    };
-}
+import { trpc } from '../../../../lib/trpc';
+import type { Integration, Worker } from '../../../../lib/types';
+import { useState, useEffect } from 'react';
+import styles from './styles.module.css';
+import { WorkerSlugHeader } from './WorkerSlugHeader';
+import { PromptSection } from './PromptSection';
+import { WebhookSection } from './WebhookSection';
+import { ToolsSection } from './ToolsSection';
 
 interface CreateWorkerModalProps {
     isOpen: boolean;
@@ -28,16 +15,22 @@ interface CreateWorkerModalProps {
 }
 
 export function CreateWorkerModal({ isOpen, onClose, integrations, worker }: CreateWorkerModalProps) {
-    const [createWorker, { isLoading: isCreating }] = useCreateWorkerMutation();
-    const [updateWorker, { isLoading: isUpdating }] = useUpdateWorkerMutation();
-    const [deleteWorker, { isLoading: isDeleting }] = useDeleteWorkerMutation();
+    const utils = trpc.useUtils();
+    const createWorker = trpc.workers.create.useMutation({
+        onSuccess: () => utils.workers.list.invalidate(),
+    });
+    const updateWorker = trpc.workers.update.useMutation({
+        onSuccess: () => utils.workers.list.invalidate(),
+    });
+    const deleteWorker = trpc.workers.delete.useMutation({
+        onSuccess: () => utils.workers.list.invalidate(),
+    });
 
-    const [prompt, setPrompt] = useState("");
-    const [slug, setSlug] = useState("new-worker-slug");
+    const [prompt, setPrompt] = useState('');
+    const [slug, setSlug] = useState('new-worker-slug');
     const [isEditingSlug, setIsEditingSlug] = useState(false);
-    const [selectedIntegration, setSelectedIntegration] = useState("GitHub");
+    const [selectedIntegration, setSelectedIntegration] = useState('GitHub');
     const [selectedTools, setSelectedTools] = useState<string[]>([]);
-    const [cloudAgents, setCloudAgents] = useState<CloudAgentsSelection>(DEFAULT_CLOUD_AGENTS);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -46,44 +39,44 @@ export function CreateWorkerModal({ isOpen, onClose, integrations, worker }: Cre
             if (worker) {
                 setSlug(worker.slug);
                 setPrompt(worker.prompt);
-                setSelectedTools(worker.tools.map(tool => tool.slug_name));
-                setCloudAgents(toCloudAgentsSelection(worker.cloud_providers));
+                setSelectedTools(worker.tools.map((tool) => tool.slug_name));
             } else {
-                setSlug("new-worker-slug");
-                setPrompt("");
+                setSlug('new-worker-slug');
+                setPrompt('');
                 setSelectedTools([]);
-                setCloudAgents(DEFAULT_CLOUD_AGENTS);
             }
         }
     }, [isOpen, worker]);
 
-    const activeProviders = useMemo(() => {
-        return cloudAgents.providers
-            .filter(p => (p.agents?.length ?? 0) > 0)
-            .map(p => ({
-                name: p.name,
-                agents: p.agents.map(a => ({ model: a.model || null }))
-            }));
-    }, [cloudAgents]);
-
     if (!isOpen) return null;
 
-    const isLoading = isCreating || isUpdating || isDeleting;
+    const isLoading = createWorker.isPending || updateWorker.isPending || deleteWorker.isPending;
 
     const handleSubmit = async () => {
         setError(null);
         try {
-            const payload = { prompt, slug, tool_slugs: selectedTools, cloud_providers: activeProviders };
+            const payload = {
+                prompt,
+                slug,
+                tool_slugs: selectedTools,
+                cloud_providers: [
+                    {
+                        name: 'Codee',
+                        agents: [{ model: null }],
+                    },
+                ],
+            };
             if (worker) {
-                await updateWorker({ id: worker.id, data: payload }).unwrap();
+                await updateWorker.mutateAsync({
+                    id: worker.id,
+                    ...payload,
+                });
             } else {
-                await createWorker(payload).unwrap();
+                await createWorker.mutateAsync(payload);
             }
             onClose();
         } catch (err: unknown) {
-            const message = err && typeof err === 'object' && 'data' in err 
-                ? String((err as { data: { detail?: string } }).data?.detail || 'Failed to save worker')
-                : 'Failed to save worker';
+            const message = err && typeof err === 'object' && 'message' in err ? String((err as { message: string }).message) : 'Failed to save worker';
             setError(message);
         }
     };
@@ -92,67 +85,41 @@ export function CreateWorkerModal({ isOpen, onClose, integrations, worker }: Cre
         if (!worker) return;
         setError(null);
         try {
-            await deleteWorker(worker.id).unwrap();
+            await deleteWorker.mutateAsync({ id: worker.id });
             onClose();
         } catch (err: unknown) {
-            const message = err && typeof err === 'object' && 'data' in err 
-                ? String((err as { data: { detail?: string } }).data?.detail || 'Failed to delete worker')
-                : 'Failed to delete worker';
+            const message = err && typeof err === 'object' && 'message' in err ? String((err as { message: string }).message) : 'Failed to delete worker';
             setError(message);
         }
     };
 
     return (
-        <div 
-            className={styles.modalOverlay}
-            onClick={onClose}
-        >
-            <div 
-                className={styles.modalContent}
-                onClick={e => e.stopPropagation()}
-            >
-                <WorkerSlugHeader 
-                    slug={slug} 
-                    setSlug={setSlug} 
-                    isEditingSlug={isEditingSlug} 
-                    setIsEditingSlug={setIsEditingSlug}
-                    cloudAgents={cloudAgents}
-                    setCloudAgents={setCloudAgents}
-                    integrations={integrations}
-                />
+        <div className={styles.modalOverlay} onClick={onClose}>
+            <div className={styles.modalContent} onClick={(event) => event.stopPropagation()}>
+                <WorkerSlugHeader slug={slug} setSlug={setSlug} isEditingSlug={isEditingSlug} setIsEditingSlug={setIsEditingSlug} />
 
                 <div className={styles.gridSection}>
                     <PromptSection prompt={prompt} setPrompt={setPrompt} />
-                    
-                    <WebhookSection 
-                        slug={slug} 
-                        selectedIntegration={selectedIntegration} 
-                        setSelectedIntegration={setSelectedIntegration} 
-                    />
-                    
-                    <ToolsSection 
-                        integrations={integrations} 
-                        selectedTools={selectedTools} 
-                        setSelectedTools={setSelectedTools} 
-                    />
+
+                    <WebhookSection slug={slug} selectedIntegration={selectedIntegration} setSelectedIntegration={setSelectedIntegration} />
+
+                    <ToolsSection integrations={integrations} selectedTools={selectedTools} setSelectedTools={setSelectedTools} />
                 </div>
                 <div className={styles.modalActions}>
                     {worker && (
-                        <button 
-                            className={styles.deleteButton} 
-                            onClick={handleDelete}
-                            disabled={isLoading}
-                        >
+                        <button className={styles.deleteButton} onClick={handleDelete} disabled={isLoading}>
                             Delete
                         </button>
                     )}
                     {error && <span className={styles.errorMessage}>{error}</span>}
-                    <div className={styles.buttonsBar}/>
-                    <button className={styles.cancelButton} onClick={onClose}>Cancel</button>
-                    <button onClick={handleSubmit} disabled={isLoading}>
-                        {worker ? "Save" : "Create"}
+                    <div className={styles.buttonsBar} />
+                    <button className={styles.cancelButton} onClick={onClose}>
+                        Cancel
                     </button>
-                </div>   
+                    <button onClick={handleSubmit} disabled={isLoading}>
+                        {worker ? 'Save' : 'Create'}
+                    </button>
+                </div>
             </div>
         </div>
     );

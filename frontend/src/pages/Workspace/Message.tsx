@@ -1,5 +1,5 @@
-import type { Message } from "../../app/services/workspaces/workspacesService";
-import style from './workspace.module.css'
+import type { Message } from '../../lib/types';
+import style from './workspace.module.css';
 
 interface MessageProps {
     message: Message;
@@ -7,8 +7,8 @@ interface MessageProps {
 }
 
 export default function Message({ message, isLastInGroup }: MessageProps) {
-    const isUser = message.sender === "USER";
-    const senderLabel = isUser ? "You" : "Agent";
+    const isUser = message.sender === 'USER';
+    const senderLabel = isUser ? 'You' : 'Agent';
     const hasToolCalls = message.tool_calls && message.tool_calls.length > 0;
     const showBubble = Boolean(message.content);
     const showSenderLabel = !message.isPendingAgent && isLastInGroup;
@@ -23,11 +23,14 @@ export default function Message({ message, isLastInGroup }: MessageProps) {
                         <div key={toolCall.id} className={style.toolCallItem}>
                             <div className={style.toolCallHeader}>
                                 <strong>{toolCall.tool_name}</strong>
-                                {toolCall.duration_ms && <span>{toolCall.duration_ms}ms</span>}
+                                {toolCall.duration_ms && (
+                                    <span>
+                                        {toolCall.duration_ms}
+                                        ms
+                                    </span>
+                                )}
                             </div>
-                            {toolCall.result && (
-                                <div className={style.toolCallResult}>{toolCall.result}</div>
-                            )}
+                            {toolCall.result && <div className={style.toolCallResult}>{toolCall.result}</div>}
                         </div>
                     ))}
                 </div>
@@ -39,5 +42,5 @@ export default function Message({ message, isLastInGroup }: MessageProps) {
             )}
             {showSenderLabel && <p className={style.sender}>{senderLabel}</p>}
         </div>
-    )
+    );
 }

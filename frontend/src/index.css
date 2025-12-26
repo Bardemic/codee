@@ -1,120 +1,120 @@
-@import url("https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap');
 
 :root {
-  font-family: "Source Sans 3", system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+    font-family: 'Source Sans 3', system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
 
-  --color-background: #1a1510;
-  --color-surface: #292119;
-  --color-surface-strong: #382e24;
-  --color-foreground: #fffbeb;
-  --color-muted: #d6ccbe;
-  
-  --color-accent: #eab308;
-  --color-accent-strong: #ca8a04;
-  --color-accent-hover: #facc15;
-  
-  --color-link: #eab308;
-  --color-link-hover: #fcd34d;
-  
-  --color-sidebar-bg: #14100c;
-  
-  --color-border: #382e24;
+    --color-background: #1a1510;
+    --color-surface: #292119;
+    --color-surface-strong: #382e24;
+    --color-foreground: #fffbeb;
+    --color-muted: #d6ccbe;
 
-  color: var(--color-foreground);
-  background-color: var(--color-background);
+    --color-accent: #eab308;
+    --color-accent-strong: #ca8a04;
+    --color-accent-hover: #facc15;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    --color-link: #eab308;
+    --color-link-hover: #fcd34d;
+
+    --color-sidebar-bg: #14100c;
+
+    --color-border: #382e24;
+
+    color: var(--color-foreground);
+    background-color: var(--color-background);
+
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 a {
-  font-weight: 500;
-  color: var(--color-link);
-  text-decoration: inherit;
+    font-weight: 500;
+    color: var(--color-link);
+    text-decoration: inherit;
 }
 
 a:hover {
-  color: var(--color-link-hover);
+    color: var(--color-link-hover);
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-  width: 100%;
-  background-color: var(--color-background);
-  color: var(--color-foreground);
+    margin: 0;
+    display: flex;
+    place-items: center;
+    min-width: 320px;
+    min-height: 100vh;
+    width: 100%;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
 }
 
 h1 {
-  font-size: 32px;
-  line-height: 1.1;
+    font-size: 32px;
+    line-height: 1.1;
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: var(--color-accent);
-  color: var(--color-background);
-  cursor: pointer;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    background-color: var(--color-accent);
+    color: var(--color-background);
+    cursor: pointer;
 }
 
 button:hover {
-  border-color: var(--color-accent-strong);
-  background-color: var(--color-accent-strong);
+    border-color: var(--color-accent-strong);
+    background-color: var(--color-accent-strong);
 }
 
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+    outline: 4px auto -webkit-focus-ring-color;
 }
 
 button:disabled {
-  background-color: var(--color-surface);
-  color: var(--color-muted);
-  cursor: not-allowed;
-  border-color: transparent;
+    background-color: var(--color-surface);
+    color: var(--color-muted);
+    cursor: not-allowed;
+    border-color: transparent;
 }
 
 button:disabled:hover {
-  background-color: var(--color-surface);
-  border-color: transparent;
+    background-color: var(--color-surface);
+    border-color: transparent;
 }
 
 input {
-  border: 1px solid var(--color-border);
-  color: var(--color-muted);
-  background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-muted);
+    background-color: var(--color-surface);
 }
 
 input:focus {
-  border: 1px solid var(--color-accent-strong);
-  outline: none;
+    border: 1px solid var(--color-accent-strong);
+    outline: none;
 }
 
 textarea {
-  border: 1px solid var(--color-border);
-  color: var(--color-muted);
-  background-color: var(--color-surface);
-  resize: none;
+    border: 1px solid var(--color-border);
+    color: var(--color-muted);
+    background-color: var(--color-surface);
+    resize: none;
 }
 
 textarea:focus {
-  border: 1px solid var(--color-accent-strong);
-  outline: none;
+    border: 1px solid var(--color-accent-strong);
+    outline: none;
 }
 
 * {
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-muted) transparent;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-muted) transparent;
 }

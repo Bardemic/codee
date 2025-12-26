@@ -6,7 +6,9 @@
     cursor: pointer;
     user-select: none;
     border: 1px solid transparent;
-    transition: background-color 0.2s, border-color 0.2s;
+    transition:
+        background-color 0.2s,
+        border-color 0.2s;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -80,4 +82,3 @@
     color: var(--color-muted, #777);
     text-align: center;
 }
-

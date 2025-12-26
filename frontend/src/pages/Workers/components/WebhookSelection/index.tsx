@@ -15,4 +15,3 @@ export function WebhookSelection({ integration, slug }: Props) {
     }
     return null;
 }
-

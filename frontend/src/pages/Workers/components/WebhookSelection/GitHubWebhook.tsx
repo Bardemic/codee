@@ -5,7 +5,6 @@ interface GitHubWebhookProps {
 }
 
 export function GitHubWebhook({ slug }: GitHubWebhookProps) {
-
     return (
         <div className={styles.container}>
             <p className={styles.text}>
@@ -17,4 +16,3 @@ export function GitHubWebhook({ slug }: GitHubWebhookProps) {
         </div>
     );
 }
-

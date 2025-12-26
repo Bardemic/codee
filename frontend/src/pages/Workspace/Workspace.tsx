@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'
-import style from './workspace.module.css'
-import { useCreateBranchMutation, useGetWorkspaceMessagesQuery, useWorkspaceByAgentId, useNewMessageMutation } from '../../app/services/workspaces/workspacesService';
-import Message from './Message'; 
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import style from './workspace.module.css';
+import { trpc } from '../../lib/trpc';
+import type { Message as MessageType, ToolCall } from '../../lib/types';
+import Message from './Message';
 import CreateBranch from '../../components/CreateBranch/CreateBranch';
 import { BsSend } from 'react-icons/bs';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import AgentCard from './Agent';
 
-function MessageSkeleton({ isUser, length }: { isUser: boolean, length: number }) {
+function MessageSkeleton({ isUser, length }: { isUser: boolean; length: number }) {
     return (
         <div className={`${style.messageWrapper} ${isUser ? style.userWrapper : style.agentWrapper}`}>
             <div className={`${style.skeletonMessage} ${isUser ? style.skeletonUser : style.skeletonAgent}`}>
@@ -24,38 +25,122 @@ function MessageSkeleton({ isUser, length }: { isUser: boolean, length: number }
 export default function Workspace() {
     const { agentId } = useParams<{ agentId: string }>();
     const navigate = useNavigate();
-    const { currentData: messages, isFetching: isFetchingMessages } = useGetWorkspaceMessagesQuery(agentId || '');
-    const { workspace, currentAgent, isLoading, isFetching } = useWorkspaceByAgentId(agentId);
-    const chatRef = useRef<HTMLDivElement>(null);
-    const [createBranch, { isLoading: isCreatingBranch }] = useCreateBranchMutation();
-    const [newMessage, { isLoading: isSendingMessage }] = useNewMessageMutation();
-    const [userMessage, setUserMessage] = useState("");
+    const utils = trpc.useUtils();
 
-    const messageList = messages ?? [];
-    const lastMessage = messageList[messageList.length - 1];
-    const hasPendingAgentMessage = messageList.some(
-        (msg) => msg.sender === "AGENT" && (msg.isPendingAgent || !msg.content)
-    );
-    const showTypingIndicator = messageList.length > 0 && (lastMessage?.sender === "USER" || hasPendingAgentMessage) && currentAgent?.status !== "FAILED";
+    const { data: workspaces, isLoading: isLoadingWorkspaces } = trpc.workspace.list.useQuery();
+    const { data: messagesData, isFetching: isFetchingMessages } = trpc.workspace.messages.useQuery({ agent_id: Number(agentId) }, { enabled: !!agentId });
+    const createBranch = trpc.workspace.createBranch.useMutation({
+        onSuccess: () => utils.workspace.list.invalidate(),
+    });
+    const sendMessage = trpc.workspace.sendMessage.useMutation({
+        onSuccess: () =>
+            utils.workspace.messages.invalidate({
+                agent_id: Number(agentId),
+            }),
+    });
+
+    const [userMessage, setUserMessage] = useState('');
+    const [streamingToolCalls, setStreamingToolCalls] = useState<ToolCall[]>([]);
+    const chatRef = useRef<HTMLDivElement>(null);
+
+    const workspace = workspaces?.find((w) => w.agents.some((a) => a.id === Number(agentId)));
+    const currentAgent = workspace?.agents.find((a) => a.id === Number(agentId));
+
+    // Combine server messages with streaming tool calls
+    const messages: MessageType[] = useMemo(() => {
+        const combinedMessages: MessageType[] = [...(messagesData ?? [])];
+        if (streamingToolCalls.length > 0) {
+            const pendingMessage = combinedMessages.find((m) => m.isPendingAgent);
+            if (!pendingMessage) {
+                combinedMessages.push({
+                    id: '__pending_agent__',
+                    created_at: new Date(),
+                    sender: 'AGENT',
+                    content: '',
+                    isPendingAgent: true,
+                    tool_calls: streamingToolCalls,
+                });
+            }
+        }
+        return combinedMessages;
+    }, [messagesData, streamingToolCalls]);
+
+    const lastMessage = messages[messages.length - 1];
+    const hasPendingAgentMessage = messages.some((msg) => msg.sender === 'AGENT' && (msg.isPendingAgent || !msg.content));
+    const showTypingIndicator = messages.length > 0 && (lastMessage?.sender === 'USER' || hasPendingAgentMessage) && currentAgent?.status !== 'FAILED';
+
+    // SSE streaming for Codee agents
+    useEffect(() => {
+        if (!agentId || !currentAgent) return;
+        if (currentAgent.integration !== 'Codee') return;
+
+        const isActive = currentAgent.status === 'PENDING' || currentAgent.status === 'RUNNING';
+        const streamUrl = isActive ? `http://127.0.0.1:5001/stream/agent/${agentId}` : `http://127.0.0.1:5001/stream/agent/${agentId}?last_event_id=%24`;
+
+        const eventSource = new EventSource(streamUrl);
+
+        eventSource.addEventListener('status', (event: MessageEvent) => {
+            const data = JSON.parse(event.data);
+            if (data.step?.startsWith('tool_')) {
+                const statusId = event.lastEventId || `sse_${Date.now()}`;
+                setStreamingToolCalls((prev) => {
+                    if (prev.some((tc) => tc.id === statusId)) return prev;
+                    return [
+                        ...prev,
+                        {
+                            id: statusId,
+                            created_at: new Date(),
+                            tool_name: data.step,
+                            arguments: {},
+                            result: data.detail ?? '',
+                            status: data.phase ?? 'running',
+                            duration_ms: null,
+                        },
+                    ];
+                });
+            }
+        });
+
+        eventSource.addEventListener('done', () => {
+            setStreamingToolCalls([]);
+            utils.workspace.messages.invalidate({
+                agent_id: Number(agentId),
+            });
+            utils.workspace.list.invalidate();
+        });
+
+        eventSource.onerror = () => {
+            console.log('Stream disconnected');
+        };
+
+        return () => {
+            eventSource.close();
+        };
+    }, [agentId, currentAgent, utils]);
 
     useEffect(() => {
-        chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight });
+        chatRef.current?.scrollTo({
+            top: chatRef.current.scrollHeight,
+        });
     }, [messages]);
 
     useEffect(() => {
-        if (!isLoading && !isFetching && !workspace) {
-            navigate("/");
+        if (!isLoadingWorkspaces && !workspace) {
+            navigate('/');
         }
-    }, [isLoading, isFetching, workspace, navigate]);
+    }, [isLoadingWorkspaces, workspace, navigate]);
 
-    async function sendMessage() {
+    const handleSendMessage = useCallback(async () => {
         if (!userMessage.trim()) return;
-        if (isSendingMessage) return;
-        await newMessage({ message: userMessage, agent_id: Number(agentId) }).unwrap();
-        setUserMessage("");
-    }
+        if (sendMessage.isPending) return;
+        await sendMessage.mutateAsync({
+            message: userMessage,
+            agent_id: Number(agentId),
+        });
+        setUserMessage('');
+    }, [userMessage, sendMessage, agentId]);
 
-    if (isLoading || !workspace || !currentAgent) {
+    if (isLoadingWorkspaces || !workspace || !currentAgent) {
         return null;
     }
 
@@ -64,15 +149,17 @@ export default function Workspace() {
             <div className={style.header}>
                 <div className={style.headerLeft}>
                     <h1>{workspace.name}</h1>
-                    {workspace.github_repository_name && (
-                        <p className={style.repoName}>{workspace.github_repository_name}</p>
-                    )}
+                    {workspace.github_repository_name && <p className={style.repoName}>{workspace.github_repository_name}</p>}
                 </div>
                 <CreateBranch
                     githubRepositoryName={workspace.github_repository_name}
                     branchName={currentAgent.github_branch_name}
-                    createBranch={() => {createBranch(agentId || "")}}
-                    isLoading={isCreatingBranch}
+                    createBranch={() =>
+                        createBranch.mutate({
+                            agent_id: Number(agentId),
+                        })
+                    }
+                    isLoading={createBranch.isPending}
                 />
             </div>
 
@@ -81,11 +168,7 @@ export default function Workspace() {
                     <h3 className={style.sidebarTitle}>Agents</h3>
                     <div className={style.agentList}>
                         {workspace.agents.map((agent) => (
-                            <AgentCard 
-                                key={agent.id} 
-                                agent={agent} 
-                                isActive={agent.id === currentAgent.id}
-                            />
+                            <AgentCard key={agent.id} agent={agent} isActive={agent.id === currentAgent.id} />
                         ))}
                     </div>
                 </div>
@@ -93,20 +176,20 @@ export default function Workspace() {
                 <div className={style.chatContainer}>
                     <div className={style.messagesScrollArea} ref={chatRef}>
                         <div className={style.messagesContent}>
-                            {isFetchingMessages && !messages ? (
+                            {isFetchingMessages && !messagesData ? (
                                 <>
                                     <MessageSkeleton isUser={true} length={Math.floor(Math.random() * 4) + 1} />
                                     <MessageSkeleton isUser={false} length={Math.floor(Math.random() * 5) + 1} />
                                     <MessageSkeleton isUser={true} length={Math.floor(Math.random() * 4) + 1} />
                                     <MessageSkeleton isUser={false} length={Math.floor(Math.random() * 5) + 1} />
                                 </>
-                            ) : messageList.map((message, index) => {
-                                const nextMessage = messageList[index + 1];
-                                const isLastInGroup = !nextMessage || nextMessage.sender !== message.sender;
-                                return (
-                                    <Message key={message.id} message={message} isLastInGroup={isLastInGroup} />
-                                );
-                            })}
+                            ) : (
+                                messages.map((message, index) => {
+                                    const nextMessage = messages[index + 1];
+                                    const isLastInGroup = !nextMessage || nextMessage.sender !== message.sender;
+                                    return <Message key={message.id} message={message} isLastInGroup={isLastInGroup} />;
+                                })
+                            )}
                             {showTypingIndicator && (
                                 <div className={style.typingIndicatorRow}>
                                     <div className={style.typingIndicatorDots}>
@@ -117,39 +200,35 @@ export default function Workspace() {
                                     <p className={style.sender}>Agent</p>
                                 </div>
                             )}
-                            {currentAgent?.status === "FAILED" && (
+                            {currentAgent?.status === 'FAILED' && (
                                 <div className={`${style.messageWrapper} ${style.agentWrapper}`}>
                                     <div className={`${style.failedToolCallItem} ${style.toolCallItem}`}>
-                                        <div className={`${style.failedToolCallHeader} ${style.toolCallHeader}`}>
-                                            Failed
-                                        </div>
-                                        <div className={style.toolCallResult}>
-                                            The workspace execution has failed.
-                                        </div>
+                                        <div className={`${style.failedToolCallHeader} ${style.toolCallHeader}`}>Failed</div>
+                                        <div className={style.toolCallResult}>The workspace execution has failed.</div>
                                     </div>
                                     <p className={style.sender}>System</p>
                                 </div>
                             )}
                         </div>
                     </div>
-                    
+
                     <div className={style.inputContainer}>
                         <div className={style.inputWrapper}>
-                            <textarea 
-                                className={style.chat} 
+                            <textarea
+                                className={style.chat}
                                 value={userMessage}
                                 placeholder="Type a message to your agent..."
-                                onChange={(e) => setUserMessage(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey && userMessage.length > 0 && !isSendingMessage) {
-                                        e.preventDefault();
-                                        sendMessage();
+                                onChange={(event) => setUserMessage(event.target.value)}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter' && !event.shiftKey && userMessage.length > 0 && !sendMessage.isPending) {
+                                        event.preventDefault();
+                                        handleSendMessage();
                                     }
                                 }}
                             />
                             {userMessage.length > 0 && (
-                                <button className={style.sendButton} onClick={sendMessage} disabled={isSendingMessage}>
-                                    {isSendingMessage ? <AiOutlineLoading3Quarters size={16} className={style.spinIcon} /> : <BsSend size={16} />}
+                                <button className={style.sendButton} onClick={handleSendMessage} disabled={sendMessage.isPending}>
+                                    {sendMessage.isPending ? <AiOutlineLoading3Quarters size={16} className={style.spinIcon} /> : <BsSend size={16} />}
                                 </button>
                             )}
                         </div>
@@ -157,5 +236,5 @@ export default function Workspace() {
                 </div>
             </div>
         </div>
-    )
+    );
 }
