@@ -1,4 +1,4 @@
-# backend-ts
+# backend
 
 To install dependencies:
 

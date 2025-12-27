@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "backend-ts",
+      "name": "backend",
       "dependencies": {
         "@ai-sdk/openai": "^1.0.0",
         "@posthog/agent-toolkit": "^0.2.4",

@@ -45,7 +45,7 @@ async function bootstrap() {
     app.use(morgan('dev'));
 
     app.get('/health', (_req, res) => {
-        res.json({ ok: true, service: 'backend-ts' });
+        res.json({ ok: true, service: 'backend' });
     });
 
     app.all('/api/auth/{*splat}', toNodeHandler(auth));
@@ -62,13 +62,13 @@ async function bootstrap() {
     app.use('/stream', sseRouter);
 
     app.listen(PORT, () => {
-        console.log(`[backend-ts] listening on http://localhost:${PORT}`);
+        console.log(`[backend] listening on http://localhost:${PORT}`);
     });
 
     process.on('SIGTERM', shutdown);
     process.on('SIGINT', shutdown);
     process.on('uncaughtException', (err) => {
-        console.error('[backend-ts] uncaught exception:', err);
+        console.error('[backend] uncaught exception:', err);
         shutdown();
     });
 
@@ -76,6 +76,6 @@ async function bootstrap() {
 }
 
 bootstrap().catch((err) => {
-    console.error('Failed to start backend-ts', err);
+    console.error('Failed to start backend', err);
     process.exit(1);
 });
