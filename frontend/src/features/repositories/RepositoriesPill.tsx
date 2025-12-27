@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { GoRepo } from "react-icons/go";
-import { useGetRepositoriesQuery, type Repository } from "../../app/services/integrations/integrationsService";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { GoRepo } from 'react-icons/go';
+import { trpc } from '../../lib/trpc';
+import type { Repository } from '../../lib/types';
 import styles from './styles.module.css';
 
 interface Props {
@@ -10,7 +11,9 @@ interface Props {
 }
 
 export function RepositoriesPill({ selected, setSelected, direction = 'down' }: Props) {
-    const { data: repos } = useGetRepositoriesQuery();
+    const { data: repos } = trpc.integrations.repositories.useQuery(undefined, {
+        trpc: { context: { skipBatch: true } }
+    });
     const [dropDown, setDropDown] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
@@ -44,9 +47,7 @@ export function RepositoriesPill({ selected, setSelected, direction = 'down' }: 
     const filteredRepos = useMemo(() => {
         if (!repos) return [];
         const sanitized = searchTerm.trim().toLowerCase();
-        return repos
-            .filter(repo => repo.github_id !== selected?.github_id)
-            .filter(repo => repo.name.toLowerCase().includes(sanitized));
+        return repos.filter((repo) => repo.github_id !== selected?.github_id).filter((repo) => repo.name.toLowerCase().includes(sanitized));
     }, [repos, searchTerm, selected]);
 
     return (
@@ -64,26 +65,28 @@ export function RepositoriesPill({ selected, setSelected, direction = 'down' }: 
                 <div
                     className={`${styles.dropdown} ${direction === 'up' ? styles.up : styles.down}`}
                     role="listbox"
-                    onClick={(e) => e.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
                 >
                     <input
                         className={styles.searchInput}
                         placeholder="Search repositories"
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
+                        onChange={(event) => setSearchTerm(event.target.value)}
+                        onClick={(event) => event.stopPropagation()}
                     />
                     {filteredRepos.length > 0 ? (
-                        filteredRepos.map(repo => (
-                            <div key={repo.github_id}
-                                onClick={(e) => {
-                                    e.stopPropagation();
+                        filteredRepos.map((repo) => (
+                            <div
+                                key={repo.github_id}
+                                onClick={(event) => {
+                                    event.stopPropagation();
                                     setSelected(repo);
                                     setDropDown(false);
                                 }}
                                 className={styles.option}
                                 role="option"
-                                aria-selected={false}>
+                                aria-selected={false}
+                            >
                                 {repo.name}
                             </div>
                         ))
@@ -95,4 +98,3 @@ export function RepositoriesPill({ selected, setSelected, direction = 'down' }: 
         </div>
     );
 }
-

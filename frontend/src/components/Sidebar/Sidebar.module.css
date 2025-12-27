@@ -67,7 +67,9 @@ h3 {
     color: var(--color-muted);
     border-radius: 0;
     background-color: transparent;
-    transition: border-color 0.2s, color 0.2s;
+    transition:
+        border-color 0.2s,
+        color 0.2s;
 }
 
 .button:hover {

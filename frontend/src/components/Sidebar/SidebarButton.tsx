@@ -1,8 +1,8 @@
-import styles from './Sidebar.module.css'
+import styles from './Sidebar.module.css';
 
 interface ButtonProps {
-    text: string
-    onClick?: () => void
+    text: string;
+    onClick?: () => void;
 }
 
 export default function SidebarButton(props: ButtonProps) {
@@ -10,5 +10,5 @@ export default function SidebarButton(props: ButtonProps) {
         <div className={styles.button} onClick={props.onClick}>
             {props.text}
         </div>
-    )
+    );
 }

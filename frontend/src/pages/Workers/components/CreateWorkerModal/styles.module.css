@@ -340,7 +340,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.1s, border-color 0.1s;
+    transition:
+        background-color 0.1s,
+        border-color 0.1s;
     flex-shrink: 0;
 }
 
@@ -354,7 +356,6 @@
     color: var(--color-muted);
     font-size: 12px;
 }
-
 
 .buttonsBar {
     flex: 1;

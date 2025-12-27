@@ -10,7 +10,7 @@
 .header {
     flex: 0 0 60px;
     padding: 0 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -151,7 +151,7 @@
 
 .inputContainer {
     width: 100%;
-    background-color: var(--color-background); 
+    background-color: var(--color-background);
     border-top: 1px solid rgba(255, 255, 255, 0.05);
     padding: 24px 0 32px 0;
     flex-shrink: 0;
@@ -224,8 +224,12 @@
 }
 
 @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .messageWrapper {
@@ -260,7 +264,7 @@
     border-radius: 12px;
     overflow: hidden;
     max-width: 85%;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .userMessage {
@@ -368,18 +372,33 @@
     opacity: 0.5;
 }
 
-.typingDot:nth-child(1) { animation-delay: 0s; }
-.typingDot:nth-child(2) { animation-delay: 0.2s; }
-.typingDot:nth-child(3) { animation-delay: 0.4s; }
+.typingDot:nth-child(1) {
+    animation-delay: 0s;
+}
+.typingDot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+.typingDot:nth-child(3) {
+    animation-delay: 0.4s;
+}
 
 @keyframes typingBounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
 }
 
 @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
 }
 
 .skeletonMessage {

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type MouseEvent as ReactMouseEvent } from "react";
-import { BsChevronDown, BsChevronRight, BsCheck } from "react-icons/bs";
-import styles from "../home.module.css";
-import type { CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type MouseEvent as ReactMouseEvent } from 'react';
+import { BsChevronDown, BsChevronRight, BsCheck } from 'react-icons/bs';
+import styles from '../home.module.css';
+import type { CSSProperties } from 'react';
 
 export type DropdownOption = {
     id: string;
@@ -17,20 +17,16 @@ interface DropdownSelectorProps {
     onChange: (values: string[]) => void;
     placeholder?: string;
     label: string;
-    dropdownVariant?: "attached" | "floating";
+    dropdownVariant?: 'attached' | 'floating';
 }
 
-export function DropdownSelector({
-    icon,
-    options,
-    selectedValues,
-    onChange,
-    label,
-    dropdownVariant = "attached",
-}: DropdownSelectorProps) {
+export function DropdownSelector({ icon, options, selectedValues, onChange, label, dropdownVariant = 'attached' }: DropdownSelectorProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [expandedIntegrations, setExpandedIntegrations] = useState<string[]>([]);
-    const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
+    const [dropdownPosition, setDropdownPosition] = useState<{
+        top: number;
+        left: number;
+    } | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -41,22 +37,29 @@ export function DropdownSelector({
             if (dropdownRef.current?.contains(target)) return;
             setIsOpen(false);
         };
-        document.addEventListener("mousedown", handleClick);
-        return () => document.removeEventListener("mousedown", handleClick);
+        document.addEventListener('mousedown', handleClick);
+        return () => document.removeEventListener('mousedown', handleClick);
     }, []);
 
     useEffect(() => {
-        if (dropdownVariant === "floating" && isOpen && containerRef.current) {
+        if (dropdownVariant === 'floating' && isOpen && containerRef.current) {
             const rect = containerRef.current.getBoundingClientRect();
-            setDropdownPosition({ top: rect.bottom + 8, left: rect.left });
+            setDropdownPosition({
+                top: rect.bottom + 8,
+                left: rect.left,
+            });
         }
     }, [dropdownVariant, isOpen]);
 
     const selectedSet = useMemo(() => new Set(selectedValues), [selectedValues]);
-    const panelClassName = dropdownVariant === "floating" ? styles.toolsDropdown : styles.dropdownContainer;
-    const panelStyle: CSSProperties | undefined = dropdownVariant === "floating" && dropdownPosition
-        ? { top: dropdownPosition.top, left: dropdownPosition.left }
-        : undefined;
+    const panelClassName = dropdownVariant === 'floating' ? styles.toolsDropdown : styles.dropdownContainer;
+    const panelStyle: CSSProperties | undefined =
+        dropdownVariant === 'floating' && dropdownPosition
+            ? {
+                  top: dropdownPosition.top,
+                  left: dropdownPosition.left,
+              }
+            : undefined;
 
     const collectValues = (option: DropdownOption): string[] => {
         const values: string[] = [];
@@ -80,15 +83,12 @@ export function DropdownSelector({
     };
 
     const toggleValue = (value: string) => {
-        onChange(selectedSet.has(value) 
-            ? selectedValues.filter((item) => item !== value)
-            : [...selectedValues, value]
-        );
+        onChange(selectedSet.has(value) ? selectedValues.filter((item) => item !== value) : [...selectedValues, value]);
     };
 
     const toggleExpand = (id: string, event: ReactMouseEvent) => {
         event.stopPropagation();
-        setExpandedIntegrations((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]);
+        setExpandedIntegrations((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
     };
 
     const renderOption = (option: DropdownOption, depth = 0) => {
@@ -113,9 +113,7 @@ export function DropdownSelector({
                         if (option.value) toggleValue(option.value);
                     }}
                 >
-                    <div className={`${styles.checkbox} ${isLeafSelected ? styles.checked : ""}`}>
-                        {isLeafSelected && <BsCheck size={12} />}
-                    </div>
+                    <div className={`${styles.checkbox} ${isLeafSelected ? styles.checked : ''}`}>{isLeafSelected && <BsCheck size={12} />}</div>
                     {option.label}
                 </div>
             );
@@ -126,7 +124,7 @@ export function DropdownSelector({
                 <div className={styles.integrationHeader} onClick={(event) => toggleExpand(option.id, event)}>
                     <div className={styles.integrationName}>
                         <div
-                            className={`${styles.checkbox} ${isAllSelected || isPartial ? styles.checked : ""}`}
+                            className={`${styles.checkbox} ${isAllSelected || isPartial ? styles.checked : ''}`}
                             onClick={(event) => {
                                 event.stopPropagation();
                                 if (descendantValues.length > 0) toggleValues(descendantValues);
@@ -136,27 +134,15 @@ export function DropdownSelector({
                         </div>
                         {option.label}
                     </div>
-                    <div className={styles.expandIcon}>
-                        {isExpanded ? <BsChevronDown /> : <BsChevronRight />}
-                    </div>
+                    <div className={styles.expandIcon}>{isExpanded ? <BsChevronDown /> : <BsChevronRight />}</div>
                 </div>
-                {isExpanded && option.children && (
-                    <div className={styles.toolList}>
-                        {option.children.map((child) => renderOption(child, depth + 1))}
-                    </div>
-                )}
+                {isExpanded && option.children && <div className={styles.toolList}>{option.children.map((child) => renderOption(child, depth + 1))}</div>}
             </div>
         );
     };
 
     const dropdownContent = isOpen && options.length > 0 && (
-        <div
-            ref={dropdownRef}
-            className={panelClassName}
-            style={panelStyle}
-            role="listbox"
-            onClick={(event) => event.stopPropagation()}
-        >
+        <div ref={dropdownRef} className={panelClassName} style={panelStyle} role="listbox" onClick={(event) => event.stopPropagation()}>
             {options.map((option) => renderOption(option))}
         </div>
     );

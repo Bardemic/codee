@@ -1,0 +1,33 @@
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, Index } from 'typeorm';
+import type { Agent } from './Agent';
+
+@Entity()
+export class Workspace {
+    @PrimaryGeneratedColumn()
+    id!: number;
+
+    @CreateDateColumn()
+    createdAt!: Date;
+
+    @Column({ length: 200, default: 'Untitled' })
+    name!: string;
+
+    @Column({ length: 100, default: 'main' })
+    defaultBranch!: string;
+
+    @Column()
+    userId!: string;
+
+    @Column()
+    githubRepositoryName!: string;
+
+    @Column({ nullable: true })
+    workerId!: number | null;
+
+    @Index()
+    @Column({ default: 'codee/agent-main', nullable: true })
+    currentBranch!: string | null;
+
+    @OneToMany('Agent', 'workspace')
+    providerAgents!: Agent[];
+}

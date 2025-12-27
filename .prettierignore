@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+.vercel
+.cursor
+*.lock
+venv
+source
+db.sqlite3
+
+

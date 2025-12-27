@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { BsChevronDown } from "react-icons/bs";
-import githubIcon from "../../../../assets/svgs/github.svg";
-import posthogIcon from "../../../../assets/svgs/posthog.svg";
-import { WebhookSelection } from "../WebhookSelection/index";
-import styles from "./styles.module.css";
+import { useState } from 'react';
+import { BsChevronDown } from 'react-icons/bs';
+import githubIcon from '../../../../assets/svgs/github.svg';
+import posthogIcon from '../../../../assets/svgs/posthog.svg';
+import { WebhookSelection } from '../WebhookSelection/index';
+import styles from './styles.module.css';
 
 interface WebhookSectionProps {
     slug: string;
@@ -19,19 +19,15 @@ export function WebhookSection({ slug, selectedIntegration, setSelectedIntegrati
             <div className={styles.toolsHeader}>Webhook Editor</div>
             <div className={styles.dropdownWrapper}>
                 <div className={styles.dropdownToggle} onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
-                    <img 
-                        src={selectedIntegration === 'GitHub' ? githubIcon : posthogIcon} 
-                        alt={selectedIntegration}
-                        className={styles.providerIcon}
-                    />
+                    <img src={selectedIntegration === 'GitHub' ? githubIcon : posthogIcon} alt={selectedIntegration} className={styles.providerIcon} />
                     <span style={{ flex: 1 }}>{selectedIntegration}</span>
                     <BsChevronDown />
                 </div>
-                
+
                 {isDropdownOpen && (
                     <div className={styles.dropdownMenu}>
-                        {['GitHub', 'PostHog'].map(provider => (
-                            <div 
+                        {['GitHub', 'PostHog'].map((provider) => (
+                            <div
                                 key={provider}
                                 onClick={() => {
                                     setSelectedIntegration(provider);
@@ -39,11 +35,7 @@ export function WebhookSection({ slug, selectedIntegration, setSelectedIntegrati
                                 }}
                                 className={`${styles.dropdownItem} ${selectedIntegration === provider ? styles.dropdownItemSelected : ''}`}
                             >
-                                <img 
-                                    src={provider === 'GitHub' ? githubIcon : posthogIcon} 
-                                    alt={provider}
-                                    className={styles.providerIcon}
-                                />
+                                <img src={provider === 'GitHub' ? githubIcon : posthogIcon} alt={provider} className={styles.providerIcon} />
                                 {provider}
                             </div>
                         ))}
@@ -54,4 +46,3 @@ export function WebhookSection({ slug, selectedIntegration, setSelectedIntegrati
         </div>
     );
 }
-

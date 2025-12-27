@@ -46,7 +46,7 @@ Codee gives the flexability of creating custom "workers," which is just short fo
 ### Frontend
 
 ```
-cd frontend && npm install && npm run dev
+cd frontend && bun install && bun run dev
 ```
 
 ### Backend
