@@ -20,7 +20,7 @@ const PROVIDER_SEEDS: ProviderSeed[] = [
         slug: 'github_app',
         displayName: 'GitHub App',
         hasCloudAgent: false,
-        tools: [],
+        tools: [{ displayName: 'Commits', slugName: 'github/commits' }],
     },
     {
         slug: 'posthog',

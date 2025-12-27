@@ -203,7 +203,7 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
 
         if (mentionState.type === 'integration') {
             return integrations
-                .filter((integration) => integration.name.toLowerCase().includes(mentionState.query.toLowerCase()))
+                .filter((integration) => !integration.has_cloud_agent && integration.tools.length && integration.name.toLowerCase().includes(mentionState.query.toLowerCase()))
                 .map((integration) => ({
                     label: integration.name,
                     value: integration.name,
