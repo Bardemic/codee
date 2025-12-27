@@ -11,7 +11,9 @@ interface Props {
 }
 
 export function RepositoriesPill({ selected, setSelected, direction = 'down' }: Props) {
-    const { data: repos } = trpc.integrations.repositories.useQuery();
+    const { data: repos } = trpc.integrations.repositories.useQuery(undefined, {
+        trpc: { context: { skipBatch: true } }
+    });
     const [dropDown, setDropDown] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);

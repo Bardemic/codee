@@ -1,4 +1,4 @@
-import { createTRPCReact, httpBatchLink } from '@trpc/react-query';
+import { createTRPCReact, httpBatchLink, httpLink, splitLink } from '@trpc/react-query';
 import { QueryClient } from '@tanstack/react-query';
 import superjson from 'superjson';
 import type { AppRouter } from '../../../backend-ts/src/trpc/router';
@@ -16,15 +16,30 @@ export const queryClient = new QueryClient({
 
 export const trpcClient = trpc.createClient({
     links: [
-        httpBatchLink({
-            url: 'http://localhost:5001/api/trpc',
-            transformer: superjson,
-            fetch(url, options) {
-                return fetch(url, {
-                    ...options,
-                    credentials: 'include',
-                });
+        splitLink({
+            condition: (op) => {
+                return op.context.skipBatch === true;
             },
+            true: httpLink({
+                url: 'http://localhost:5001/api/trpc',
+                transformer: superjson,
+                fetch(url, options) {
+                    return fetch(url, {
+                        ...options,
+                        credentials: 'include',
+                    });
+                },
+            }),
+            false: httpBatchLink({
+                url: 'http://localhost:5001/api/trpc',
+                transformer: superjson,
+                fetch(url, options) {
+                    return fetch(url, {
+                        ...options,
+                        credentials: 'include',
+                    });
+                },
+            }),
         }),
     ],
 });
