@@ -3,7 +3,6 @@ import type { CloudProvider } from './base';
 import { Workspace } from '../db/entities/Workspace';
 import { Agent, AgentStatus, ProviderType } from '../db/entities/Agent';
 import { AppDataSource } from '../db/data-source';
-import { Message } from '../db/entities/Message';
 import { IntegrationConnection } from '../db/entities/IntegrationConnection';
 import { z } from 'zod';
 import axios from 'axios';
@@ -36,13 +35,6 @@ export class CursorProvider implements CloudProvider {
             model: model || null,
         });
         await agentRepository.save(agent);
-        await AppDataSource.getRepository(Message).save(
-            AppDataSource.getRepository(Message).create({
-                agent,
-                content: message,
-                sender: 'USER',
-            })
-        );
 
         const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
         const cursorConnection = await connectionRepository.findOne({
@@ -221,15 +213,6 @@ export class CursorProvider implements CloudProvider {
                 console.error('Response data:', response.data);
                 return false;
             }
-
-            // Save the user message to local database
-            await AppDataSource.getRepository(Message).save(
-                AppDataSource.getRepository(Message).create({
-                    agent,
-                    content: message,
-                    sender: 'USER',
-                })
-            );
 
             return true;
         } catch (error) {
