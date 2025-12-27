@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar/Sidebar';
 import Integrations from './pages/Integrations/Integrations';
 import Workspace from './pages/Workspace/Workspace';
 import Workers from './pages/Workers/Workers';
+import './app.css';
 
 function SidebarLayout() {
     return (

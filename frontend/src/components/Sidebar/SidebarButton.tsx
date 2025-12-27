@@ -7,7 +7,7 @@ interface ButtonProps {
 
 export default function SidebarButton(props: ButtonProps) {
     return (
-        <div className={styles.Button} onClick={props.onClick}>
+        <div className={styles.button} onClick={props.onClick}>
             {props.text}
         </div>
     );
