@@ -4,15 +4,11 @@ import { authedProcedure, router } from '../trpc';
 import { AppDataSource } from '../../db/data-source';
 import { Workspace } from '../../db/entities/Workspace';
 import { Agent } from '../../db/entities/Agent';
-import { Message } from '../../db/entities/Message';
 import { Tool } from '../../db/entities/Tool';
 import { WorkspaceTool } from '../../db/entities/WorkspaceTool';
-import { createAgentsFromProviders } from '../../providers';
+import { createAgentsFromProviders, PROVIDERS } from '../../providers';
 import { generateTitle } from '../../utils/llm';
-import { ProviderType } from '../../db/entities/Agent';
-import { emitStatus } from '../../stream/events';
 import { In } from 'typeorm';
-import { ToolCall } from '../../db/entities/ToolCall';
 
 const providerConfig = z.object({
     name: z.string(),
@@ -139,47 +135,10 @@ export const workspaceRouter = router({
         if (!agent || agent.workspace.userId !== ctx.user.id) {
             throw new TRPCError({ code: 'NOT_FOUND' });
         }
-        const messages = await AppDataSource.getRepository(Message).find({
-            where: { agent: { id: agent.id } },
-            order: { createdAt: 'ASC' },
-        });
-        const messageIds = messages.map((message) => message.id);
-        const toolCalls = messageIds.length
-            ? await AppDataSource.getRepository(ToolCall).find({
-                  where: { message: { id: In(messageIds) } },
-                  order: { createdAt: 'ASC' },
-              })
-            : [];
-        type TransformedToolCall = {
-            id: number;
-            created_at: Date;
-            tool_name: string;
-            arguments: Record<string, unknown>;
-            result: string;
-            status: string;
-            duration_ms: number | null;
-        };
-        const toolCallsByMessage = new Map<number, TransformedToolCall[]>();
-        for (const toolCall of toolCalls) {
-            const list = toolCallsByMessage.get(toolCall.message.id) || [];
-            list.push({
-                id: toolCall.id,
-                created_at: toolCall.createdAt,
-                tool_name: toolCall.toolName,
-                arguments: toolCall.arguments,
-                result: toolCall.result,
-                status: toolCall.status,
-                duration_ms: toolCall.durationMs,
-            });
-            toolCallsByMessage.set(toolCall.message.id, list);
-        }
-        return messages.map((message) => ({
-            id: message.id,
-            created_at: message.createdAt,
-            sender: message.sender,
-            content: message.content,
-            tool_calls: toolCallsByMessage.get(message.id) || [],
-        }));
+        const ProviderClass = PROVIDERS[agent.providerType];
+        if (!ProviderClass) return [];
+        const provider = new ProviderClass();
+        return provider.getMessages(agent);
     }),
 
     sendMessage: authedProcedure.input(z.object({ agent_id: z.number(), message: z.string() })).mutation(async ({ ctx, input }) => {
@@ -190,33 +149,16 @@ export const workspaceRouter = router({
         if (!agent || agent.workspace.userId !== ctx.user.id) {
             throw new TRPCError({ code: 'NOT_FOUND' });
         }
-        if (agent.providerType !== ProviderType.CODEE) {
+        const ProviderClass = PROVIDERS[agent.providerType];
+        if (!ProviderClass) {
             throw new TRPCError({
-                code: 'NOT_IMPLEMENTED',
-                message: 'Send message supported only for Codee agents currently',
+                code: 'NOT_FOUND',
+                message: 'Provider not found',
             });
         }
-        // For Codee, reuse provider to enqueue job
-        const toolSlugs = await AppDataSource.getRepository(WorkspaceTool).find({
-            where: { workspace: { id: agent.workspace.id } },
-            relations: ['tool'],
-        });
-        const messageRepository = AppDataSource.getRepository(Message);
-        const userMessage = messageRepository.create({
-            agent,
-            content: input.message,
-            sender: 'USER',
-        });
-        await messageRepository.save(userMessage);
-        await emitStatus(agent.id, 'queued', 'message', 'queued follow up');
-        await import('../../workers/queue').then(({ enqueueAgentJob }) =>
-            enqueueAgentJob({
-                prompt: input.message,
-                agentId: agent.id,
-                toolSlugs: toolSlugs.map((workspaceTool) => workspaceTool.tool.slugName),
-            })
-        );
-        return { ok: true };
+        const provider = new ProviderClass();
+        const success = await provider.sendMessage(agent, input.message);
+        return { ok: success };
     }),
 
     agentStatus: authedProcedure.input(z.object({ agent_id: z.number() })).query(async ({ ctx, input }) => {

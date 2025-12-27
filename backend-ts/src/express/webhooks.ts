@@ -6,7 +6,7 @@ import { WorkerDefinition } from '../db/entities/WorkerDefinition';
 import { Workspace } from '../db/entities/Workspace';
 import { WorkspaceTool } from '../db/entities/WorkspaceTool';
 import { Tool } from '../db/entities/Tool';
-import { createAgentsFromProviders } from '../providers';
+import { createAgentsFromProviders, type CloudProviderConfig } from '../providers';
 import { generateTitle } from '../utils/llm';
 import { Agent, AgentStatus } from '../db/entities/Agent';
 import { In } from 'typeorm';
@@ -14,9 +14,20 @@ import { WorkerDefinitionTool } from '../db/entities/WorkerDefinitionTool';
 
 const router = Router();
 
-const cloudProviderSchema = z.object({
+const cloudProviderSchema: z.ZodType<CloudProviderConfig> = z.object({
     name: z.string(),
     agents: z.array(z.object({ model: z.string().nullable().optional() })),
+});
+
+const posthogIssueSchema = z.object({
+    worker_slug: z.string(),
+    key: z.string(),
+    repository: z.string(),
+    event: z.record(z.unknown()),
+});
+
+const cursorCompleteSchema = z.object({
+    status: z.enum(['FINISHED', 'FAILED']),
 });
 
 function verifySignature(secret: string, payload: Buffer, signatureHeader?: string) {
@@ -69,26 +80,26 @@ async function createWorkspaceFromWebhook(params: { worker: WorkerDefinition; re
 router.post('/github/events', express.raw({ type: 'application/json' }), async (req, res) => {
     const secret = process.env.GITHUB_WEBHOOK_SECRET || '';
     if (!verifySignature(secret, req.body, req.header('x-hub-signature-256'))) {
-        return res.status(401).send('signature mismatch');
+        return res.status(401).send('GitHub webhook signature verification failed');
     }
     const event = req.header('x-github-event');
-    if (!event) return res.status(400).send('no event');
+    if (!event) return res.status(400).send('Missing GitHub event type header');
     const body = JSON.parse(req.body.toString('utf8'));
     if (event === 'issue_comment' && body.action === 'created') {
         const comment: string | undefined = body.comment?.body;
         if (!comment || !comment.includes('--codee')) return res.status(204).end();
         const match = comment.match(/--codee\/(\S+)/);
-        if (!match) return res.status(400).send('missing worker slug');
+        if (!match) return res.status(400).send('Missing worker slug in --codee command');
         const slug = match[1];
         const issue = body.issue;
         const repository = body.repository?.full_name;
-        if (!issue || !repository) return res.status(400).send('missing repo/issue');
+        if (!issue || !repository) return res.status(400).send('Missing GitHub issue or repository in webhook payload');
 
         const workerRepository = AppDataSource.getRepository(WorkerDefinition);
         const worker = await workerRepository.findOne({
             where: { slug },
         });
-        if (!worker) return res.status(404).send('worker not found');
+        if (!worker) return res.status(404).send(`Worker not found with slug: ${slug}`);
         const message = worker.prompt + '\n\nGitHub Issue Title: ' + issue.title + '\n\nDescription: ' + issue.body;
         await createWorkspaceFromWebhook({
             worker,
@@ -101,37 +112,37 @@ router.post('/github/events', express.raw({ type: 'application/json' }), async (
 });
 
 router.post('/posthog/issue', express.json(), async (req, res) => {
-    const body = req.body || {};
-    const workerSlug = body.worker_slug;
-    const key = body.key;
-    const repository = body.repository;
-    const event = body.event;
-    if (!workerSlug || !key || !repository || !event) {
-        return res.status(400).send('missing fields');
+    const parsedBody = posthogIssueSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+        return res.status(400).send(`Invalid request body: ${parsedBody.error.message}`);
     }
+    const body = parsedBody.data;
     const workerRepository = AppDataSource.getRepository(WorkerDefinition);
-    const workers = await workerRepository.find({
-        where: { slug: workerSlug },
+    const worker = await workerRepository.findOne({
+        where: { slug: body.worker_slug, key: body.key },
     });
-    const worker = workers.find((w) => w.key === key);
-    if (!worker) return res.status(403).send('invalid key');
-    const message = worker.prompt + '\n\n' + 'PostHog event data: ' + JSON.stringify(event, null, 2);
+    if (!worker) return res.status(403).send(`Invalid key for worker with slug: ${body.worker_slug}`);
+    const message = worker.prompt + '\n\n' + 'PostHog event data: ' + JSON.stringify(body.event, null, 2);
     await createWorkspaceFromWebhook({
         worker,
-        repository,
+        repository: body.repository,
         message,
-        data: event,
+        data: body.event,
     });
     return res.status(204).end();
 });
 
 router.post('/cursor/complete/:agentId', express.json(), async (req, res) => {
     const agentId = Number(req.params.agentId);
-    const status = req.body?.status;
+    const parsedBody = cursorCompleteSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+        return res.status(400).send(`Invalid request body: ${parsedBody.error.message}`);
+    }
+    const body = parsedBody.data;
     const agentRepository = AppDataSource.getRepository(Agent);
     const agent = await agentRepository.findOne({ where: { id: agentId } });
-    if (!agent) return res.status(404).send('agent not found');
-    if (status === 'FINISHED') {
+    if (!agent) return res.status(404).send(`Agent not found with ID: ${agentId}`);
+    if (body.status === 'FINISHED') {
         agent.status = AgentStatus.COMPLETED;
         await agentRepository.save(agent);
     }

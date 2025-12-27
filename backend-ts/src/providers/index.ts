@@ -5,13 +5,13 @@ import { JulesProvider } from './jules';
 import type { Workspace } from '../db/entities/Workspace';
 import type { Agent } from '../db/entities/Agent';
 
-const PROVIDERS: Record<string, new () => CloudProvider> = {
+export const PROVIDERS: Record<string, new () => CloudProvider> = {
     Codee: CodeeProvider,
     Cursor: CursorProvider,
     Jules: JulesProvider,
 };
 
-type CloudProviderConfig = {
+export type CloudProviderConfig = {
     name: string;
     agents: Array<{ model?: string | null }>;
 };

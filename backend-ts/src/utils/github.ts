@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import axios from 'axios';
 
 const GITHUB_APP_ID = process.env.GITHUB_APP_ID || '';
 const GITHUB_PRIVATE_KEY = process.env.GITHUB_PRIVATE_KEY ? process.env.GITHUB_PRIVATE_KEY.replace(/\\n/g, '\n') : '';
@@ -27,16 +28,17 @@ export function generateGitHubAppJwt(): string {
 export async function getInstallationToken(installationId: string): Promise<string | null> {
     try {
         const jwt = generateGitHubAppJwt();
-        const res = await fetch(`https://api.github.com/app/installations/${installationId}/access_tokens`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${jwt}`,
-                Accept: 'application/vnd.github+json',
-            },
-        });
-        if (!res.ok) return null;
-        const json = (await res.json()) as { token: string };
-        return json.token;
+        const res = await axios.post<{ token: string }>(
+            `https://api.github.com/app/installations/${installationId}/access_tokens`,
+            {},
+            {
+                headers: {
+                    Authorization: `Bearer ${jwt}`,
+                    Accept: 'application/vnd.github+json',
+                },
+            }
+        );
+        return res.data.token;
     } catch (err) {
         console.warn('github token error', err);
         return null;

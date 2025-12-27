@@ -1,5 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import axios from 'axios';
 import { authedProcedure, router } from '../trpc';
 import { AppDataSource } from '../../db/data-source';
 import { IntegrationProvider } from '../../db/entities/IntegrationProvider';
@@ -53,27 +54,25 @@ export const integrationsRouter = router({
             const apiKey = cursorConnection.getDataConfig()?.api_key;
             if (apiKey) {
                 try {
-                    const response = await fetch('https://api.cursor.com/v0/models', {
+                    const response = await axios.get<{ models: string[] }>('https://api.cursor.com/v0/models', {
                         headers: {
                             Authorization: `Basic ${btoa(`${apiKey}:`)}`,
                         },
-                        signal: AbortSignal.timeout(5000),
+                        timeout: 5000,
                     });
-                    if (response.ok) {
-                        const cursorModelsSchema = z.object({ models: z.array(z.string()) });
-                        const parsedResponse = cursorModelsSchema.safeParse(await response.json());
-                        const models = parsedResponse.success ? parsedResponse.data.models : [];
-                        const cursorProvider = result.find((provider) => provider.slug === 'cursor');
-                        if (cursorProvider) {
-                            cursorProvider.tools.push(
-                                ...models.map((modelName) => ({
-                                    id: 0,
-                                    display_name: modelName,
-                                    slug_name: modelName,
-                                    is_model: true,
-                                }))
-                            );
-                        }
+                    const cursorModelsSchema = z.object({ models: z.array(z.string()) });
+                    const parsedResponse = cursorModelsSchema.safeParse(response.data);
+                    const models = parsedResponse.success ? parsedResponse.data.models : [];
+                    const cursorProvider = result.find((provider) => provider.slug === 'cursor');
+                    if (cursorProvider) {
+                        cursorProvider.tools.push(
+                            ...models.map((modelName) => ({
+                                id: 0,
+                                display_name: modelName,
+                                slug_name: modelName,
+                                is_model: true,
+                            }))
+                        );
                     }
                 } catch (error) {
                     console.warn('Failed to fetch Cursor models:', error);
@@ -187,32 +186,30 @@ export const integrationsRouter = router({
                 message: 'token fetch failed',
             });
 
-        const response = await fetch('https://api.github.com/installation/repositories?per_page=100', {
+        const responseSchema = z.object({
+            repositories: z.array(
+                z.object({
+                    id: z.number(),
+                    full_name: z.string(),
+                    default_branch: z.string(),
+                })
+            ),
+        });
+
+        const response = await axios.get<{ repositories: unknown[] }>('https://api.github.com/installation/repositories?per_page=100', {
             headers: {
                 Authorization: `Bearer ${token}`,
                 Accept: 'application/vnd.github+json',
             },
         });
-        if (!response.ok)
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'github error',
-            });
-        const json = await response.json();
-        const repoList = z.object({ repositories: z.array(z.unknown()) }).safeParse(json);
-        const repoSchema = z.object({
-            id: z.number(),
-            full_name: z.string(),
-            default_branch: z.string().optional(),
-        });
-        const parsedRepos = repoList.success ? repoSchema.array().safeParse(repoList.data.repositories) : null;
-        const repos = parsedRepos?.success
-            ? parsedRepos.data.map((repository) => ({
-                  github_id: repository.id,
-                  name: repository.full_name,
-                  default_branch: repository.default_branch || '',
-              }))
-            : [];
-        return repos;
+        const repoList = responseSchema.safeParse(response.data);
+
+        if (!repoList.success) return [];
+
+        return repoList.data.repositories.map((repository) => ({
+            github_id: repository.id,
+            name: repository.full_name,
+            default_branch: repository.default_branch,
+        }));
     }),
 });
