@@ -17,6 +17,11 @@ export async function generateTitle(prompt: string): Promise<string> {
             model,
             system: 'You are Codee, an async coding agent. Generate a concise workspace title under 7 words. Avoid filler like quotes or exclamations.',
             prompt,
+            providerOptions: {
+                openai: {
+                    reasoningEffort: 'minimal',
+                },
+            },
             schema: z.object({
                 title: z
                     .string()

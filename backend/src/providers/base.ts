@@ -2,12 +2,22 @@ import { Agent } from '../db/entities/Agent';
 import { Workspace } from '../db/entities/Workspace';
 import type { SenderType } from '../db/entities/Message';
 
+export type ProviderToolCall = {
+    id: number;
+    created_at: Date;
+    tool_name: string;
+    arguments: Record<string, unknown>;
+    result: string;
+    status: string;
+    duration_ms: number | null;
+};
+
 export type ProviderMessage = {
     id: number;
     created_at: Date;
     content: string;
     sender: SenderType;
-    tool_calls: unknown[];
+    tool_calls: ProviderToolCall[];
 };
 
 export interface CloudProvider {

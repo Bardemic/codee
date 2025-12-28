@@ -1,4 +1,4 @@
-import type { CloudProvider } from './base';
+import type { CloudProvider, ProviderToolCall } from './base';
 import { Workspace } from '../db/entities/Workspace';
 import { Agent, AgentStatus, ProviderType } from '../db/entities/Agent';
 import { AppDataSource } from '../db/data-source';
@@ -45,8 +45,8 @@ export class CodeeProvider implements CloudProvider {
         });
         await messageRepository.save(userMessage);
 
-        await emitStatus(agent.id, 'queued', 'init', 'queued agent job');
-        await enqueueAgentJob({
+        emitStatus(agent.id, 'queued', 'init', 'queued agent job');
+        enqueueAgentJob({
             agentId: agent.id,
             prompt: message,
             repositoryFullName,
@@ -68,16 +68,7 @@ export class CodeeProvider implements CloudProvider {
                   order: { createdAt: 'ASC' },
               })
             : [];
-        type TransformedToolCall = {
-            id: number;
-            created_at: Date;
-            tool_name: string;
-            arguments: Record<string, unknown>;
-            result: string;
-            status: string;
-            duration_ms: number | null;
-        };
-        const toolCallsByMessage = new Map<number, TransformedToolCall[]>();
+        const toolCallsByMessage = new Map<number, ProviderToolCall[]>();
         for (const toolCall of toolCalls) {
             const list = toolCallsByMessage.get(toolCall.message.id) || [];
             list.push({

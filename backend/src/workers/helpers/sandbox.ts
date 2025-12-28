@@ -3,24 +3,10 @@ import { Sandbox } from '@vercel/sandbox';
 import { Agent } from '../../db/entities/Agent';
 import { updateAgent } from './agents';
 
-async function tryGetExistingSandbox(sandboxId: string | null): Promise<Sandbox | null> {
-    if (!sandboxId) return null;
+export async function createSandbox(agent: Agent, token: string, repositoryFullName: string): Promise<Sandbox> {
+    const revision = agent.githubBranchName || undefined;
 
-    try {
-        const sandbox = await Sandbox.get({ sandboxId });
-        if (sandbox.status === 'running') {
-            return sandbox;
-        }
-        return null;
-    } catch {
-        return null;
-    }
-}
-
-export async function createNewSandbox(token: string, repositoryFullName: string, branchName?: string): Promise<Sandbox> {
-    const revision = branchName || undefined;
-
-    return Sandbox.create({
+    const sandbox = await Sandbox.create({
         token: process.env.VERCEL_TOKEN,
         teamId: process.env.VERCEL_TEAM_ID,
         projectId: process.env.VERCEL_PROJECT_ID,
@@ -30,22 +16,12 @@ export async function createNewSandbox(token: string, repositoryFullName: string
             depth: 1,
             revision,
         },
-        runtime: 'node24',
+        runtime: process.env.VERCEL_RUNTIME || 'node22',
         timeout: 5 * 60 * 1000,
         resources: { vcpus: 2 },
     });
-}
-
-export async function getOrCreateSandbox(agent: Agent, token: string, repositoryFullName: string): Promise<{ sandbox: Sandbox; isNew: boolean }> {
-    const existingSandbox = await tryGetExistingSandbox(agent.sandboxId);
-    if (existingSandbox) {
-        existingSandbox.extendTimeout(5000);
-        return { sandbox: existingSandbox, isNew: false };
-    }
-
-    const sandbox = await createNewSandbox(token, repositoryFullName, agent.githubBranchName || undefined);
 
     await updateAgent(agent, { sandboxId: sandbox.sandboxId });
 
-    return { sandbox, isNew: true };
+    return sandbox;
 }
