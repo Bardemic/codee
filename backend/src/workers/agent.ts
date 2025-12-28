@@ -1,21 +1,14 @@
 import { generateText } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { withTracing } from '@posthog/ai';
+import { openai } from '@ai-sdk/openai';
 import { Sandbox } from '@vercel/sandbox';
 import { AgentStatus } from '../db/entities/Agent';
 import { sandboxTools } from '../tools/sandboxTools';
 import { emitDone, emitError, emitStatus } from '../stream/events';
 import type { AgentJobPayload } from './queue';
 import { buildDynamicTools } from '../tools/dynamic';
-import { getPostHog } from '../utils/posthog';
-import { getAgentById, getAgentMessages, saveMessage, updateAgent, type AgentMessage } from './helpers/agents';
+import { getAgentById, getAgentMessages, saveMessage, updateAgent, persistToolCallsFromRedis, type AgentMessage } from './helpers/agents';
 import { commitAndPush, generateBranchName, getGithubTokenForUser } from './helpers/github';
-import { getOrCreateSandbox } from './helpers/sandbox';
-
-const openaiClient = createOpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-    compatibility: 'strict',
-});
+import { createSandbox } from './helpers/sandbox';
 
 const AGENT_SYSTEM_PROMPT = `
 You are Codee, an asynchronous coding agent. You work on GitHub repositories, read code, make changes, and explain your steps succinctly.
@@ -24,21 +17,8 @@ Avoid destructive operations. Return concise reasoning and resulting changes.
 `;
 
 async function runAgentLLM(agentId: number, prompt: string, sandbox: Sandbox, toolSlugs: string[], previousMessages?: AgentMessage[]) {
-    const agent = await getAgentById(agentId);
     const tools = sandboxTools(agentId, sandbox);
     const dynamicTools = await buildDynamicTools(agentId, toolSlugs, sandbox);
-
-    const postHogClient = getPostHog();
-    const model = withTracing(openaiClient('gpt-5-nano'), postHogClient, {
-        posthogDistinctId: String(agent?.workspace?.userId ?? agentId),
-        posthogProperties: {
-            agentId,
-            workspaceId: agent?.workspace?.id,
-            toolSlugs,
-            previousMessagesCount: previousMessages?.length || 0,
-        },
-    });
-
     const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
         ...(previousMessages || []).map<{
             role: 'user' | 'assistant';
@@ -51,7 +31,13 @@ async function runAgentLLM(agentId: number, prompt: string, sandbox: Sandbox, to
     ];
 
     const result = await generateText({
-        model,
+        model: openai('gpt-5-nano'),
+        providerOptions: {
+            openai: {
+                //temp, for testing
+                reasoningEffort: 'minimal',
+            },
+        },
         system: AGENT_SYSTEM_PROMPT,
         messages,
         tools: { ...tools, ...dynamicTools },
@@ -60,7 +46,7 @@ async function runAgentLLM(agentId: number, prompt: string, sandbox: Sandbox, to
 
     return {
         final: result.text,
-        toolCalls: result.toolCalls || [],
+        toolCalls: result.toolCalls,
     };
 }
 
@@ -83,12 +69,9 @@ export async function runAgentJob(payload: AgentJobPayload) {
     await emitStatus(agent.id, 'starting', 'init', 'preparing sandbox');
 
     let sandbox: Sandbox;
-    let isNewSandbox: boolean;
 
     try {
-        const result = await getOrCreateSandbox(agent, token, repositoryFullName);
-        sandbox = result.sandbox;
-        isNewSandbox = result.isNew;
+        sandbox = await createSandbox(agent, token, repositoryFullName);
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Failed to create sandbox';
         await emitError(agent.id, 'sandbox_creation_failed', message, 'init');
@@ -96,6 +79,8 @@ export async function runAgentJob(payload: AgentJobPayload) {
     }
 
     try {
+        const previousMessagesPromise = getAgentMessages(agent.id);
+
         if (!agent.githubBranchName) {
             const branchName = generateBranchName(agent.id);
             await emitStatus(agent.id, 'running', 'create_branch', `creating branch ${branchName}`);
@@ -108,26 +93,11 @@ export async function runAgentJob(payload: AgentJobPayload) {
                 args: ['push', '-u', 'origin', branchName],
             });
             await updateAgent(agent, { githubBranchName: branchName });
-        } else if (isNewSandbox) {
-            await emitStatus(agent.id, 'running', 'pull_branch', `pulling latest from ${agent.githubBranchName}`);
-            await sandbox.runCommand({
-                cmd: 'git',
-                args: ['fetch', 'origin', agent.githubBranchName],
-            });
-            await sandbox.runCommand({
-                cmd: 'git',
-                args: ['checkout', agent.githubBranchName],
-            });
-            await sandbox.runCommand({
-                cmd: 'git',
-                args: ['pull', 'origin', agent.githubBranchName],
-            });
         }
 
-        const previousMessages = await getAgentMessages(agent.id);
+        const previousMessages = await previousMessagesPromise;
 
-        await emitStatus(agent.id, 'running', 'agent_start', 'running AI');
-        await updateAgent(agent, { status: AgentStatus.RUNNING });
+        await Promise.all([emitStatus(agent.id, 'running', 'agent_start', 'running AI'), updateAgent(agent, { status: AgentStatus.RUNNING })]);
 
         const response = await runAgentLLM(
             agent.id,
@@ -137,7 +107,9 @@ export async function runAgentJob(payload: AgentJobPayload) {
             previousMessages.slice(0, -1) // Exclude the current message we just added
         );
 
-        await saveMessage(agent, response.final, 'AGENT');
+        const savedMessage = await saveMessage(agent, response.final, 'AGENT');
+
+        await persistToolCallsFromRedis(agent.id, savedMessage);
 
         const statusResult = await sandbox.runCommand({
             cmd: 'git',
@@ -149,9 +121,9 @@ export async function runAgentJob(payload: AgentJobPayload) {
             const commitMessage = `Codee: ${payload.prompt.slice(0, 50)}${payload.prompt.length > 50 ? '...' : ''}`;
             await commitAndPush(sandbox, commitMessage);
         }
+        await sandbox.stop();
 
-        await updateAgent(agent, { status: AgentStatus.COMPLETED });
-        await emitDone(agent.id, 'success');
+        await Promise.all([updateAgent(agent, { status: AgentStatus.COMPLETED }), emitDone(agent.id, 'success')]);
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'unknown error';
         await emitError(agent.id, 'agent_failure', message, 'execute');

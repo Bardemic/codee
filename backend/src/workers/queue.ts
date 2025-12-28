@@ -3,7 +3,9 @@ import { Queue, Worker } from 'bullmq';
 import { runAgentJob } from './agent';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379/0';
-const connection = new IORedis(REDIS_URL, { maxRetriesPerRequest: null });
+
+const queueConnection = new IORedis(REDIS_URL, { maxRetriesPerRequest: null });
+const workerConnection = new IORedis(REDIS_URL, { maxRetriesPerRequest: null });
 
 export type AgentJobPayload = {
     agentId: number;
@@ -13,7 +15,7 @@ export type AgentJobPayload = {
 };
 
 export const agentQueue = new Queue<AgentJobPayload>('agent-tasks', {
-    connection,
+    connection: queueConnection,
 });
 
 export async function enqueueAgentJob(payload: AgentJobPayload) {
@@ -32,7 +34,10 @@ export async function startWorkers() {
             }
             throw new Error(`unknown job ${job.name}`);
         },
-        { connection }
+        {
+            connection: workerConnection,
+            concurrency: 3,
+        }
     );
 
     worker.on('failed', (job, error) => {

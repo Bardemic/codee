@@ -104,16 +104,15 @@ export const workspaceRouter = router({
             }
 
             const workspaceToolRepository = AppDataSource.getRepository(WorkspaceTool);
-            await Promise.all(
-                tools.map((tool) =>
-                    workspaceToolRepository.save(
-                        workspaceToolRepository.create({
-                            workspace: newWorkspace,
-                            tool,
-                        })
-                    )
-                )
+            const workspaceTools = tools.map((tool) =>
+                workspaceToolRepository.create({
+                    workspace: newWorkspace,
+                    tool,
+                })
             );
+            if (workspaceTools.length > 0) {
+                await workspaceToolRepository.save(workspaceTools);
+            }
 
             const firstAgent = await createAgentsFromProviders({
                 userId: ctx.user.id,

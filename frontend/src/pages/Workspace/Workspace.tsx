@@ -74,26 +74,23 @@ export default function Workspace() {
         if (!agentId || !currentAgent) return;
         if (currentAgent.integration !== 'Codee') return;
 
-        const isActive = currentAgent.status === 'PENDING' || currentAgent.status === 'RUNNING';
-        const streamUrl = isActive ? `http://127.0.0.1:5001/stream/agent/${agentId}` : `http://127.0.0.1:5001/stream/agent/${agentId}?last_event_id=%24`;
-
-        const eventSource = new EventSource(streamUrl);
+        const eventSource = new EventSource(`http://127.0.0.1:5001/stream/agent/${agentId}`);
 
         eventSource.addEventListener('status', (event: MessageEvent) => {
-            const data = JSON.parse(event.data);
-            if (data.step?.startsWith('tool_')) {
-                const statusId = event.lastEventId || `sse_${Date.now()}`;
+            const eventData = JSON.parse(event.data);
+            if (eventData.step?.startsWith('tool_')) {
+                const eventId = event.lastEventId || `sse_${Date.now()}`;
                 setStreamingToolCalls((prev) => {
-                    if (prev.some((tc) => tc.id === statusId)) return prev;
+                    if (prev.some((toolCall) => toolCall.id === eventId)) return prev;
                     return [
                         ...prev,
                         {
-                            id: statusId,
-                            created_at: new Date(),
-                            tool_name: data.step,
+                            id: eventId,
+                            created_at: new Date(eventData.timestamp),
+                            tool_name: eventData.step,
                             arguments: {},
-                            result: data.detail ?? '',
-                            status: data.phase ?? 'running',
+                            result: eventData.detail ?? '',
+                            status: eventData.phase ?? 'running',
                             duration_ms: null,
                         },
                     ];
