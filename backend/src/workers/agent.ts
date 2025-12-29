@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { generateText, type CoreMessage } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { Sandbox } from '@vercel/sandbox';
 import { AgentStatus } from '../db/entities/Agent';
@@ -6,9 +6,11 @@ import { sandboxTools } from '../tools/sandboxTools';
 import { emitDone, emitError, emitStatus } from '../stream/events';
 import type { AgentJobPayload } from './queue';
 import { buildDynamicTools } from '../tools/dynamic';
-import { getAgentById, getAgentMessages, saveMessage, updateAgent, persistToolCallsFromRedis, type AgentMessage } from './helpers/agents';
+import { getAgentById, saveMessage, updateAgent, persistToolCallsFromRedis } from './helpers/agents';
 import { commitAndPush, generateBranchName, getGithubTokenForUser } from './helpers/github';
 import { createSandbox } from './helpers/sandbox';
+import { AppDataSource } from '../db/data-source';
+import { Message } from '../db/entities/Message';
 
 const AGENT_SYSTEM_PROMPT = `
 You are Codee, an asynchronous coding agent. You work on GitHub repositories, read code, make changes, and explain your steps succinctly.
@@ -16,18 +18,14 @@ If the user requests git operations, prefer using tools (update_file, list_files
 Avoid destructive operations. Return concise reasoning and resulting changes.
 `;
 
-async function runAgentLLM(agentId: number, prompt: string, sandbox: Sandbox, toolSlugs: string[], previousMessages?: AgentMessage[]) {
+async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: string[], previousMessages: Message[]) {
     const tools = sandboxTools(agentId, sandbox);
     const dynamicTools = await buildDynamicTools(agentId, toolSlugs, sandbox);
-    const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [
-        ...(previousMessages || []).map<{
-            role: 'user' | 'assistant';
-            content: string;
-        }>((message) => ({
+    const messages: CoreMessage[] = [
+        ...previousMessages.map<CoreMessage>((message) => ({
             role: message.sender === 'USER' ? 'user' : 'assistant',
             content: message.content,
         })),
-        { role: 'user', content: prompt },
     ];
 
     const result = await generateText({
@@ -79,7 +77,10 @@ export async function runAgentJob(payload: AgentJobPayload) {
     }
 
     try {
-        const previousMessagesPromise = getAgentMessages(agent.id);
+        const previousMessagesPromise = AppDataSource.getRepository(Message).find({
+            where: { agent: { id: agent.id } },
+            order: { createdAt: 'ASC' },
+        });
 
         if (!agent.githubBranchName) {
             const branchName = generateBranchName(agent.id);
@@ -99,13 +100,7 @@ export async function runAgentJob(payload: AgentJobPayload) {
 
         await Promise.all([emitStatus(agent.id, 'running', 'agent_start', 'running AI'), updateAgent(agent, { status: AgentStatus.RUNNING })]);
 
-        const response = await runAgentLLM(
-            agent.id,
-            payload.prompt,
-            sandbox,
-            payload.toolSlugs || [],
-            previousMessages.slice(0, -1) // Exclude the current message we just added
-        );
+        const response = await runAgentLLM(agent.id, sandbox, payload.toolSlugs || [], previousMessages);
 
         const savedMessage = await saveMessage(agent, response.final, 'AGENT');
 

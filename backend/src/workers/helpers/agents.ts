@@ -4,13 +4,6 @@ import { Message, type SenderType } from '../../db/entities/Message';
 import { ToolCall } from '../../db/entities/ToolCall';
 import { readHistorySince } from '../../stream/events';
 
-export type AgentMessage = {
-    id: number;
-    created_at: Date;
-    content: string;
-    sender: SenderType;
-};
-
 export async function getAgentById(agentId: number) {
     return AppDataSource.getRepository(Agent).findOne({
         where: { id: agentId },
@@ -22,20 +15,6 @@ export async function saveMessage(agent: Agent, content: string, sender: SenderT
     const messageRepository = AppDataSource.getRepository(Message);
     const msg = messageRepository.create({ agent, content, sender });
     return messageRepository.save(msg);
-}
-
-export async function getAgentMessages(agentId: number): Promise<AgentMessage[]> {
-    const messages = await AppDataSource.getRepository(Message).find({
-        where: { agent: { id: agentId } },
-        order: { createdAt: 'ASC' },
-    });
-
-    return messages.map((message) => ({
-        id: message.id,
-        created_at: message.createdAt,
-        content: message.content,
-        sender: message.sender,
-    }));
 }
 
 export async function updateAgent(agent: Agent, updates: Partial<Agent>) {
