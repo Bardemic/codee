@@ -12,9 +12,6 @@ export class Workspace {
     @Column({ length: 200, default: 'Untitled' })
     name!: string;
 
-    @Column({ length: 100, default: 'main' })
-    defaultBranch!: string;
-
     @Column()
     userId!: string;
 

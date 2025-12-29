@@ -41,7 +41,7 @@ async function createWorkspaceFromWebhook(params: {
     repository: string;
     message: string;
     data: Record<string, unknown>;
-    defaultBranch: string;
+    currentBranch: string;
 }) {
     const workspaceRepository = AppDataSource.getRepository(Workspace);
     const toolRepository = AppDataSource.getRepository(Tool);
@@ -54,7 +54,7 @@ async function createWorkspaceFromWebhook(params: {
         userId: params.worker.userId,
         name: title,
         workerId: params.worker.id,
-        defaultBranch: params.defaultBranch,
+        currentBranch: params.currentBranch,
     });
     await workspaceRepository.save(workspace);
 
@@ -79,7 +79,7 @@ async function createWorkspaceFromWebhook(params: {
         repositoryFullName: params.repository,
         message: params.message,
         toolSlugs,
-        branchName: params.defaultBranch,
+        branchName: params.currentBranch,
         cloudProviders,
     });
     return workspace;
@@ -114,7 +114,7 @@ router.post('/github/events', express.raw({ type: 'application/json' }), async (
             worker,
             repository,
             message,
-            defaultBranch: typeof defaultBranch === 'string' && defaultBranch.length > 0 ? defaultBranch : 'main',
+            currentBranch: typeof defaultBranch === 'string' && defaultBranch.length > 0 ? defaultBranch : 'main',
             data: { comment, issue },
         });
     }
@@ -138,7 +138,7 @@ router.post('/posthog/issue', express.json(), async (req, res) => {
         worker,
         repository: body.repository,
         message,
-        defaultBranch: eventDefaultBranch && eventDefaultBranch.length > 0 ? eventDefaultBranch : 'main',
+        currentBranch: eventDefaultBranch && eventDefaultBranch.length > 0 ? eventDefaultBranch : 'main',
         data: body.event,
     });
     return res.status(204).end();

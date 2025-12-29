@@ -53,7 +53,7 @@ export async function runAgentJob(payload: AgentJobPayload) {
     if (!agent) throw new Error('agent not found');
 
     const repositoryFullName = payload.repositoryFullName || agent.workspace.githubRepositoryName;
-    const baseBranch = payload.baseBranch || agent.workspace.defaultBranch;
+    const baseBranch = payload.baseBranch || agent.workspace.currentBranch;
     if (!repositoryFullName) {
         await emitError(agent.id, 'missing_repository', 'No repository specified', 'init');
         return;
