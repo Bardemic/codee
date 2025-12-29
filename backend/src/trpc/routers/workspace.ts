@@ -76,6 +76,7 @@ export const workspaceRouter = router({
                 repository_full_name: z.string(),
                 tool_slugs: z.array(z.string()),
                 cloud_providers: z.array(providerConfig).min(1),
+                branch_name: z.string().min(1),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -86,6 +87,7 @@ export const workspaceRouter = router({
                 name: title,
                 userId: ctx.user.id,
                 githubRepositoryName: input.repository_full_name,
+                defaultBranch: input.branch_name,
             });
             await workspaceRepository.save(newWorkspace);
 
@@ -120,6 +122,7 @@ export const workspaceRouter = router({
                 repositoryFullName: input.repository_full_name,
                 message: input.message,
                 toolSlugs: input.tool_slugs,
+                branchName: input.branch_name,
                 cloudProviders: input.cloud_providers,
             });
 

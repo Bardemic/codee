@@ -16,12 +16,14 @@ export class CursorProvider implements CloudProvider {
         repositoryFullName,
         message,
         model,
+        baseBranch,
     }: {
         userId: string;
         workspace: Workspace;
         repositoryFullName: string;
         message: string;
         toolSlugs: string[];
+        baseBranch: string;
         model?: string | null;
     }): Promise<Agent> {
         const agentRepository = AppDataSource.getRepository(Agent);

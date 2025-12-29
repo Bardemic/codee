@@ -3,8 +3,8 @@ import { Sandbox } from '@vercel/sandbox';
 import { Agent } from '../../db/entities/Agent';
 import { updateAgent } from './agents';
 
-export async function createSandbox(agent: Agent, token: string, repositoryFullName: string): Promise<Sandbox> {
-    const revision = agent.githubBranchName || undefined;
+export async function createSandbox(agent: Agent, token: string, repositoryFullName: string, baseBranch?: string): Promise<Sandbox> {
+    const revision = agent.githubBranchName || baseBranch || undefined;
 
     const sandbox = await Sandbox.create({
         token: process.env.VERCEL_TOKEN,

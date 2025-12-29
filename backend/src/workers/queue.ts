@@ -12,6 +12,7 @@ export type AgentJobPayload = {
     prompt: string;
     repositoryFullName?: string; // Optional - will use agent's workspace repo if not provided
     toolSlugs?: string[];
+    baseBranch: string;
 };
 
 export const agentQueue = new Queue<AgentJobPayload>('agent-tasks', {

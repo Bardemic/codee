@@ -7,6 +7,7 @@ import { IntegrationProvider } from '../../db/entities/IntegrationProvider';
 import { IntegrationConnection } from '../../db/entities/IntegrationConnection';
 import { Tool } from '../../db/entities/Tool';
 import { getInstallationToken } from '../../utils/github';
+import { getGithubTokenForUser } from '../../services/githubService';
 
 const connectInput = z.object({
     providerId: z.number().optional(),
@@ -212,4 +213,36 @@ export const integrationsRouter = router({
             default_branch: repository.default_branch,
         }));
     }),
+
+    branches: authedProcedure
+        .input(
+            z.object({
+                repository_full_name: z.string(),
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            const token = await getGithubTokenForUser(ctx.user.id);
+
+            const responseSchema = z.array(
+                z.object({
+                    name: z.string(),
+                    commit: z.object({ sha: z.string() }),
+                })
+            );
+
+            const response = await axios.get(`https://api.github.com/repos/${input.repository_full_name}/branches?per_page=100`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: 'application/vnd.github+json',
+                },
+            });
+
+            const parsed = responseSchema.safeParse(response.data);
+            if (!parsed.success) return [];
+
+            return parsed.data.map((branch) => ({
+                name: branch.name,
+                commit_sha: branch.commit.sha,
+            }));
+        }),
 });
