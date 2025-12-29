@@ -44,14 +44,7 @@ export function SelectionPill<T>({ options, selected, onSelect, direction = 'dow
     }, [options, searchTerm]);
 
     return (
-        <div
-            ref={containerRef}
-            onClick={() => setIsOpen(!isOpen)}
-            className={styles.container}
-            role="button"
-            aria-haspopup="listbox"
-            aria-expanded={isOpen}
-        >
+        <div ref={containerRef} onClick={() => setIsOpen(!isOpen)} className={styles.container} role="button" aria-haspopup="listbox" aria-expanded={isOpen}>
             {icon}
             <span className={styles.label}>{selected?.label ?? placeholder}</span>
             {isOpen && options.length > 0 && (
@@ -103,10 +96,7 @@ export function RepositoriesPill({ selected, setSelected, direction = 'down' }: 
         trpc: { context: { skipBatch: true } },
     });
 
-    const repoOptions = useMemo<PillOption<Repository>[]>(
-        () => (repos ?? []).map((repo) => ({ id: repo.github_id, label: repo.name, value: repo })),
-        [repos]
-    );
+    const repoOptions = useMemo<PillOption<Repository>[]>(() => (repos ?? []).map((repo) => ({ id: repo.github_id, label: repo.name, value: repo })), [repos]);
 
     const selectedOption = useMemo(
         () => repoOptions.find((option) => option.value.github_id === selected?.github_id) ?? null,

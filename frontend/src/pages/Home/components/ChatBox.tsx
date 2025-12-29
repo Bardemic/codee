@@ -23,17 +23,7 @@ export interface ChatBoxRef {
     clear: () => void;
 }
 
-export function ChatBox({
-    integrations,
-    onSubmit,
-    isLoading,
-    isDisabled,
-    placeholder,
-    leftPills,
-    resetKey,
-    cloudAgents,
-    onCloudAgentsChange,
-}: ChatBoxProps) {
+export function ChatBox({ integrations, onSubmit, isLoading, isDisabled, placeholder, leftPills, resetKey, cloudAgents, onCloudAgentsChange }: ChatBoxProps) {
     const [selectedTools, setSelectedTools] = useState<string[]>([]);
     const editorRef = useRef<PromptEditorRef>(null);
     const isBlocked = Boolean(isLoading || isDisabled);

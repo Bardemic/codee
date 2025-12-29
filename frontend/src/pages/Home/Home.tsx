@@ -54,21 +54,23 @@ function Home() {
     const branchOptions = useMemo(() => {
         const branchNames = branches?.map((branch) => branch.name) ?? [];
         const defaultBranch = selectedRepo?.default_branch;
-        
+
         if (defaultBranch && !branchNames.includes(defaultBranch)) {
             branchNames.unshift(defaultBranch);
         }
-        
+
         return branchNames.map((name) => ({ id: name, label: name, value: name }));
     }, [branches, selectedRepo?.default_branch]);
 
     const selectedBranchOption = useMemo(() => {
         if (!selectedBranch) return null;
-        return branchOptions.find((option) => option.value === selectedBranch) ?? {
-            id: selectedBranch,
-            label: selectedBranch,
-            value: selectedBranch,
-        };
+        return (
+            branchOptions.find((option) => option.value === selectedBranch) ?? {
+                id: selectedBranch,
+                label: selectedBranch,
+                value: selectedBranch,
+            }
+        );
     }, [branchOptions, selectedBranch]);
 
     async function createNewWorkspace(userMessage: string, selectedTools: string[]) {
