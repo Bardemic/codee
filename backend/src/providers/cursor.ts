@@ -61,7 +61,7 @@ export class CursorProvider implements CloudProvider {
 
         const payload = {
             prompt: { text: message },
-            source: { repository: `https://github.com/${repositoryFullName}` },
+            source: { repository: `https://github.com/${repositoryFullName}`, ref: baseBranch },
             ...(model ? { model } : {}),
             // target: { autoCreatePr: false, branchName: '' },
         };
