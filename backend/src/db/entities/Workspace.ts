@@ -12,9 +12,6 @@ export class Workspace {
     @Column({ length: 200, default: 'Untitled' })
     name!: string;
 
-    @Column({ length: 100, default: 'main' })
-    defaultBranch!: string;
-
     @Column()
     userId!: string;
 
@@ -25,8 +22,8 @@ export class Workspace {
     workerId!: number | null;
 
     @Index()
-    @Column({ default: 'codee/agent-main', nullable: true })
-    currentBranch!: string | null;
+    @Column({ default: 'main' })
+    currentBranch!: string;
 
     @OneToMany('Agent', 'workspace')
     providerAgents!: Agent[];

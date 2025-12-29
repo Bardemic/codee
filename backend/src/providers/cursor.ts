@@ -16,12 +16,14 @@ export class CursorProvider implements CloudProvider {
         repositoryFullName,
         message,
         model,
+        baseBranch,
     }: {
         userId: string;
         workspace: Workspace;
         repositoryFullName: string;
         message: string;
         toolSlugs: string[];
+        baseBranch: string;
         model?: string | null;
     }): Promise<Agent> {
         const agentRepository = AppDataSource.getRepository(Agent);
@@ -59,7 +61,7 @@ export class CursorProvider implements CloudProvider {
 
         const payload = {
             prompt: { text: message },
-            source: { repository: `https://github.com/${repositoryFullName}` },
+            source: { repository: `https://github.com/${repositoryFullName}`, ref: baseBranch },
             ...(model ? { model } : {}),
             // target: { autoCreatePr: false, branchName: '' },
         };

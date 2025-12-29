@@ -22,6 +22,7 @@ export async function createAgentsFromProviders(params: {
     repositoryFullName: string;
     message: string;
     toolSlugs: string[];
+    branchName: string;
     cloudProviders: CloudProviderConfig[];
 }): Promise<Agent> {
     let first: Agent | null = null;
@@ -36,6 +37,7 @@ export async function createAgentsFromProviders(params: {
                 repositoryFullName: params.repositoryFullName,
                 message: params.message,
                 toolSlugs: params.toolSlugs,
+                baseBranch: params.branchName,
                 model: agentConfig.model,
             });
             if (!first) first = agent;

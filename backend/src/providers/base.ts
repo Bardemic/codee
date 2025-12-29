@@ -28,6 +28,7 @@ export interface CloudProvider {
         repositoryFullName: string;
         message: string;
         toolSlugs: string[];
+        baseBranch: string;
         model?: string | null;
     }): Promise<Agent>;
     getMessages(agent: Agent): Promise<ProviderMessage[]>;

@@ -11,6 +11,7 @@ interface ChatBoxProps {
     integrations: Integration[];
     onSubmit: (message: string, selectedTools: string[]) => void;
     isLoading?: boolean;
+    isDisabled?: boolean;
     placeholder?: string;
     leftPills?: ReactNode;
     resetKey?: number;
@@ -22,9 +23,10 @@ export interface ChatBoxRef {
     clear: () => void;
 }
 
-export function ChatBox({ integrations, onSubmit, isLoading, placeholder, leftPills, resetKey, cloudAgents, onCloudAgentsChange }: ChatBoxProps) {
+export function ChatBox({ integrations, onSubmit, isLoading, isDisabled, placeholder, leftPills, resetKey, cloudAgents, onCloudAgentsChange }: ChatBoxProps) {
     const [selectedTools, setSelectedTools] = useState<string[]>([]);
     const editorRef = useRef<PromptEditorRef>(null);
+    const isBlocked = Boolean(isLoading || isDisabled);
 
     const integrationDropdownOptions = useMemo<DropdownOption[]>(
         () =>
@@ -62,7 +64,7 @@ export function ChatBox({ integrations, onSubmit, isLoading, placeholder, leftPi
                 integrations={integrations}
                 onSelectedToolsChange={setSelectedTools}
                 onSubmit={handleSubmit}
-                disabled={isLoading}
+                disabled={isBlocked}
                 placeholder={placeholder}
             />
             <div className={styles.chatFooter}>
@@ -84,7 +86,7 @@ export function ChatBox({ integrations, onSubmit, isLoading, placeholder, leftPi
                         const message = editorRef.current?.getMessage().trim();
                         if (message) handleSubmit(message);
                     }}
-                    disabled={isLoading}
+                    disabled={isBlocked}
                 >
                     {isLoading ? <AiOutlineLoading3Quarters size={16} className={styles.spinIcon} /> : <BsSend size={16} />}
                 </button>

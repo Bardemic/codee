@@ -36,7 +36,13 @@ function verifySignature(secret: string, payload: Buffer, signatureHeader?: stri
     return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signatureHeader));
 }
 
-async function createWorkspaceFromWebhook(params: { worker: WorkerDefinition; repository: string; message: string; data: Record<string, unknown> }) {
+async function createWorkspaceFromWebhook(params: {
+    worker: WorkerDefinition;
+    repository: string;
+    message: string;
+    data: Record<string, unknown>;
+    currentBranch: string;
+}) {
     const workspaceRepository = AppDataSource.getRepository(Workspace);
     const toolRepository = AppDataSource.getRepository(Tool);
     const workspaceToolRepository = AppDataSource.getRepository(WorkspaceTool);
@@ -48,6 +54,7 @@ async function createWorkspaceFromWebhook(params: { worker: WorkerDefinition; re
         userId: params.worker.userId,
         name: title,
         workerId: params.worker.id,
+        currentBranch: params.currentBranch,
     });
     await workspaceRepository.save(workspace);
 
@@ -72,6 +79,7 @@ async function createWorkspaceFromWebhook(params: { worker: WorkerDefinition; re
         repositoryFullName: params.repository,
         message: params.message,
         toolSlugs,
+        branchName: params.currentBranch,
         cloudProviders,
     });
     return workspace;
@@ -93,6 +101,7 @@ router.post('/github/events', express.raw({ type: 'application/json' }), async (
         const slug = match[1];
         const issue = body.issue;
         const repository = body.repository?.full_name;
+        const defaultBranch = body.repository?.default_branch;
         if (!issue || !repository) return res.status(400).send('Missing GitHub issue or repository in webhook payload');
 
         const workerRepository = AppDataSource.getRepository(WorkerDefinition);
@@ -105,6 +114,7 @@ router.post('/github/events', express.raw({ type: 'application/json' }), async (
             worker,
             repository,
             message,
+            currentBranch: typeof defaultBranch === 'string' && defaultBranch.length > 0 ? defaultBranch : 'main',
             data: { comment, issue },
         });
     }
@@ -123,10 +133,12 @@ router.post('/posthog/issue', express.json(), async (req, res) => {
     });
     if (!worker) return res.status(403).send(`Invalid key for worker with slug: ${body.worker_slug}`);
     const message = worker.prompt + '\n\n' + 'PostHog event data: ' + JSON.stringify(body.event, null, 2);
+    const eventDefaultBranch = typeof body.event.default_branch === 'string' ? body.event.default_branch : null;
     await createWorkspaceFromWebhook({
         worker,
         repository: body.repository,
         message,
+        currentBranch: eventDefaultBranch && eventDefaultBranch.length > 0 ? eventDefaultBranch : 'main',
         data: body.event,
     });
     return res.status(204).end();

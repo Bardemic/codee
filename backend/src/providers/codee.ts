@@ -16,6 +16,7 @@ export class CodeeProvider implements CloudProvider {
         repositoryFullName,
         message,
         toolSlugs,
+        baseBranch,
         model,
     }: {
         userId: string;
@@ -23,6 +24,7 @@ export class CodeeProvider implements CloudProvider {
         repositoryFullName: string;
         message: string;
         toolSlugs: string[];
+        baseBranch: string;
         model?: string | null;
     }): Promise<Agent> {
         const agentRepository = AppDataSource.getRepository(Agent);
@@ -51,6 +53,7 @@ export class CodeeProvider implements CloudProvider {
             prompt: message,
             repositoryFullName,
             toolSlugs,
+            baseBranch,
         });
         return agent;
     }
@@ -104,7 +107,15 @@ export class CodeeProvider implements CloudProvider {
             console.error('Failed to emit status:', err);
         });
 
-        enqueueAgentJob({ agentId: agent.id, prompt: message }).catch((err) => {
+        if (!agent.githubBranchName) {
+            throw new Error('Agent branch not found');
+        }
+
+        enqueueAgentJob({
+            agentId: agent.id,
+            prompt: message,
+            baseBranch: agent.githubBranchName,
+        }).catch((err) => {
             console.error('Failed to enqueue agent job:', err);
         });
 

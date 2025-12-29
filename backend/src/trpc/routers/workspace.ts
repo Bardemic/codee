@@ -38,7 +38,7 @@ export const workspaceRouter = router({
             id: workspace.id,
             created_at: workspace.createdAt,
             name: workspace.name,
-            default_branch: workspace.defaultBranch,
+            current_branch: workspace.currentBranch,
             github_repository_name: workspace.githubRepositoryName,
             agents: (agentsByWorkspace.get(workspace.id) || []).map((agent) => ({
                 id: agent.id,
@@ -63,7 +63,7 @@ export const workspaceRouter = router({
             id: workspace.id,
             created_at: workspace.createdAt,
             name: workspace.name,
-            default_branch: workspace.defaultBranch,
+            current_branch: workspace.currentBranch,
             github_repository_name: workspace.githubRepositoryName,
             agents,
         };
@@ -76,6 +76,7 @@ export const workspaceRouter = router({
                 repository_full_name: z.string(),
                 tool_slugs: z.array(z.string()),
                 cloud_providers: z.array(providerConfig).min(1),
+                branch_name: z.string().min(1),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -86,6 +87,7 @@ export const workspaceRouter = router({
                 name: title,
                 userId: ctx.user.id,
                 githubRepositoryName: input.repository_full_name,
+                currentBranch: input.branch_name,
             });
             await workspaceRepository.save(newWorkspace);
 
@@ -120,6 +122,7 @@ export const workspaceRouter = router({
                 repositoryFullName: input.repository_full_name,
                 message: input.message,
                 toolSlugs: input.tool_slugs,
+                branchName: input.branch_name,
                 cloudProviders: input.cloud_providers,
             });
 

@@ -53,6 +53,7 @@ export async function runAgentJob(payload: AgentJobPayload) {
     if (!agent) throw new Error('agent not found');
 
     const repositoryFullName = payload.repositoryFullName || agent.workspace.githubRepositoryName;
+    const baseBranch = payload.baseBranch || agent.workspace.currentBranch;
     if (!repositoryFullName) {
         await emitError(agent.id, 'missing_repository', 'No repository specified', 'init');
         return;
@@ -69,7 +70,7 @@ export async function runAgentJob(payload: AgentJobPayload) {
     let sandbox: Sandbox;
 
     try {
-        sandbox = await createSandbox(agent, token, repositoryFullName);
+        sandbox = await createSandbox(agent, token, repositoryFullName, baseBranch);
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Failed to create sandbox';
         await emitError(agent.id, 'sandbox_creation_failed', message, 'init');
