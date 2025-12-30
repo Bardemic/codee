@@ -7,7 +7,6 @@ import { Tool } from '../../db/entities/Tool';
 import { In } from 'typeorm';
 import { WorkerDefinitionTool } from '../../db/entities/WorkerDefinitionTool';
 import { Workspace } from '../../db/entities/Workspace';
-import { Agent } from '../../db/entities/Agent';
 
 const cloudProviderSchema = z.object({
     name: z.string(),
@@ -24,67 +23,46 @@ const workerInput = z.object({
 
 export const workersRouter = router({
     list: authedProcedure.query(async ({ ctx }) => {
-        const workerRepository = AppDataSource.getRepository(WorkerDefinition);
-        const workers = await workerRepository.find({
+        const workers = await AppDataSource.getRepository(WorkerDefinition).find({
             where: { userId: ctx.user.id },
+            relations: ['tools', 'tools.tool'],
             order: { id: 'DESC' },
         });
+
         const workerIds = workers.map((worker) => worker.id);
-        const workspaceRepository = AppDataSource.getRepository(Workspace);
         const workspaces = workerIds.length
-            ? await workspaceRepository.find({
+            ? await AppDataSource.getRepository(Workspace).find({
                   where: { workerId: In(workerIds) },
+                  relations: ['providerAgents'],
                   order: { createdAt: 'DESC' },
               })
             : [];
-        const workspaceIds = workspaces.map((workspace) => workspace.id);
-        const agentRepository = AppDataSource.getRepository(Agent);
-        const agents = workspaceIds.length
-            ? await agentRepository.find({
-                  where: { workspace: { id: In(workspaceIds) } },
-              })
-            : [];
-        const agentsByWorkspace = new Map<number, Agent[]>();
-        for (const agent of agents) {
-            const list = agentsByWorkspace.get(agent.workspace.id) || [];
-            list.push(agent);
-            agentsByWorkspace.set(agent.workspace.id, list);
-        }
+
         const workspacesByWorker = new Map<number, Workspace[]>();
         for (const workspace of workspaces) {
             const list = workspacesByWorker.get(workspace.workerId || -1) || [];
-            list.push(workspace);
-            workspacesByWorker.set(workspace.workerId || -1, list.slice(0, 3));
+            if (list.length < 3) {
+                list.push(workspace);
+                workspacesByWorker.set(workspace.workerId || -1, list);
+            }
         }
-        const linkRepository = AppDataSource.getRepository(WorkerDefinitionTool);
-        const links = workerIds.length
-            ? await linkRepository.find({
-                  where: { workerDefinition: { id: In(workerIds) } },
-                  relations: ['tool', 'workerDefinition'],
-              })
-            : [];
-        const toolsByWorker = new Map<number, Tool[]>();
-        for (const link of links) {
-            const list = toolsByWorker.get(link.workerDefinition.id) || [];
-            if (link.tool) list.push(link.tool);
-            toolsByWorker.set(link.workerDefinition.id, list);
-        }
+
         return workers.map((worker) => ({
             id: worker.id,
             slug: worker.slug,
             prompt: worker.prompt,
-            tools: (toolsByWorker.get(worker.id) || []).map((tool) => ({
-                id: tool.id,
-                display_name: tool.displayName,
-                slug_name: tool.slugName,
-                is_model: tool.isModel,
+            tools: (worker.tools || []).map((workerTool) => ({
+                id: workerTool.tool.id,
+                display_name: workerTool.tool.displayName,
+                slug_name: workerTool.tool.slugName,
+                is_model: workerTool.tool.isModel,
             })),
             cloud_providers: worker.cloudProviders,
             workspaces: (workspacesByWorker.get(worker.id) || []).map((workspace) => ({
                 id: workspace.id,
                 name: workspace.name,
                 created_at: workspace.createdAt,
-                agents: (agentsByWorkspace.get(workspace.id) || []).map((agent) => ({
+                agents: (workspace.providerAgents || []).map((agent) => ({
                     id: agent.id,
                     name: agent.name,
                     status: agent.status,

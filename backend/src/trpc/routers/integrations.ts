@@ -5,7 +5,6 @@ import { authedProcedure, router } from '../trpc';
 import { AppDataSource } from '../../db/data-source';
 import { IntegrationProvider } from '../../db/entities/IntegrationProvider';
 import { IntegrationConnection } from '../../db/entities/IntegrationConnection';
-import { Tool } from '../../db/entities/Tool';
 import { getInstallationToken } from '../../utils/github';
 import { getGithubTokenForUser } from '../../services/githubService';
 
@@ -17,40 +16,36 @@ const connectInput = z.object({
 
 export const integrationsRouter = router({
     list: authedProcedure.query(async ({ ctx }) => {
-        const providerRepository = AppDataSource.getRepository(IntegrationProvider);
-        const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
-        const toolRepository = AppDataSource.getRepository(Tool);
+        const providers = await AppDataSource.getRepository(IntegrationProvider).find({
+            relations: ['tools', 'connections'],
+        });
 
-        const providers = await providerRepository.find();
-        const connections = await connectionRepository.find({
+        const userConnections = await AppDataSource.getRepository(IntegrationConnection).find({
             where: { userId: ctx.user.id },
             relations: ['provider'],
         });
 
-        const tools = await toolRepository.find({ relations: ['provider'] });
+        const connectionsByProvider = new Map(userConnections.map((connection) => [connection.provider.id, connection]));
 
         const result = providers.map((provider) => {
-            const connection = connections.find((c) => c.provider.id === provider.id);
-            const providerTools = tools
-                .filter((tool) => tool.provider?.id === provider.id)
-                .map((tool) => ({
-                    id: tool.id,
-                    display_name: tool.displayName,
-                    slug_name: tool.slugName,
-                    is_model: tool.isModel,
-                }));
+            const connection = connectionsByProvider.get(provider.id);
             return {
                 id: provider.id,
                 slug: provider.slug,
                 name: provider.displayName,
                 connected: !!connection,
                 connection_id: connection?.id,
-                tools: providerTools,
+                tools: provider.tools.map((tool) => ({
+                    id: tool.id,
+                    display_name: tool.displayName,
+                    slug_name: tool.slugName,
+                    is_model: tool.isModel,
+                })),
                 has_cloud_agent: provider.hasCloudAgent,
             };
         });
 
-        const cursorConnection = connections.find((connection) => connection.provider.slug === 'cursor');
+        const cursorConnection = userConnections.find((connection) => connection.provider.slug === 'cursor');
         if (cursorConnection) {
             const apiKey = cursorConnection.getDataConfig()?.api_key;
             if (apiKey) {
@@ -144,7 +139,7 @@ export const integrationsRouter = router({
                 });
             connection.setDataConfig({ api_key: apiKey });
         } else {
-            connection.setDataConfig(Object.fromEntries(Object.entries(input.data).map(([k, v]) => [k, String(v)])));
+            connection.setDataConfig(Object.fromEntries(Object.entries(input.data).map(([key, value]) => [key, String(value)])));
         }
 
         await connectionRepository.save(connection);

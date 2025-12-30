@@ -17,55 +17,43 @@ const providerConfig = z.object({
 
 export const workspaceRouter = router({
     list: authedProcedure.query(async ({ ctx }) => {
-        const workspaceRepository = AppDataSource.getRepository(Workspace);
-        const workspaces = await workspaceRepository.find({
+        const workspaces = await AppDataSource.getRepository(Workspace).find({
             where: { userId: ctx.user.id },
+            relations: ['providerAgents'],
             order: { createdAt: 'DESC' },
         });
 
-        const workspaceIds = workspaces.map((workspace) => workspace.id);
-        const agentRepository = AppDataSource.getRepository(Agent);
-        const agents = await agentRepository.find({ where: { workspace: { id: In(workspaceIds) } }, relations: ['workspace'] });
-        const agentsByWorkspace = new Map<number, Agent[]>();
-        for (const agent of agents) {
-            const workspaceId = agent.workspace?.id;
-            if (!workspaceId) continue;
-            const list = agentsByWorkspace.get(workspaceId) || [];
-            list.push(agent);
-            agentsByWorkspace.set(workspaceId, list);
-        }
         return workspaces.map((workspace) => ({
             id: workspace.id,
             created_at: workspace.createdAt,
             name: workspace.name,
             current_branch: workspace.currentBranch,
             github_repository_name: workspace.githubRepositoryName,
-            agents: (agentsByWorkspace.get(workspace.id) || []).map((agent) => ({
-                id: agent.id,
-                name: agent.name,
-                status: agent.status,
-                integration: agent.providerType,
-                url: agent.url,
-                github_branch_name: agent.githubBranchName,
-            })),
+            agents:
+                workspace.providerAgents?.map((agent) => ({
+                    id: agent.id,
+                    name: agent.name,
+                    status: agent.status,
+                    integration: agent.providerType,
+                    url: agent.url,
+                    github_branch_name: agent.githubBranchName,
+                })) || [],
         }));
     }),
 
     get: authedProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
         const workspace = await AppDataSource.getRepository(Workspace).findOne({
             where: { id: input.id, userId: ctx.user.id },
+            relations: ['providerAgents'],
         });
         if (!workspace) throw new TRPCError({ code: 'NOT_FOUND' });
-        const agents = await AppDataSource.getRepository(Agent).find({
-            where: { workspace: { id: workspace.id } },
-        });
         return {
             id: workspace.id,
             created_at: workspace.createdAt,
             name: workspace.name,
             current_branch: workspace.currentBranch,
             github_repository_name: workspace.githubRepositoryName,
-            agents,
+            agents: workspace.providerAgents,
         };
     }),
 

@@ -1,4 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Unique, OneToMany } from 'typeorm';
+import type { Tool } from './Tool';
+import type { IntegrationConnection } from './IntegrationConnection';
 
 @Entity()
 @Unique(['slug'])
@@ -20,4 +22,10 @@ export class IntegrationProvider {
 
     @CreateDateColumn()
     createdAt!: Date;
+
+    @OneToMany('Tool', 'provider')
+    tools!: Tool[];
+
+    @OneToMany('IntegrationConnection', 'provider')
+    connections!: IntegrationConnection[];
 }
