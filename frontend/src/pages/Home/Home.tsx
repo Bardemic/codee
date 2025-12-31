@@ -118,6 +118,11 @@ function Home() {
                     }
                 />
             </div>
+            <div style={{ padding: '20px' }}>
+                <pre><code>
+{`function add(a, b) { return a + b; }`}
+</code></pre>
+            </div>
         </div>
     );
 }
