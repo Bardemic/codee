@@ -7,6 +7,7 @@ import Integrations from './pages/Integrations/Integrations';
 import Workspace from './pages/Workspace/Workspace';
 import Workers from './pages/Workers/Workers';
 import './app.css';
+import GlobalHotkeys from './components/GlobalHotkeys';
 
 function SidebarLayout() {
     return (
@@ -19,8 +20,9 @@ function SidebarLayout() {
 function App() {
     return (
         <Router>
+            <GlobalHotkeys />
             <Routes>
-                <Route path="/" element={<SidebarLayout />}>
+                <Route path="/" element={<SidebarLayout /> }>
                     <Route index element={<Home />} />
                     <Route path="integrations" element={<Integrations />} />
                     <Route path="workers" element={<Workers />} />
