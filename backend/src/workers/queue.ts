@@ -1,6 +1,6 @@
 import IORedis from 'ioredis';
 import { Queue, Worker } from 'bullmq';
-import { runAgentJob } from './agent';
+import { runAgentJob, runPrimaryAgentJob } from './agent';
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379/0';
 
@@ -13,6 +13,7 @@ export type AgentJobPayload = {
     repositoryFullName?: string; // Optional - will use agent's workspace repo if not provided
     toolSlugs?: string[];
     baseBranch: string;
+    isPrimaryAgent: boolean;
 };
 
 export const agentQueue = new Queue<AgentJobPayload>('agent-tasks', {
@@ -31,6 +32,9 @@ export async function startWorkers() {
         'agent-tasks',
         async (job) => {
             if (job.name === 'agent') {
+                if (job.data.isPrimaryAgent) {
+                    return runPrimaryAgentJob(job.data);
+                }
                 return runAgentJob(job.data);
             }
             throw new Error(`unknown job ${job.name}`);

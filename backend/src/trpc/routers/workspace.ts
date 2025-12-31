@@ -9,6 +9,7 @@ import { WorkspaceTool } from '../../db/entities/WorkspaceTool';
 import { createAgentsFromProviders, PROVIDERS } from '../../providers';
 import { generateTitle } from '../../utils/llm';
 import { In } from 'typeorm';
+import { CodeeProvider } from '../../providers/codee';
 
 const providerConfig = z.object({
     name: z.string(),
@@ -65,6 +66,7 @@ export const workspaceRouter = router({
                 tool_slugs: z.array(z.string()),
                 cloud_providers: z.array(providerConfig).min(1),
                 branch_name: z.string().min(1),
+                sub_agents: z.boolean(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -104,17 +106,29 @@ export const workspaceRouter = router({
                 await workspaceToolRepository.save(workspaceTools);
             }
 
-            const firstAgent = await createAgentsFromProviders({
-                userId: ctx.user.id,
-                workspace: newWorkspace,
-                repositoryFullName: input.repository_full_name,
-                message: input.message,
-                toolSlugs: input.tool_slugs,
-                branchName: input.branch_name,
-                cloudProviders: input.cloud_providers,
-            });
-
-            return { agent_id: firstAgent.id };
+            if (!input.sub_agents) {
+                const firstAgent = await createAgentsFromProviders({
+                    userId: ctx.user.id,
+                    workspace: newWorkspace,
+                    repositoryFullName: input.repository_full_name,
+                    message: input.message,
+                    toolSlugs: input.tool_slugs,
+                    branchName: input.branch_name,
+                    cloudProviders: input.cloud_providers,
+                });
+                return { agent_id: firstAgent.id };
+            } else {
+                //create primary agent now, sub agents come later
+                const primaryAgent = await new CodeeProvider().createPrimaryAgent({
+                    userId: ctx.user.id,
+                    workspace: newWorkspace,
+                    repositoryFullName: input.repository_full_name,
+                    message: input.message,
+                    toolSlugs: tools.map((tool) => tool.slugName),
+                    baseBranch: input.branch_name,
+                });
+                return { agent_id: primaryAgent.id };
+            }
         }),
 
     messages: authedProcedure.input(z.object({ agent_id: z.number() })).query(async ({ ctx, input }) => {

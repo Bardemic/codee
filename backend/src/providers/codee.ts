@@ -18,6 +18,7 @@ export class CodeeProvider implements CloudProvider {
         toolSlugs,
         baseBranch,
         model,
+        isPrimaryAgent,
     }: {
         userId: string;
         workspace: Workspace;
@@ -26,6 +27,7 @@ export class CodeeProvider implements CloudProvider {
         toolSlugs: string[];
         baseBranch: string;
         model?: string | null;
+        isPrimaryAgent: boolean;
     }): Promise<Agent> {
         const agentRepository = AppDataSource.getRepository(Agent);
         const messageRepository = AppDataSource.getRepository(Message);
@@ -54,6 +56,7 @@ export class CodeeProvider implements CloudProvider {
             repositoryFullName,
             toolSlugs,
             baseBranch,
+            isPrimaryAgent,
         });
         return agent;
     }
@@ -115,10 +118,30 @@ export class CodeeProvider implements CloudProvider {
             agentId: agent.id,
             prompt: message,
             baseBranch: agent.githubBranchName,
+            isPrimaryAgent: true,
         }).catch((err) => {
             console.error('Failed to enqueue agent job:', err);
         });
 
         return true;
+    }
+
+    async createPrimaryAgent({
+        userId,
+        workspace,
+        repositoryFullName,
+        message,
+        toolSlugs,
+        baseBranch,
+    }: {
+        userId: string;
+        workspace: Workspace;
+        repositoryFullName: string;
+        message: string;
+        toolSlugs: string[];
+        baseBranch: string;
+    }): Promise<Agent> {
+        const agent = await this.createAgent({ userId, workspace, repositoryFullName, message, toolSlugs, baseBranch, model: null, isPrimaryAgent: true });
+        return agent;
     }
 }

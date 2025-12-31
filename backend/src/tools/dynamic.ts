@@ -17,7 +17,7 @@ export async function buildDynamicTools(agentId: number, toolSlugs: string[], sa
             Object.assign(tools, queryTools, insightTools);
         }
 
-        if (toolSlugs.includes('posthog/error')) {
+        if (toolSlugs.includes('posthog/errors')) {
             const errorTools = await buildErrorTools(agentId);
             Object.assign(tools, errorTools);
         }
