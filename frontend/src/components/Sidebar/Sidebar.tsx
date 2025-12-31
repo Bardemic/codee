@@ -4,6 +4,7 @@ import SidebarButton from './SidebarButton';
 import { signOut } from '../../lib/auth';
 import { useNavigate } from 'react-router-dom';
 import { trpc } from '../../lib/trpc';
+import ThemeToggle from '../ThemeToggle';
 
 type SidebarProps = {
     children?: ReactNode;
@@ -22,6 +23,9 @@ export default function Sidebar({ children }: SidebarProps) {
         <div className={styles.container}>
             <nav className={styles.sidebar}>
                 <h2 className={styles.header}>codee</h2>
+                <div className={styles.headerRow}>
+                    <ThemeToggle />
+                </div>
                 <div className={styles.navigationSection}>
                     <SidebarButton text="Home" onClick={() => navigate('/')} />
                     <SidebarButton text="Integrations" onClick={() => navigate('/integrations')} />

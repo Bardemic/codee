@@ -1,4 +1,4 @@
-.container {
+container {
     display: flex;
     flex-direction: row;
     width: 100%;
@@ -94,4 +94,11 @@ h3 {
     overflow-y: auto;
     padding-right: 16px;
     flex: 1;
+}
+
+/* new headerRow for ThemeToggle */
+.headerRow {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
 }

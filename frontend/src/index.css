@@ -31,6 +31,32 @@
     -moz-osx-font-smoothing: grayscale;
 }
 
+/* Light theme overrides */
+:root[data-theme="light"] {
+    --color-background: #f5f5f5;
+    --color-surface: #ffffff;
+    --color-surface-strong: #f0f0f0;
+    --color-foreground: #111111;
+    --color-muted: #555;
+
+    --color-accent: #0b5ed7;
+    --color-accent-strong: #0a58ca;
+    --color-accent-hover: #1e64e6;
+
+    --color-link: #0b5ed7;
+    --color-link-hover: #1e64e6;
+
+    --color-sidebar-bg: #eaeef6;
+
+    --color-border: #d1d5db;
+}
+
+/* Existing styles continue below */
+:root {
+    color: var(--color-foreground);
+    background-color: var(--color-background);
+}
+
 a {
     font-weight: 500;
     color: var(--color-link);

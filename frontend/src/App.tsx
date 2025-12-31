@@ -1,36 +1,13 @@
-import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
-import Login from './pages/Login/Login';
-import Register from './pages/Register/Register';
-import Home from './pages/Home/Home';
+import React from 'react';
 import Sidebar from './components/Sidebar/Sidebar';
-import Integrations from './pages/Integrations/Integrations';
-import Workspace from './pages/Workspace/Workspace';
-import Workers from './pages/Workers/Workers';
-import './app.css';
-
-function SidebarLayout() {
-    return (
-        <Sidebar>
-            <Outlet />
-        </Sidebar>
-    );
-}
+import './index.css';
 
 function App() {
-    return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<SidebarLayout />}>
-                    <Route index element={<Home />} />
-                    <Route path="integrations" element={<Integrations />} />
-                    <Route path="workers" element={<Workers />} />
-                    <Route path="agent/:agentId" element={<Workspace />} />
-                </Route>
-                <Route path="login" element={<Login />} />
-                <Route path="register" element={<Register />} />
-            </Routes>
-        </Router>
-    );
+  return (
+    <Sidebar>
+      {/* app content goes here */}
+    </Sidebar>
+  );
 }
 
 export default App;
