@@ -1,5 +1,7 @@
+import { TRPCError } from '@trpc/server';
 import { AppDataSource } from '../../db/data-source';
 import { Agent } from '../../db/entities/Agent';
+import { IntegrationConnection } from '../../db/entities/IntegrationConnection';
 import { Message, type SenderType } from '../../db/entities/Message';
 import { ToolCall } from '../../db/entities/ToolCall';
 import { readHistorySince } from '../../stream/events';
@@ -73,4 +75,29 @@ export async function persistToolCallsFromRedis(agentId: number, message: Messag
     } catch (error) {
         console.warn('persistToolCallsFromRedis error:', error);
     }
+}
+
+export async function getIntegrationApiKey(userId: string, providerSlug: string): Promise<string> {
+    const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
+    const connection = await connectionRepository.findOne({
+        where: { userId, provider: { slug: providerSlug } },
+        relations: ['provider'],
+    });
+
+    if (!connection) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: `${providerSlug} not connected`,
+        });
+    }
+
+    const apiKey = connection.getDataConfig()?.api_key;
+    if (!apiKey) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: `${providerSlug} API key not found`,
+        });
+    }
+
+    return apiKey;
 }

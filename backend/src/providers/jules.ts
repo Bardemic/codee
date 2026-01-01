@@ -1,11 +1,10 @@
-import { TRPCError } from '@trpc/server';
 import type { CloudProvider } from './base';
 import { Workspace } from '../db/entities/Workspace';
 import { Agent, AgentStatus, ProviderType } from '../db/entities/Agent';
 import { AppDataSource } from '../db/data-source';
-import { IntegrationConnection } from '../db/entities/IntegrationConnection';
 import { z } from 'zod';
 import axios from 'axios';
+import { getIntegrationApiKey } from '../workers/helpers/agents';
 
 export class JulesProvider implements CloudProvider {
     slug = 'Jules';
@@ -38,26 +37,7 @@ export class JulesProvider implements CloudProvider {
         });
         await agentRepository.save(agent);
 
-        const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
-        const julesConnection = await connectionRepository.findOne({
-            where: { userId, provider: { slug: 'jules' } },
-            relations: ['provider'],
-        });
-
-        if (!julesConnection) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'Jules not connected',
-            });
-        }
-
-        const apiKey = julesConnection.getDataConfig()?.api_key;
-        if (!apiKey) {
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Jules API key not found',
-            });
-        }
+        const apiKey = await getIntegrationApiKey(userId, 'jules');
 
         const payload = {
             prompt: message,
@@ -107,26 +87,7 @@ export class JulesProvider implements CloudProvider {
     }
 
     async getMessages(agent: Agent) {
-        const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
-        const julesConnection = await connectionRepository.findOne({
-            where: { userId: agent.workspace.userId, provider: { slug: 'jules' } },
-            relations: ['provider'],
-        });
-
-        if (!julesConnection) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'Jules not connected',
-            });
-        }
-
-        const apiKey = julesConnection.getDataConfig().api_key;
-        if (!apiKey) {
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Jules API key not found',
-            });
-        }
+        const apiKey = await getIntegrationApiKey(agent.workspace.userId, 'jules');
 
         try {
             const [sessionResponse, activitiesResponse] = await Promise.all([
@@ -224,26 +185,7 @@ export class JulesProvider implements CloudProvider {
     }
 
     async sendMessage(agent: Agent, message: string): Promise<boolean> {
-        const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
-        const julesConnection = await connectionRepository.findOne({
-            where: { userId: agent.workspace.userId, provider: { slug: 'jules' } },
-            relations: ['provider'],
-        });
-
-        if (!julesConnection) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'Jules not connected',
-            });
-        }
-
-        const apiKey = julesConnection.getDataConfig()?.api_key;
-        if (!apiKey) {
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Jules API key not found',
-            });
-        }
+        const apiKey = await getIntegrationApiKey(agent.workspace.userId, 'jules');
 
         const payload = {
             prompt: message,
