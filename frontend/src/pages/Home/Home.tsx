@@ -12,6 +12,7 @@ import { FiGitBranch } from 'react-icons/fi';
 function Home() {
     const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
     const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
+    const [subAgents, setSubAgents] = useState<boolean>(false);
     const [cloudAgents, setCloudAgents] = useState<CloudAgentsSelection>({
         providers: [{ agents: [{ model: 'auto.5', tools: [] }], name: 'Codee' }],
     });
@@ -81,6 +82,7 @@ function Home() {
             branch_name: selectedBranch,
             tool_slugs: selectedTools,
             cloud_providers: activeProviders,
+            sub_agents: subAgents,
         });
     }
 
@@ -104,6 +106,8 @@ function Home() {
                     isLoading={createWorkspace.isPending}
                     isDisabled={!selectedBranch}
                     placeholder="Find all errors from the recent commit and fix them"
+                    subAgents={subAgents}
+                    onSubAgentsChange={setSubAgents}
                     leftPills={
                         <>
                             <RepositoriesPill selected={selectedRepo} setSelected={selectRepository} />

@@ -18,6 +18,7 @@ export class CodeeProvider implements CloudProvider {
         toolSlugs,
         baseBranch,
         model,
+        isOrchestratorAgent,
     }: {
         userId: string;
         workspace: Workspace;
@@ -26,6 +27,7 @@ export class CodeeProvider implements CloudProvider {
         toolSlugs: string[];
         baseBranch: string;
         model?: string | null;
+        isOrchestratorAgent: boolean;
     }): Promise<Agent> {
         const agentRepository = AppDataSource.getRepository(Agent);
         const messageRepository = AppDataSource.getRepository(Message);
@@ -37,6 +39,7 @@ export class CodeeProvider implements CloudProvider {
             status: AgentStatus.PENDING,
             name: `Codee Agent${model ? ` (${model})` : ''}`,
             model: model || null,
+            isOrchestratorAgent,
         });
         await agentRepository.save(agent);
 
@@ -54,6 +57,7 @@ export class CodeeProvider implements CloudProvider {
             repositoryFullName,
             toolSlugs,
             baseBranch,
+            isOrchestratorAgent,
         });
         return agent;
     }
@@ -107,18 +111,34 @@ export class CodeeProvider implements CloudProvider {
             console.error('Failed to emit status:', err);
         });
 
-        if (!agent.githubBranchName) {
-            throw new Error('Agent branch not found');
-        }
-
         enqueueAgentJob({
             agentId: agent.id,
             prompt: message,
-            baseBranch: agent.githubBranchName,
+            baseBranch: agent.workspace.currentBranch,
+            isOrchestratorAgent: agent.isOrchestratorAgent,
         }).catch((err) => {
             console.error('Failed to enqueue agent job:', err);
         });
 
         return true;
+    }
+
+    async createPrimaryAgent({
+        userId,
+        workspace,
+        repositoryFullName,
+        message,
+        toolSlugs,
+        baseBranch,
+    }: {
+        userId: string;
+        workspace: Workspace;
+        repositoryFullName: string;
+        message: string;
+        toolSlugs: string[];
+        baseBranch: string;
+    }): Promise<Agent> {
+        const agent = await this.createAgent({ userId, workspace, repositoryFullName, message, toolSlugs, baseBranch, model: null, isOrchestratorAgent: true });
+        return agent;
     }
 }

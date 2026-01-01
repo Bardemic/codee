@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo, type ReactNode } from 'react';
 import { BsSend, BsTools } from 'react-icons/bs';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
+import { BsCheck } from 'react-icons/bs';
 import type { Integration } from '../../../lib/types';
 import { PromptEditor, type PromptEditorRef } from './PromptEditor';
 import { DropdownSelector, type DropdownOption } from './DropdownSelector';
@@ -17,13 +18,15 @@ interface ChatBoxProps {
     resetKey?: number;
     cloudAgents: CloudAgentsSelection;
     onCloudAgentsChange: (sel: CloudAgentsSelection) => void;
+    subAgents: boolean;
+    onSubAgentsChange: (value: boolean) => void;
 }
 
 export interface ChatBoxRef {
     clear: () => void;
 }
 
-export function ChatBox({ integrations, onSubmit, isLoading, isDisabled, placeholder, leftPills, resetKey, cloudAgents, onCloudAgentsChange }: ChatBoxProps) {
+export function ChatBox({ integrations, onSubmit, isLoading, isDisabled, placeholder, leftPills, resetKey, cloudAgents, onCloudAgentsChange, subAgents, onSubAgentsChange }: ChatBoxProps) {
     const [selectedTools, setSelectedTools] = useState<string[]>([]);
     const editorRef = useRef<PromptEditorRef>(null);
     const isBlocked = Boolean(isLoading || isDisabled);
@@ -59,6 +62,23 @@ export function ChatBox({ integrations, onSubmit, isLoading, isDisabled, placeho
 
     return (
         <div className={styles.chatBox}>
+            <div className={styles.chatToolbar}>
+                <CloudAgentsDropdown integrations={integrations} value={cloudAgents} onChange={onCloudAgentsChange} />
+                <DropdownSelector
+                    icon={<BsTools size={14} />}
+                    options={integrationDropdownOptions}
+                    selectedValues={selectedTools}
+                    onChange={setSelectedTools}
+                    label={toolsLabel}
+                    dropdownVariant="floating"
+                />
+                <div className={styles.pillContainer} onClick={() => onSubAgentsChange(!subAgents)} role="button" tabIndex={0}>
+                    <div className={`${styles.checkbox} ${subAgents ? styles.checked : ''}`}>
+                        {subAgents && <BsCheck size={12} />}
+                    </div>
+                    <span>subagent mode</span>
+                </div>
+            </div>
             <PromptEditor
                 ref={editorRef}
                 integrations={integrations}
@@ -68,18 +88,7 @@ export function ChatBox({ integrations, onSubmit, isLoading, isDisabled, placeho
                 placeholder={placeholder}
             />
             <div className={styles.chatFooter}>
-                <div className={styles.pillsContainer}>
-                    {leftPills}
-                    <CloudAgentsDropdown integrations={integrations} value={cloudAgents} onChange={onCloudAgentsChange} />
-                    <DropdownSelector
-                        icon={<BsTools size={14} />}
-                        options={integrationDropdownOptions}
-                        selectedValues={selectedTools}
-                        onChange={setSelectedTools}
-                        label={toolsLabel}
-                        dropdownVariant="floating"
-                    />
-                </div>
+                <div className={styles.pillsContainer}>{leftPills}</div>
                 <button
                     className={styles.sendButton}
                     onClick={() => {

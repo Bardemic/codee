@@ -30,6 +30,7 @@ export interface CloudProvider {
         toolSlugs: string[];
         baseBranch: string;
         model?: string | null;
+        isOrchestratorAgent: boolean;
     }): Promise<Agent>;
     getMessages(agent: Agent): Promise<ProviderMessage[]>;
     sendMessage(agent: Agent, message: string): Promise<boolean>;

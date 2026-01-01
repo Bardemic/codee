@@ -50,6 +50,9 @@ export class Agent {
     @Column({ nullable: true })
     sandboxId!: string | null;
 
+    @Column({ type: 'boolean', default: false })
+    isOrchestratorAgent!: boolean;
+
     @OneToMany('Message', 'agent')
     messages!: Message[];
 }
