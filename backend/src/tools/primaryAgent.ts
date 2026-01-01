@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { CodeeProvider } from '../providers/codee';
 import type { Workspace } from '../db/entities/Workspace';
 
-interface PrimaryAgentToolsParams {
+interface OrchestratorAgentToolsParams {
     userId: string;
     workspace: Workspace;
     repositoryFullName: string;
@@ -11,7 +11,7 @@ interface PrimaryAgentToolsParams {
     toolSlugs: string[];
 }
 
-export function buildPrimaryAgentTools({ userId, workspace, repositoryFullName, baseBranch, toolSlugs }: PrimaryAgentToolsParams) {
+export function buildOrchestratorAgentTools({ userId, workspace, repositoryFullName, baseBranch, toolSlugs }: OrchestratorAgentToolsParams) {
     const spawnSubAgentInputSchema = z.object({
         prompt: z.string().describe('The prompt to spawn the agent with'),
     });
@@ -29,7 +29,7 @@ export function buildPrimaryAgentTools({ userId, workspace, repositoryFullName, 
                     message: prompt,
                     toolSlugs,
                     baseBranch,
-                    isPrimaryAgent: false,
+                    isOrchestratorAgent: false,
                 });
                 return agent.id;
             },

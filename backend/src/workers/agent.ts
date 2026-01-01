@@ -12,7 +12,7 @@ import { commitAndPush, generateBranchName, getGithubTokenForUser } from './help
 import { createSandbox } from './helpers/sandbox';
 import { AppDataSource } from '../db/data-source';
 import { Message } from '../db/entities/Message';
-import { buildPrimaryAgentTools } from '../tools/primaryAgent';
+import { buildOrchestratorAgentTools } from '../tools/primaryAgent';
 import { PostHog } from 'posthog-node';
 
 const AGENT_SYSTEM_PROMPT = `
@@ -21,7 +21,7 @@ If the user requests git operations, prefer using tools (update_file, list_files
 Avoid destructive operations. Return concise reasoning and resulting changes.
 `;
 
-const PRIMARY_AGENT_SYSTEM_PROMPT = `
+const ORCHESTRATOR_AGENT_SYSTEM_PROMPT = `
 You are the primary agent of a coding agent, Codee. Codee is an Asynchronous
 coding agent platform, which allows users to create and manage coding agents. They can enter a prompt, select their repository,
 then select from providers for a coding agent, as well as different models/amounts of agents (for example, a user may request 3
@@ -38,6 +38,9 @@ to figure out what the 3 most requested features are, then spawn 3 agents to add
 The sub agents do not have any context between one another. They are completely independent. The goal is to have independent code, solutions, etc.
 
 You are the primary agent for the user in this case. You should spend a long time thinking, planning, etc. If given tools that relate to the request,
+use those tools. At the very end, you should spawn a number of agents to help you with the request. This is not the time to elicit feedback from the user.
+A user will only use a primary agent in order to have a lot of thinking done for other sub agents to be created. Under no circumstances should you finish a conversation
+without creating sub agents, unless there is truly no further work to be done relating to the request.
 `;
 async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: string[], previousMessages: Message[]) {
     const tools = sandboxTools(agentId, sandbox);
@@ -82,9 +85,9 @@ async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: string[
     };
 }
 
-async function runPrimaryAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs: string[], prompt: string) {
+async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs: string[], prompt: string) {
     const tools = sandboxTools(agent.id, sandbox);
-    const primaryAgentTools = buildPrimaryAgentTools({
+    const orchestratorAgentTools = buildOrchestratorAgentTools({
         userId: agent.workspace.userId,
         workspace: agent.workspace,
         repositoryFullName: agent.workspace.githubRepositoryName,
@@ -115,9 +118,9 @@ async function runPrimaryAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs: str
                 reasoningEffort: 'high',
             },
         },
-        system: PRIMARY_AGENT_SYSTEM_PROMPT,
+        system: ORCHESTRATOR_AGENT_SYSTEM_PROMPT,
         messages,
-        tools: { ...primaryAgentTools, ...dynamicTools, ...tools },
+        tools: { ...orchestratorAgentTools, ...dynamicTools, ...tools },
         stopWhen: stepCountIs(32),
     });
 
@@ -129,7 +132,7 @@ async function runPrimaryAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs: str
     };
 }
 
-export async function runPrimaryAgentJob(payload: AgentJobPayload) {
+export async function runOrchestratorAgentJob(payload: AgentJobPayload) {
     const agent = await getAgentById(payload.agentId);
     if (!agent) throw new Error('agent not found');
 
@@ -160,11 +163,11 @@ export async function runPrimaryAgentJob(payload: AgentJobPayload) {
 
     try {
         await Promise.all([
-            emitStatus(agent.id, 'running', 'primary_agent_start', 'running primary agent'),
+            emitStatus(agent.id, 'running', 'orchestrator_agent_start', 'running orchestrator agent'),
             updateAgent(agent, { status: AgentStatus.RUNNING }),
         ]);
 
-        const response = await runPrimaryAgentLLM(agent, sandbox, payload.toolSlugs || [], payload.prompt);
+        const response = await runOrchestratorAgentLLM(agent, sandbox, payload.toolSlugs || [], payload.prompt);
 
         const savedMessage = await saveMessage(agent, response.final, 'AGENT');
 
@@ -216,7 +219,7 @@ export async function runAgentJob(payload: AgentJobPayload) {
             order: { createdAt: 'ASC' },
         });
 
-        if (!agent.githubBranchName && !payload.isPrimaryAgent) {
+        if (!agent.githubBranchName && !payload.isOrchestratorAgent) {
             const branchName = generateBranchName(agent.id);
             await emitStatus(agent.id, 'running', 'create_branch', `creating branch ${branchName}`);
             await sandbox.runCommand({
@@ -234,15 +237,13 @@ export async function runAgentJob(payload: AgentJobPayload) {
 
         await Promise.all([emitStatus(agent.id, 'running', 'agent_start', 'running AI'), updateAgent(agent, { status: AgentStatus.RUNNING })]);
 
-        const response = payload.isPrimaryAgent
-            ? await runPrimaryAgentLLM(agent, sandbox, payload.toolSlugs || [], payload.prompt)
-            : await runAgentLLM(agent.id, sandbox, payload.toolSlugs || [], previousMessages);
+        const response = await runAgentLLM(agent.id, sandbox, payload.toolSlugs || [], previousMessages);
 
         const savedMessage = await saveMessage(agent, response.final, 'AGENT');
 
         await persistToolCallsFromRedis(agent.id, savedMessage);
 
-        if (payload.isPrimaryAgent) {
+        if (payload.isOrchestratorAgent) {
             await sandbox.stop();
 
             await Promise.all([updateAgent(agent, { status: AgentStatus.COMPLETED }), emitDone(agent.id, 'success')]);

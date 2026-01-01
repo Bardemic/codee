@@ -118,16 +118,16 @@ export const workspaceRouter = router({
                 });
                 return { agent_id: firstAgent.id };
             } else {
-                //create primary agent now, sub agents come later
-                const primaryAgent = await new CodeeProvider().createPrimaryAgent({
+                const orchestratorAgent = await new CodeeProvider().createAgent({
                     userId: ctx.user.id,
                     workspace: newWorkspace,
                     repositoryFullName: input.repository_full_name,
                     message: input.message,
-                    toolSlugs: tools.map((tool) => tool.slugName),
+                    toolSlugs: input.tool_slugs,
                     baseBranch: input.branch_name,
+                    isOrchestratorAgent: true,
                 });
-                return { agent_id: primaryAgent.id };
+                return { agent_id: orchestratorAgent.id };
             }
         }),
 

@@ -34,6 +34,7 @@ export class CursorProvider implements CloudProvider {
             status: AgentStatus.PENDING,
             name: `Cursor Agent${model ? ` (${model})` : ''}`,
             model: model || null,
+            isOrchestratorAgent: false,
         });
         await agentRepository.save(agent);
 
