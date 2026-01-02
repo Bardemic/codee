@@ -7,7 +7,7 @@ import Message from './Message';
 import CreateBranch from '../../components/CreateBranch/CreateBranch';
 import { BsSend } from 'react-icons/bs';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
-import AgentCard from './Agent';
+import AgentCard from './AgentCard';
 
 function MessageSkeleton({ isUser, length }: { isUser: boolean; length: number }) {
     return (
