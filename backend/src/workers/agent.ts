@@ -88,6 +88,7 @@ async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: string[
 async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs: string[], prompt: string) {
     const tools = sandboxTools(agent.id, sandbox);
     const orchestratorAgentTools = buildOrchestratorAgentTools({
+        agentId: agent.id,
         userId: agent.workspace.userId,
         workspace: agent.workspace,
         repositoryFullName: agent.workspace.githubRepositoryName,

@@ -38,6 +38,7 @@ export const workspaceRouter = router({
                     integration: agent.providerType,
                     url: agent.url,
                     github_branch_name: agent.githubBranchName,
+                    is_orchestrator_agent: agent.isOrchestratorAgent,
                 })) || [],
         }));
     }),

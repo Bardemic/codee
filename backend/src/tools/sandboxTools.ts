@@ -38,7 +38,7 @@ export function sandboxTools(agentId: number, sandbox: Sandbox) {
                 cmd: 'bash',
                 args: ['-c', `ls -1 ${relativePath}`],
             });
-            await emitStatus(agentId, 'running', 'tool_list_files', `listed ${relativePath}`);
+            await emitStatus(agentId, 'running', 'tool_list_files', result.stdout(), { arguments: input });
             return result.stdout();
         },
     });
@@ -50,7 +50,7 @@ export function sandboxTools(agentId: number, sandbox: Sandbox) {
             const { relativeFilePath } = input;
             const stream = await sandbox.readFile({ path: relativeFilePath });
             const content = stream ? await streamToString(stream) : '';
-            await emitStatus(agentId, 'running', 'tool_read_file', `read ${relativeFilePath}`);
+            await emitStatus(agentId, 'running', 'tool_read_file', content, { arguments: input });
             return content;
         },
     });
@@ -61,7 +61,7 @@ export function sandboxTools(agentId: number, sandbox: Sandbox) {
         execute: async (input) => {
             const { relativeFilePath, content } = input;
             await sandbox.writeFiles([{ path: relativeFilePath, content: Buffer.from(content) }]);
-            await emitStatus(agentId, 'running', 'tool_update_file', `updated ${relativeFilePath}`);
+            await emitStatus(agentId, 'running', 'tool_update_file', `updated ${relativeFilePath}`, { arguments: input });
             return 'file updated';
         },
     });
@@ -75,7 +75,7 @@ export function sandboxTools(agentId: number, sandbox: Sandbox) {
                 cmd: 'bash',
                 args: ['-c', command],
             });
-            await emitStatus(agentId, 'running', 'tool_grep', command);
+            await emitStatus(agentId, 'running', 'tool_grep', result.stdout(), { arguments: input });
             return result.stdout();
         },
     });
