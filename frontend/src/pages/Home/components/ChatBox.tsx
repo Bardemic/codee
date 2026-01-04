@@ -26,7 +26,19 @@ export interface ChatBoxRef {
     clear: () => void;
 }
 
-export function ChatBox({ integrations, onSubmit, isLoading, isDisabled, placeholder, leftPills, resetKey, cloudAgents, onCloudAgentsChange, subAgents, onSubAgentsChange }: ChatBoxProps) {
+export function ChatBox({
+    integrations,
+    onSubmit,
+    isLoading,
+    isDisabled,
+    placeholder,
+    leftPills,
+    resetKey,
+    cloudAgents,
+    onCloudAgentsChange,
+    subAgents,
+    onSubAgentsChange,
+}: ChatBoxProps) {
     const [selectedTools, setSelectedTools] = useState<string[]>([]);
     const editorRef = useRef<PromptEditorRef>(null);
     const isBlocked = Boolean(isLoading || isDisabled);
@@ -73,9 +85,7 @@ export function ChatBox({ integrations, onSubmit, isLoading, isDisabled, placeho
                     dropdownVariant="floating"
                 />
                 <div className={styles.pillContainer} onClick={() => onSubAgentsChange(!subAgents)} role="button" tabIndex={0}>
-                    <div className={`${styles.checkbox} ${subAgents ? styles.checked : ''}`}>
-                        {subAgents && <BsCheck size={12} />}
-                    </div>
+                    <div className={`${styles.checkbox} ${subAgents ? styles.checked : ''}`}>{subAgents && <BsCheck size={12} />}</div>
                     <span>subagent mode</span>
                 </div>
             </div>

@@ -38,7 +38,7 @@ export function sandboxTools(agentId: number, sandbox: Sandbox) {
                 cmd: 'bash',
                 args: ['-c', `ls -1 ${relativePath}`],
             });
-            await emitStatus(agentId, 'running', 'tool_list_files', result.stdout(), { arguments: input });
+            await emitStatus(agentId, 'running', 'tool_list_files', (await result.stdout()).trim(), { arguments: input });
             return result.stdout();
         },
     });
@@ -75,7 +75,7 @@ export function sandboxTools(agentId: number, sandbox: Sandbox) {
                 cmd: 'bash',
                 args: ['-c', command],
             });
-            await emitStatus(agentId, 'running', 'tool_grep', result.stdout(), { arguments: input });
+            await emitStatus(agentId, 'running', 'tool_grep', await result.stdout(), { arguments: input });
             return result.stdout();
         },
     });

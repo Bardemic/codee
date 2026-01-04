@@ -199,9 +199,9 @@ export default function Workspace() {
                             )}
                             {currentAgent?.status === 'FAILED' && (
                                 <div className={`${style.messageWrapper} ${style.agentWrapper}`}>
-                                    <div className={`${style.failedToolCallItem} ${style.toolCallItem}`}>
-                                        <div className={`${style.failedToolCallHeader} ${style.toolCallHeader}`}>Failed</div>
-                                        <div className={style.toolCallResult}>The workspace execution has failed.</div>
+                                    <div className={style.failedToolCallItem}>
+                                        <div className={style.failedToolCallHeader}>Failed</div>
+                                        <div className={style.failedToolCallResult}>The workspace execution has failed.</div>
                                     </div>
                                     <p className={style.sender}>System</p>
                                 </div>
