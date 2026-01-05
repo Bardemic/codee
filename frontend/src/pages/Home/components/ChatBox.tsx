@@ -126,12 +126,7 @@ export function ChatBox({
                 processFiles(event.dataTransfer.files);
             }}
         >
-            {isDragging && (
-                <div className={styles.dropOverlay}>
-                    <IoImage size={32} />
-                    <span>Drop images here</span>
-                </div>
-            )}
+            {isDragging && <div className={styles.dropOverlay} />}
             <div className={styles.chatToolbar}>
                 <CloudAgentsDropdown integrations={integrations} value={cloudAgents} onChange={onCloudAgentsChange} />
                 <DropdownSelector

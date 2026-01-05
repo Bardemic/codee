@@ -288,7 +288,7 @@ export default function Workspace() {
                     </div>
 
                     <div
-                        className={`${style.inputContainer} ${isDragging ? style.inputContainerDragging : ''}`}
+                        className={style.inputContainer}
                         onDragOver={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -306,30 +306,25 @@ export default function Workspace() {
                             processFiles(event.dataTransfer.files);
                         }}
                     >
-                        {isDragging && (
-                            <div className={style.dropOverlay}>
-                                <IoImage size={32} />
-                                <span>Drop images here</span>
-                            </div>
-                        )}
+                        {isDragging && <div className={style.dropOverlay} />}
                         <div className={style.inputWrapper}>
-                            {attachedImages.length > 0 && (
-                                <div className={style.imagePreviewContainer}>
-                                    {attachedImages.map((image, index) => (
-                                        <div key={index} className={style.imagePreview}>
-                                            <img src={`data:${image.mimeType};base64,${image.data}`} alt={`Attachment ${index + 1}`} />
-                                            <button
-                                                className={style.removeImageButton}
-                                                onClick={() => setAttachedImages((prev) => prev.filter((_, imageIndex) => imageIndex !== index))}
-                                                type="button"
-                                            >
-                                                <IoClose size={14} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
                             <div className={style.textareaWrapper}>
+                                {attachedImages.length > 0 && (
+                                    <div className={style.imagePreviewContainer}>
+                                        {attachedImages.map((image, index) => (
+                                            <div key={index} className={style.imagePreview}>
+                                                <img src={`data:${image.mimeType};base64,${image.data}`} alt={`Attachment ${index + 1}`} />
+                                                <button
+                                                    className={style.removeImageButton}
+                                                    onClick={() => setAttachedImages((prev) => prev.filter((_, imageIndex) => imageIndex !== index))}
+                                                    type="button"
+                                                >
+                                                    <IoClose size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                                 <button type="button" className={style.attachButton} onClick={() => fileInputRef.current?.click()} title="Attach images">
                                     <IoImage size={18} />
                                 </button>
