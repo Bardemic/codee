@@ -80,6 +80,15 @@ export default function Workspace() {
             const eventData = JSON.parse(event.data);
             if (eventData.step?.startsWith('tool_')) {
                 const eventId = event.lastEventId || `sse_${Date.now()}`;
+                const parsedArguments = (() => {
+                    if (!eventData.arguments) return {};
+                    try {
+                        return JSON.parse(eventData.arguments);
+                    } catch {
+                        return eventData.arguments;
+                    }
+                })();
+
                 setStreamingToolCalls((prev) => {
                     if (prev.some((toolCall) => toolCall.id === eventId)) return prev;
                     return [
@@ -88,7 +97,7 @@ export default function Workspace() {
                             id: eventId,
                             created_at: new Date(eventData.timestamp),
                             tool_name: eventData.step,
-                            arguments: {},
+                            arguments: parsedArguments,
                             result: eventData.detail ?? '',
                             status: eventData.phase ?? 'running',
                             duration_ms: null,
