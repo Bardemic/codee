@@ -16,6 +16,11 @@ const providerConfig = z.object({
     agents: z.array(z.object({ model: z.string().nullable().optional() })),
 });
 
+const imageSchema = z.object({
+    data: z.string(),
+    mimeType: z.string(),
+});
+
 export const workspaceRouter = router({
     list: authedProcedure.query(async ({ ctx }) => {
         const workspaces = await AppDataSource.getRepository(Workspace).find({
@@ -68,6 +73,7 @@ export const workspaceRouter = router({
                 cloud_providers: z.array(providerConfig).min(1),
                 branch_name: z.string().min(1),
                 sub_agents: z.boolean(),
+                images: z.array(imageSchema).default([]),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -116,6 +122,7 @@ export const workspaceRouter = router({
                     toolSlugs: input.tool_slugs,
                     branchName: input.branch_name,
                     cloudProviders: input.cloud_providers,
+                    images: input.images,
                 });
                 return { agent_id: firstAgent.id };
             } else {
@@ -127,6 +134,7 @@ export const workspaceRouter = router({
                     toolSlugs: input.tool_slugs,
                     baseBranch: input.branch_name,
                     isOrchestratorAgent: true,
+                    images: input.images,
                 });
                 return { agent_id: orchestratorAgent.id };
             }
@@ -146,25 +154,27 @@ export const workspaceRouter = router({
         return provider.getMessages(agent);
     }),
 
-    sendMessage: authedProcedure.input(z.object({ agent_id: z.number(), message: z.string() })).mutation(async ({ ctx, input }) => {
-        const agent = await AppDataSource.getRepository(Agent).findOne({
-            where: { id: input.agent_id },
-            relations: ['workspace'],
-        });
-        if (!agent || agent.workspace.userId !== ctx.user.id) {
-            throw new TRPCError({ code: 'NOT_FOUND' });
-        }
-        const ProviderClass = PROVIDERS[agent.providerType];
-        if (!ProviderClass) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'Provider not found',
+    sendMessage: authedProcedure
+        .input(z.object({ agent_id: z.number(), message: z.string(), images: z.array(imageSchema).default([]) }))
+        .mutation(async ({ ctx, input }) => {
+            const agent = await AppDataSource.getRepository(Agent).findOne({
+                where: { id: input.agent_id },
+                relations: ['workspace'],
             });
-        }
-        const provider = new ProviderClass();
-        const success = await provider.sendMessage(agent, input.message);
-        return { ok: success };
-    }),
+            if (!agent || agent.workspace.userId !== ctx.user.id) {
+                throw new TRPCError({ code: 'NOT_FOUND' });
+            }
+            const ProviderClass = PROVIDERS[agent.providerType];
+            if (!ProviderClass) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Provider not found',
+                });
+            }
+            const provider = new ProviderClass();
+            const success = await provider.sendMessage(agent, input.message, input.images);
+            return { ok: success };
+        }),
 
     agentStatus: authedProcedure.input(z.object({ agent_id: z.number() })).query(async ({ ctx, input }) => {
         const agent = await AppDataSource.getRepository(Agent).findOne({

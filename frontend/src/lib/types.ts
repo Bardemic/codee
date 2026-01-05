@@ -11,10 +11,17 @@ export type Workspace = RouterOutput['workspace']['list'][number];
 export type ToolCall = Omit<RouterOutput['workspace']['messages'][number]['tool_calls'][number], 'id'> & {
     id: number | string;
 };
+
+export type MessageImage = {
+    data: string;
+    mimeType: string;
+};
+
 export type Message = Omit<RouterOutput['workspace']['messages'][number], 'id' | 'tool_calls'> & {
     id: number | string;
     tool_calls: ToolCall[];
     isPendingAgent?: boolean;
+    images: MessageImage[];
 };
 export type Worker = RouterOutput['workers']['list'][number];
 export type LinkedWorkspace = RouterOutput['workers']['list'][number]['workspaces'][number];

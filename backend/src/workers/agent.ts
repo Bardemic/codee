@@ -53,15 +53,36 @@ use those tools. At the very end, you should spawn a number of agents to help yo
 A user will only use a primary agent in order to have a lot of thinking done for other sub agents to be created. Under no circumstances should you finish a conversation
 without creating sub agents, unless there is truly no further work to be done relating to the request.
 `;
+
+function transformMessagesToModelMessages(previousMessages: Message[]): ModelMessage[] {
+    return previousMessages.map<ModelMessage>((message) => {
+        if (message.sender === 'USER' && message.images.length > 0) {
+            const content: Array<{ type: 'text'; text: string } | { type: 'image'; image: string; mimeType?: string }> = [
+                { type: 'text', text: message.content },
+            ];
+            for (const image of message.images) {
+                content.push({
+                    type: 'image',
+                    image: image.data,
+                    mimeType: image.mimeType,
+                });
+            }
+            return {
+                role: 'user',
+                content,
+            };
+        }
+        return {
+            role: message.sender === 'USER' ? 'user' : 'assistant',
+            content: message.content,
+        };
+    });
+}
+
 async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: string[], previousMessages: Message[]) {
     const tools = sandboxTools(agentId, sandbox);
     const dynamicTools = await buildDynamicTools(agentId, toolSlugs, sandbox);
-    const messages: ModelMessage[] = [
-        ...previousMessages.map<ModelMessage>((message) => ({
-            role: message.sender === 'USER' ? 'user' : 'assistant',
-            content: message.content,
-        })),
-    ];
+    const messages = transformMessagesToModelMessages(previousMessages);
     const result = await generateText({
         model: model(agentId),
         providerOptions: {
@@ -84,8 +105,9 @@ async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: string[
     };
 }
 
-async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs: string[], prompt: string) {
+async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs: string[], previousMessages: Message[]) {
     const tools = sandboxTools(agent.id, sandbox);
+    const userImages = previousMessages.filter((message) => message.sender === 'USER').flatMap((message) => message.images);
     const orchestratorAgentTools = buildOrchestratorAgentTools({
         agentId: agent.id,
         userId: agent.workspace.userId,
@@ -93,14 +115,10 @@ async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs
         repositoryFullName: agent.workspace.githubRepositoryName,
         baseBranch: agent.workspace.currentBranch,
         toolSlugs,
+        images: userImages,
     });
     const dynamicTools = await buildDynamicTools(agent.id, toolSlugs, sandbox);
-    const messages: ModelMessage[] = [
-        {
-            role: 'user',
-            content: prompt,
-        },
-    ];
+    const messages = transformMessagesToModelMessages(previousMessages);
 
     const result = await generateText({
         model: model(agent.id),
@@ -154,12 +172,17 @@ export async function runOrchestratorAgentJob(payload: AgentJobPayload) {
     }
 
     try {
+        const previousMessages = await AppDataSource.getRepository(Message).find({
+            where: { agent: { id: agent.id } },
+            order: { createdAt: 'ASC' },
+        });
+
         await Promise.all([
             emitStatus(agent.id, 'running', 'agent_orchestrator_start', 'running orchestrator agent'),
             updateAgent(agent, { status: AgentStatus.RUNNING }),
         ]);
 
-        const response = await runOrchestratorAgentLLM(agent, sandbox, payload.toolSlugs || [], payload.prompt);
+        const response = await runOrchestratorAgentLLM(agent, sandbox, payload.toolSlugs || [], previousMessages);
 
         const savedMessage = await saveMessage(agent, response.final, 'AGENT');
 
@@ -168,11 +191,11 @@ export async function runOrchestratorAgentJob(payload: AgentJobPayload) {
         await sandbox.stop();
 
         await Promise.all([updateAgent(agent, { status: AgentStatus.COMPLETED }), emitDone(agent.id, 'success')]);
-    } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'unknown error';
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'unknown error';
         await emitError(agent.id, 'agent_failure', message, 'execute');
         await updateAgent(agent, { status: AgentStatus.FAILED });
-        throw err;
+        throw error;
     }
 }
 
@@ -199,8 +222,8 @@ export async function runAgentJob(payload: AgentJobPayload) {
 
     try {
         sandbox = await createSandbox(agent, token, repositoryFullName, baseBranch);
-    } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Failed to create sandbox';
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to create sandbox';
         await emitError(agent.id, 'sandbox_creation_failed', message, 'agent_init');
         return;
     }
@@ -255,10 +278,10 @@ export async function runAgentJob(payload: AgentJobPayload) {
         await sandbox.stop();
 
         await Promise.all([updateAgent(agent, { status: AgentStatus.COMPLETED }), emitDone(agent.id, 'success')]);
-    } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'unknown error';
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'unknown error';
         await emitError(agent.id, 'agent_failure', message, 'execute');
         await updateAgent(agent, { status: AgentStatus.FAILED });
-        throw err;
+        throw error;
     }
 }

@@ -4,6 +4,7 @@ import { CursorProvider } from './cursor';
 import { JulesProvider } from './jules';
 import type { Workspace } from '../db/entities/Workspace';
 import type { Agent } from '../db/entities/Agent';
+import type { MessageImage } from '../db/entities/Message';
 
 export const PROVIDERS: Record<string, new () => CloudProvider> = {
     Codee: CodeeProvider,
@@ -24,6 +25,7 @@ export async function createAgentsFromProviders(params: {
     toolSlugs: string[];
     branchName: string;
     cloudProviders: CloudProviderConfig[];
+    images: MessageImage[];
 }): Promise<Agent> {
     let first: Agent | null = null;
     for (const config of params.cloudProviders) {
@@ -40,6 +42,7 @@ export async function createAgentsFromProviders(params: {
                 baseBranch: params.branchName,
                 model: agentConfig.model,
                 isOrchestratorAgent: false,
+                images: params.images,
             });
             if (!first) first = agent;
         }

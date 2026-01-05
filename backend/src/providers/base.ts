@@ -1,6 +1,6 @@
 import { Agent } from '../db/entities/Agent';
 import { Workspace } from '../db/entities/Workspace';
-import type { SenderType } from '../db/entities/Message';
+import type { SenderType, MessageImage } from '../db/entities/Message';
 
 export type ProviderToolCall = {
     id: number;
@@ -18,6 +18,7 @@ export type ProviderMessage = {
     content: string;
     sender: SenderType;
     tool_calls: ProviderToolCall[];
+    images: MessageImage[];
 };
 
 export interface CloudProvider {
@@ -31,7 +32,8 @@ export interface CloudProvider {
         baseBranch: string;
         model?: string | null;
         isOrchestratorAgent: boolean;
+        images: MessageImage[];
     }): Promise<Agent>;
     getMessages(agent: Agent): Promise<ProviderMessage[]>;
-    sendMessage(agent: Agent, message: string): Promise<boolean>;
+    sendMessage(agent: Agent, message: string, images: MessageImage[]): Promise<boolean>;
 }
