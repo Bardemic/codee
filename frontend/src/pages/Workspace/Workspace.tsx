@@ -2,11 +2,12 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import style from './workspace.module.css';
 import { trpc } from '../../lib/trpc';
-import type { Message as MessageType, ToolCall } from '../../lib/types';
+import type { Message as MessageType, ToolCall, MessageImage } from '../../lib/types';
 import Message from './Message';
 import CreateBranch from '../../components/CreateBranch/CreateBranch';
 import { BsSend } from 'react-icons/bs';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
+import { IoClose, IoImage } from 'react-icons/io5';
 import AgentCard from './AgentCard';
 
 function MessageSkeleton({ isUser, length }: { isUser: boolean; length: number }) {
@@ -41,10 +42,13 @@ export default function Workspace() {
 
     const [userMessage, setUserMessage] = useState('');
     const [streamingToolCalls, setStreamingToolCalls] = useState<ToolCall[]>([]);
+    const [attachedImages, setAttachedImages] = useState<MessageImage[]>([]);
+    const [isDragging, setIsDragging] = useState(false);
     const chatRef = useRef<HTMLDivElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const workspace = workspaces?.find((w) => w.agents.some((a) => a.id === Number(agentId)));
-    const currentAgent = workspace?.agents.find((a) => a.id === Number(agentId));
+    const workspace = workspaces?.find((workspace) => workspace.agents.some((agent) => agent.id === Number(agentId)));
+    const currentAgent = workspace?.agents.find((agent) => agent.id === Number(agentId));
 
     const messages: MessageType[] = useMemo(() => {
         const combinedMessages: MessageType[] = [...(messagesData ?? [])];
@@ -67,6 +71,7 @@ export default function Workspace() {
                 content: '',
                 isPendingAgent: true,
                 tool_calls: streamingToolCalls,
+                images: [],
             });
         }
 
@@ -144,15 +149,71 @@ export default function Workspace() {
         }
     }, [isLoadingWorkspaces, workspace, navigate]);
 
+    const processFiles = useCallback(async (files: FileList | File[]) => {
+        const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
+        const newImages: MessageImage[] = [];
+
+        for (const file of Array.from(files)) {
+            if (!validTypes.includes(file.type)) continue;
+            if (file.size > 10 * 1024 * 1024) continue; // 10MB limit
+
+            try {
+                const base64 = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const result = reader.result as string;
+                        const base64Data = result.split(',')[1];
+                        resolve(base64Data);
+                    };
+                    reader.onerror = () => {
+                        reject(new Error(`Failed to read file: ${file.name}`));
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                newImages.push({
+                    data: base64,
+                    mimeType: file.type,
+                });
+            } catch (error) {
+                console.error('Error processing image file:', error);
+            }
+        }
+
+        setAttachedImages((prev) => [...prev, ...newImages]);
+    }, []);
+
+    const handlePaste = useCallback(
+        (event: React.ClipboardEvent) => {
+            const items = event.clipboardData.items;
+            const imageFiles: File[] = [];
+
+            for (const item of Array.from(items)) {
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    if (file) imageFiles.push(file);
+                }
+            }
+
+            if (imageFiles.length > 0) {
+                event.preventDefault();
+                processFiles(imageFiles);
+            }
+        },
+        [processFiles]
+    );
+
     const handleSendMessage = useCallback(async () => {
-        if (!userMessage.trim()) return;
+        if (!userMessage.trim() && attachedImages.length === 0) return;
         if (sendMessage.isPending) return;
         await sendMessage.mutateAsync({
             message: userMessage,
             agent_id: Number(agentId),
+            images: attachedImages,
         });
         setUserMessage('');
-    }, [userMessage, sendMessage, agentId]);
+        setAttachedImages([]);
+    }, [userMessage, sendMessage, agentId, attachedImages]);
 
     if (isLoadingWorkspaces || !workspace || !currentAgent) {
         return null;
@@ -181,8 +242,8 @@ export default function Workspace() {
                 <div className={style.leftSidebar}>
                     <h3 className={style.sidebarTitle}>Agents</h3>
                     <div className={style.agentList}>
-                        {workspace.agents.map((agent) => (
-                            <AgentCard key={agent.id} agent={agent} isActive={agent.id === currentAgent.id} />
+                        {workspace.agents.map((workspaceAgent) => (
+                            <AgentCard key={workspaceAgent.id} agent={workspaceAgent} isActive={workspaceAgent.id === currentAgent.id} />
                         ))}
                     </div>
                 </div>
@@ -226,25 +287,84 @@ export default function Workspace() {
                         </div>
                     </div>
 
-                    <div className={style.inputContainer}>
+                    <div
+                        className={`${style.inputContainer} ${isDragging ? style.inputContainerDragging : ''}`}
+                        onDragOver={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setIsDragging(true);
+                        }}
+                        onDragLeave={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setIsDragging(false);
+                        }}
+                        onDrop={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setIsDragging(false);
+                            processFiles(event.dataTransfer.files);
+                        }}
+                    >
+                        {isDragging && (
+                            <div className={style.dropOverlay}>
+                                <IoImage size={32} />
+                                <span>Drop images here</span>
+                            </div>
+                        )}
                         <div className={style.inputWrapper}>
-                            <textarea
-                                className={style.chat}
-                                value={userMessage}
-                                placeholder="Type a message to your agent..."
-                                onChange={(event) => setUserMessage(event.target.value)}
-                                onKeyDown={(event) => {
-                                    if (event.key === 'Enter' && !event.shiftKey && userMessage.length > 0 && !sendMessage.isPending) {
-                                        event.preventDefault();
-                                        handleSendMessage();
-                                    }
-                                }}
-                            />
-                            {userMessage.length > 0 && (
-                                <button className={style.sendButton} onClick={handleSendMessage} disabled={sendMessage.isPending}>
-                                    {sendMessage.isPending ? <AiOutlineLoading3Quarters size={16} className={style.spinIcon} /> : <BsSend size={16} />}
-                                </button>
+                            {attachedImages.length > 0 && (
+                                <div className={style.imagePreviewContainer}>
+                                    {attachedImages.map((image, index) => (
+                                        <div key={index} className={style.imagePreview}>
+                                            <img src={`data:${image.mimeType};base64,${image.data}`} alt={`Attachment ${index + 1}`} />
+                                            <button
+                                                className={style.removeImageButton}
+                                                onClick={() => setAttachedImages((prev) => prev.filter((_, imageIndex) => imageIndex !== index))}
+                                                type="button"
+                                            >
+                                                <IoClose size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
+                            <div className={style.textareaWrapper}>
+                                <button type="button" className={style.attachButton} onClick={() => fileInputRef.current?.click()} title="Attach images">
+                                    <IoImage size={18} />
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    className={style.hiddenFileInput}
+                                    accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                                    multiple
+                                    onChange={(event) => event.target.files && processFiles(event.target.files)}
+                                />
+                                <textarea
+                                    className={style.chat}
+                                    value={userMessage}
+                                    placeholder="Type a message to your agent..."
+                                    onChange={(event) => setUserMessage(event.target.value)}
+                                    onPaste={handlePaste}
+                                    onKeyDown={(event) => {
+                                        if (
+                                            event.key === 'Enter' &&
+                                            !event.shiftKey &&
+                                            (userMessage.length > 0 || attachedImages.length > 0) &&
+                                            !sendMessage.isPending
+                                        ) {
+                                            event.preventDefault();
+                                            handleSendMessage();
+                                        }
+                                    }}
+                                />
+                                {(userMessage.length > 0 || attachedImages.length > 0) && (
+                                    <button className={style.sendButton} onClick={handleSendMessage} disabled={sendMessage.isPending}>
+                                        {sendMessage.isPending ? <AiOutlineLoading3Quarters size={16} className={style.spinIcon} /> : <BsSend size={16} />}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

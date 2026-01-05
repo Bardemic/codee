@@ -156,6 +156,30 @@
     padding: 24px 0 32px 0;
     flex-shrink: 0;
     z-index: 10;
+    position: relative;
+    transition: border-color 0.2s ease;
+}
+
+.inputContainerDragging {
+    border-color: var(--color-accent);
+}
+
+.dropOverlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(234, 179, 8, 0.1);
+    border: 2px dashed var(--color-accent);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--color-accent);
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 20;
+    pointer-events: none;
 }
 
 .inputWrapper {
@@ -164,7 +188,92 @@
     margin: 0 auto;
     padding: 0 24px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.imagePreviewContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 0;
+}
+
+.imagePreview {
     position: relative;
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--color-surface);
+}
+
+.imagePreview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.removeImageButton {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.imagePreview:hover .removeImageButton {
+    opacity: 1;
+}
+
+.removeImageButton:hover {
+    background-color: rgba(239, 68, 68, 0.9);
+}
+
+.textareaWrapper {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+}
+
+.attachButton {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    background: transparent;
+    color: var(--color-muted);
+    padding: 8px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    transition:
+        color 0.15s ease,
+        background-color 0.15s ease;
+}
+
+.attachButton:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--color-foreground);
+}
+
+.hiddenFileInput {
+    display: none;
 }
 
 .chat {
@@ -172,7 +281,7 @@
     background-color: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    padding: 16px 50px 16px 16px;
+    padding: 16px 50px 16px 48px;
     color: var(--color-foreground);
     resize: none;
     height: auto;
@@ -193,9 +302,8 @@
 
 .sendButton {
     position: absolute;
-    right: 36px;
+    right: 12px;
     bottom: 12px;
-    top: 12px;
     background: transparent;
     color: var(--color-accent);
     padding: 8px;
@@ -287,12 +395,36 @@
     border-bottom-left-radius: 12px;
 }
 
+.messageImages {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 12px 0 12px;
+}
+
+.messageImage {
+    max-width: 240px;
+    max-height: 180px;
+    border-radius: 8px;
+    object-fit: contain;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.messageImage:hover {
+    transform: scale(1.02);
+}
+
 .messageContent {
     padding: 16px 20px;
     font-size: 14px;
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
+}
+
+.messageImages + .messageContent {
+    padding-top: 8px;
 }
 
 .failedToolCallItem {
