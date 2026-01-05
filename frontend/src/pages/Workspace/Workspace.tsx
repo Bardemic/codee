@@ -46,28 +46,36 @@ export default function Workspace() {
     const workspace = workspaces?.find((w) => w.agents.some((a) => a.id === Number(agentId)));
     const currentAgent = workspace?.agents.find((a) => a.id === Number(agentId));
 
-    // Combine server messages with streaming tool calls
     const messages: MessageType[] = useMemo(() => {
         const combinedMessages: MessageType[] = [...(messagesData ?? [])];
-        if (streamingToolCalls.length > 0) {
-            const pendingMessage = combinedMessages.find((m) => m.isPendingAgent);
-            if (!pendingMessage) {
-                combinedMessages.push({
-                    id: '__pending_agent__',
-                    created_at: new Date(),
-                    sender: 'AGENT',
-                    content: '',
-                    isPendingAgent: true,
+        const lastMessage = combinedMessages[combinedMessages.length - 1];
+        const pendingIndex = combinedMessages.findIndex((msg) => msg.isPendingAgent);
+        const isAwaitingAgent = lastMessage?.sender === 'USER' && currentAgent?.status !== 'FAILED';
+
+        if (pendingIndex !== -1) {
+            if (streamingToolCalls.length > 0) {
+                combinedMessages[pendingIndex] = {
+                    ...combinedMessages[pendingIndex],
                     tool_calls: streamingToolCalls,
-                });
+                };
             }
+        } else if (isAwaitingAgent || streamingToolCalls.length > 0) {
+            combinedMessages.push({
+                id: '__pending_agent__',
+                created_at: new Date(),
+                sender: 'AGENT',
+                content: '',
+                isPendingAgent: true,
+                tool_calls: streamingToolCalls,
+            });
         }
+
         return combinedMessages;
-    }, [messagesData, streamingToolCalls]);
+    }, [messagesData, streamingToolCalls, currentAgent]);
 
     const lastMessage = messages[messages.length - 1];
     const hasPendingAgentMessage = messages.some((msg) => msg.sender === 'AGENT' && (msg.isPendingAgent || !msg.content));
-    const showTypingIndicator = messages.length > 0 && (lastMessage?.sender === 'USER' || hasPendingAgentMessage) && currentAgent?.status !== 'FAILED';
+    const showTypingIndicator = messages.length > 0 && lastMessage?.sender === 'USER' && !hasPendingAgentMessage && currentAgent?.status !== 'FAILED';
 
     // SSE streaming for Codee agents
     useEffect(() => {
@@ -206,7 +214,7 @@ export default function Workspace() {
                                     <p className={style.sender}>Agent</p>
                                 </div>
                             )}
-                            {currentAgent?.status === 'FAILED' && (
+                            {currentAgent.status === 'FAILED' && (
                                 <div className={`${style.messageWrapper} ${style.agentWrapper}`}>
                                     <div className={style.failedToolCallItem}>
                                         <div className={style.failedToolCallHeader}>Failed</div>

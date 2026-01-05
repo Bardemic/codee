@@ -1,5 +1,6 @@
 import type { ToolCall } from '../../lib/types';
 import style from './ToolsContainer.module.css';
+import { BsChevronDown, BsX } from 'react-icons/bs';
 
 export default function ToolsContainer({
     toolCalls,
@@ -18,9 +19,7 @@ export default function ToolsContainer({
         return (
             <div className={style.previewContainer} onClick={() => setShowFullContent(true)}>
                 <div className={style.previewHeader}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <BsChevronDown size={16} />
                 </div>
                 <div>
                     <div className={style.thinkingBadge}>
@@ -39,9 +38,7 @@ export default function ToolsContainer({
             <div className={style.stackHeader} onClick={() => setShowFullContent(false)}>
                 <span className={style.stackTitle}>Tool Calls ({toolCalls.length})</span>
                 <div className={style.closeButton}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                        <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                    <BsX size={16} />
                 </div>
             </div>
             {toolCalls.map((toolCall) => (
