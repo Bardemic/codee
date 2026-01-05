@@ -5,6 +5,7 @@ import { AppDataSource } from '../db/data-source';
 import { z } from 'zod';
 import axios from 'axios';
 import { getIntegrationApiKey } from '../workers/helpers/agents';
+import type { MessageImage } from '../db/entities/Message';
 
 export class JulesProvider implements CloudProvider {
     slug = 'Jules';
@@ -26,6 +27,7 @@ export class JulesProvider implements CloudProvider {
         baseBranch: string;
         model?: string | null;
         isOrchestratorAgent: boolean;
+        images: MessageImage[];
     }): Promise<Agent> {
         const agentRepository = AppDataSource.getRepository(Agent);
         const agent = agentRepository.create({
@@ -178,6 +180,7 @@ export class JulesProvider implements CloudProvider {
                         content,
                         sender,
                         tool_calls: [],
+                        images: [],
                     };
                 })
                 .filter((msg) => msg != null);
@@ -187,7 +190,9 @@ export class JulesProvider implements CloudProvider {
         }
     }
 
-    async sendMessage(agent: Agent, message: string): Promise<boolean> {
+    async sendMessage(agent: Agent, message: string, _images: MessageImage[]): Promise<boolean> {
+        // jules api doesn't support images (99% sure, nothing in docs, but does via Jules site)
+        // probably should add ui indication that jules doesn't support images
         const apiKey = await getIntegrationApiKey(agent.workspace.userId, 'jules');
 
         const payload = {

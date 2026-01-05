@@ -5,6 +5,7 @@ import { AppDataSource } from '../db/data-source';
 import { z } from 'zod';
 import axios from 'axios';
 import { getIntegrationApiKey } from '../workers/helpers/agents';
+import type { MessageImage } from '../db/entities/Message';
 
 export class CursorProvider implements CloudProvider {
     slug = 'Cursor';
@@ -16,6 +17,7 @@ export class CursorProvider implements CloudProvider {
         message,
         model,
         baseBranch,
+        images,
     }: {
         userId: string;
         workspace: Workspace;
@@ -24,6 +26,7 @@ export class CursorProvider implements CloudProvider {
         toolSlugs: string[];
         baseBranch: string;
         model?: string | null;
+        images: MessageImage[];
     }): Promise<Agent> {
         const agentRepository = AppDataSource.getRepository(Agent);
         const agent = agentRepository.create({
@@ -41,10 +44,12 @@ export class CursorProvider implements CloudProvider {
         const apiKey = await getIntegrationApiKey(userId, 'cursor');
 
         const payload = {
-            prompt: { text: message },
+            prompt: {
+                text: message,
+                ...(images.length > 0 && { images: images.map((image) => ({ data: image.data })) }),
+            },
             source: { repository: `https://github.com/${repositoryFullName}`, ref: baseBranch },
-            ...(model ? { model } : {}),
-            // target: { autoCreatePr: false, branchName: '' },
+            ...(model && { model }),
         };
 
         try {
@@ -83,7 +88,6 @@ export class CursorProvider implements CloudProvider {
         } catch (error) {
             agent.status = AgentStatus.FAILED;
             console.error('Cursor provider agent creation error:', error);
-
             return await agentRepository.save(agent);
         }
     }
@@ -117,12 +121,13 @@ export class CursorProvider implements CloudProvider {
                 return [];
             }
 
-            return parsedResponse.data.messages.map((msg, index) => ({
+            return parsedResponse.data.messages.map((message, index) => ({
                 id: index + 1,
                 created_at: new Date(),
-                content: msg.text,
-                sender: msg.type === 'user_message' ? ('USER' as const) : ('AGENT' as const),
+                content: message.text,
+                sender: message.type === 'user_message' ? ('USER' as const) : ('AGENT' as const),
                 tool_calls: [],
+                images: [],
             }));
         } catch (error) {
             console.error('Cursor provider getMessages error:', error, 'Agent ID:', agent.id);
@@ -130,12 +135,13 @@ export class CursorProvider implements CloudProvider {
         }
     }
 
-    async sendMessage(agent: Agent, message: string): Promise<boolean> {
+    async sendMessage(agent: Agent, message: string, images: MessageImage[]): Promise<boolean> {
         const apiKey = await getIntegrationApiKey(agent.workspace.userId, 'cursor');
 
         const payload = {
             prompt: {
                 text: message,
+                ...(images.length > 0 && { images: images.map((image) => ({ data: image.data })) }),
             },
         };
 

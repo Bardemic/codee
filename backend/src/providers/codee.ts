@@ -3,7 +3,7 @@ import { Workspace } from '../db/entities/Workspace';
 import { Agent, AgentStatus, ProviderType } from '../db/entities/Agent';
 import { AppDataSource } from '../db/data-source';
 import { enqueueAgentJob } from '../workers/queue';
-import { Message } from '../db/entities/Message';
+import { Message, type MessageImage } from '../db/entities/Message';
 import { emitStatus } from '../stream/events';
 import { ToolCall } from '../db/entities/ToolCall';
 import { In } from 'typeorm';
@@ -19,6 +19,7 @@ export class CodeeProvider implements CloudProvider {
         baseBranch,
         model,
         isOrchestratorAgent,
+        images,
     }: {
         userId: string;
         workspace: Workspace;
@@ -28,6 +29,7 @@ export class CodeeProvider implements CloudProvider {
         baseBranch: string;
         model?: string | null;
         isOrchestratorAgent: boolean;
+        images: MessageImage[];
     }): Promise<Agent> {
         const agentRepository = AppDataSource.getRepository(Agent);
         const messageRepository = AppDataSource.getRepository(Message);
@@ -47,6 +49,7 @@ export class CodeeProvider implements CloudProvider {
             agent,
             content: message,
             sender: 'USER',
+            images,
         });
         await messageRepository.save(userMessage);
 
@@ -95,15 +98,17 @@ export class CodeeProvider implements CloudProvider {
             content: message.content,
             sender: message.sender,
             tool_calls: toolCallsByMessage.get(message.id) || [],
+            images: message.images,
         }));
     }
 
-    async sendMessage(agent: Agent, message: string) {
+    async sendMessage(agent: Agent, message: string, images: MessageImage[]) {
         const messageRepository = AppDataSource.getRepository(Message);
         const userMessage = messageRepository.create({
             agent,
             content: message,
             sender: 'USER',
+            images,
         });
         await messageRepository.save(userMessage);
 
@@ -121,24 +126,5 @@ export class CodeeProvider implements CloudProvider {
         });
 
         return true;
-    }
-
-    async createPrimaryAgent({
-        userId,
-        workspace,
-        repositoryFullName,
-        message,
-        toolSlugs,
-        baseBranch,
-    }: {
-        userId: string;
-        workspace: Workspace;
-        repositoryFullName: string;
-        message: string;
-        toolSlugs: string[];
-        baseBranch: string;
-    }): Promise<Agent> {
-        const agent = await this.createAgent({ userId, workspace, repositoryFullName, message, toolSlugs, baseBranch, model: null, isOrchestratorAgent: true });
-        return agent;
     }
 }

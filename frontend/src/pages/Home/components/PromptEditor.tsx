@@ -9,6 +9,9 @@ interface PromptEditorProps {
     onSubmit: (message: string) => void;
     disabled?: boolean;
     placeholder?: string;
+    onImagesPaste?: (files: File[]) => void;
+    hasAttachments?: boolean;
+    onContentChange?: (hasContent: boolean) => void;
 }
 
 export interface PromptEditorRef {
@@ -34,7 +37,7 @@ export interface MentionOption {
 }
 
 export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(function PromptEditor(
-    { integrations, onSelectedToolsChange, onSubmit, disabled = false, placeholder },
+    { integrations, onSelectedToolsChange, onSubmit, disabled = false, placeholder, onImagesPaste, hasAttachments = false, onContentChange },
     ref
 ) {
     const editorRef = useRef<HTMLDivElement>(null);
@@ -129,10 +132,29 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
         syncToolsFromPills(currentSlugsFromPills);
         prevPillSlugsRef.current = currentSlugsFromPills;
         setMentionState(detectMentionTrigger());
-    }, [detectMentionTrigger, extractSlugsFromPill, syncToolsFromPills]);
+        onContentChange?.(editorRef.current.innerText.trim().length > 0);
+    }, [detectMentionTrigger, extractSlugsFromPill, syncToolsFromPills, onContentChange]);
 
     const handlePaste = useCallback(
         (event: React.ClipboardEvent<HTMLDivElement>) => {
+            if (onImagesPaste) {
+                const items = event.clipboardData.items;
+                const imageFiles: File[] = [];
+
+                for (const item of Array.from(items)) {
+                    if (item.type.startsWith('image/')) {
+                        const file = item.getAsFile();
+                        if (file) imageFiles.push(file);
+                    }
+                }
+
+                if (imageFiles.length > 0) {
+                    event.preventDefault();
+                    onImagesPaste(imageFiles);
+                    return;
+                }
+            }
+
             event.preventDefault();
             const text = event.clipboardData.getData('text/plain');
             const selection = window.getSelection();
@@ -145,7 +167,7 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
             selection.addRange(range);
             handleInput();
         },
-        [handleInput]
+        [handleInput, onImagesPaste]
     );
 
     const handleSelectMention = useCallback(
@@ -177,14 +199,14 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
                 if (type === 'tool') {
                     const [integrationName, toolDisplay] = value.split('/');
                     const integration = integrations.find((item) => item.name === integrationName);
-                    const tool = integration?.tools.find((t) => t.display_name === toolDisplay);
+                    const tool = integration?.tools.find((tool) => tool.display_name === toolDisplay);
                     if (!tool) return prev;
                     (span as HTMLSpanElement).dataset.toolSlug = tool.slug_name;
                     return prev.includes(tool.slug_name) ? prev : [...prev, tool.slug_name];
                 }
                 const integration = integrations.find((item) => item.name === value);
                 if (!integration) return prev;
-                const slugs = integration.tools.map((t) => t.slug_name);
+                const slugs = integration.tools.map((tool) => tool.slug_name);
                 (span as HTMLSpanElement).dataset.integrationSlugs = JSON.stringify(slugs);
                 const existing = new Set(prev);
                 const toAdd = slugs.filter((slug) => !existing.has(slug));
@@ -267,10 +289,10 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
             if (event.key === 'Enter' && !event.shiftKey && !disabled) {
                 event.preventDefault();
                 const message = editorRef.current?.innerText.trim();
-                if (message) onSubmit(message);
+                if (message || hasAttachments) onSubmit(message || '');
             }
         },
-        [disabled, handleSelectMention, mentionOptions, mentionState, onSubmit]
+        [disabled, handleSelectMention, mentionOptions, mentionState, onSubmit, hasAttachments]
     );
 
     return (

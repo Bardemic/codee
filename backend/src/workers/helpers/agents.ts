@@ -15,8 +15,8 @@ export async function getAgentById(agentId: number) {
 
 export async function saveMessage(agent: Agent, content: string, sender: SenderType) {
     const messageRepository = AppDataSource.getRepository(Message);
-    const msg = messageRepository.create({ agent, content, sender });
-    return messageRepository.save(msg);
+    const message = messageRepository.create({ agent, content, sender });
+    return messageRepository.save(message);
 }
 
 export async function updateAgent(agent: Agent, updates: Partial<Agent>) {
@@ -40,7 +40,8 @@ export async function persistToolCallsFromRedis(agentId: number, message: Messag
         const toolCallsToSave: ToolCall[] = [];
 
         for (const event of events) {
-            const isToolOrAgentEvent = event.event === 'status' && typeof event.step === 'string' && (event.step.startsWith('tool_') || event.step.startsWith('agent_'));
+            const isToolOrAgentEvent =
+                event.event === 'status' && typeof event.step === 'string' && (event.step.startsWith('tool_') || event.step.startsWith('agent_'));
             if (!isToolOrAgentEvent) continue;
 
             let parsedArguments: Record<string, unknown> = {};

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { trpc } from '../../lib/trpc';
 import { useSession } from '../../lib/auth';
-import type { Repository } from '../../lib/types';
+import type { Repository, MessageImage } from '../../lib/types';
 import styles from './home.module.css';
 import { ChatBox } from './components/ChatBox';
 import type { CloudAgentsSelection } from './components/CloudAgentsDropdown';
@@ -74,7 +74,7 @@ function Home() {
         );
     }, [branchOptions, selectedBranch]);
 
-    async function createNewWorkspace(userMessage: string, selectedTools: string[]) {
+    async function createNewWorkspace(userMessage: string, selectedTools: string[], images: MessageImage[]) {
         if (!selectedRepo || !selectedBranch) return;
         await createWorkspace.mutateAsync({
             message: userMessage,
@@ -83,6 +83,7 @@ function Home() {
             tool_slugs: selectedTools,
             cloud_providers: activeProviders,
             sub_agents: subAgents,
+            images,
         });
     }
 
