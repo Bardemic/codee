@@ -246,6 +246,7 @@ export async function runAgentJob(payload: AgentJobPayload) {
                 args: ['push', '-u', 'origin', branchName],
             });
             await updateAgent(agent, { githubBranchName: branchName });
+            await emitStatus(agent.id, 'running', 'agent_branch_created', branchName);
         }
 
         const previousMessages = await previousMessagesPromise;
