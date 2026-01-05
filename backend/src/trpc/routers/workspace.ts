@@ -10,6 +10,7 @@ import { createAgentsFromProviders, PROVIDERS } from '../../providers';
 import { generateTitle } from '../../utils/llm';
 import { In } from 'typeorm';
 import { CodeeProvider } from '../../providers/codee';
+import { generateBranchName } from '../../workers/helpers/github';
 
 const providerConfig = z.object({
     name: z.string(),
@@ -196,7 +197,7 @@ export const workspaceRouter = router({
         if (!agent || agent.workspace.userId !== ctx.user.id) {
             throw new TRPCError({ code: 'NOT_FOUND' });
         }
-        const branchName = agent.githubBranchName || `codee/agent-${agent.id}-${Date.now().toString(16)}`;
+        const branchName = agent.githubBranchName || generateBranchName({ title: agent.workspace.name, agentId: agent.id });
         agent.githubBranchName = branchName;
         await agentRepository.save(agent);
         return { branch_name: branchName };

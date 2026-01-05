@@ -9,9 +9,25 @@ export async function getGithubTokenForUser(userId: string): Promise<string | nu
     }
 }
 
-export function generateBranchName(agentId: number): string {
-    const timestamp = Date.now();
-    return `codee/agent-${agentId}-${timestamp}`;
+function generateRandomSuffix(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    return Array.from({ length: 5 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+function cleanBranchName(title: string): string {
+    return title
+        .replace(/\s+/g, '-')
+        .replace(/[^A-Za-z0-9-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .toLowerCase();
+}
+
+export function generateBranchName(params: { title: string; agentId: number }): string {
+    const sanitized = cleanBranchName(params.title);
+    const base = sanitized.length > 0 ? sanitized : `agent-${params.agentId}${generateRandomSuffix()}`;
+    const suffix = generateRandomSuffix();
+    return `codee/${base}-${suffix}`;
 }
 
 export async function commitAndPush(sandbox: Sandbox, message: string): Promise<void> {

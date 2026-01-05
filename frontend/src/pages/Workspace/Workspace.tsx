@@ -91,6 +91,9 @@ export default function Workspace() {
 
         eventSource.addEventListener('status', (event: MessageEvent) => {
             const eventData = JSON.parse(event.data);
+            if (eventData.step === 'agent_branch_created') {
+                utils.workspace.list.invalidate();
+            }
             if (eventData.step?.startsWith('tool_') || eventData.step?.startsWith('agent_')) {
                 const eventId = event.lastEventId || `sse_${Date.now()}`;
                 const parsedArguments = (() => {
