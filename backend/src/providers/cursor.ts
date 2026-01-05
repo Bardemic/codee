@@ -1,11 +1,10 @@
-import { TRPCError } from '@trpc/server';
 import type { CloudProvider } from './base';
 import { Workspace } from '../db/entities/Workspace';
 import { Agent, AgentStatus, ProviderType } from '../db/entities/Agent';
 import { AppDataSource } from '../db/data-source';
-import { IntegrationConnection } from '../db/entities/IntegrationConnection';
 import { z } from 'zod';
 import axios from 'axios';
+import { getIntegrationApiKey } from '../workers/helpers/agents';
 
 export class CursorProvider implements CloudProvider {
     slug = 'Cursor';
@@ -35,29 +34,11 @@ export class CursorProvider implements CloudProvider {
             status: AgentStatus.PENDING,
             name: `Cursor Agent${model ? ` (${model})` : ''}`,
             model: model || null,
+            isOrchestratorAgent: false,
         });
         await agentRepository.save(agent);
 
-        const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
-        const cursorConnection = await connectionRepository.findOne({
-            where: { userId, provider: { slug: 'cursor' } },
-            relations: ['provider'],
-        });
-
-        if (!cursorConnection) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'Cursor not connected',
-            });
-        }
-
-        const apiKey = cursorConnection.getDataConfig()?.api_key;
-        if (!apiKey) {
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Cursor API key not found',
-            });
-        }
+        const apiKey = await getIntegrationApiKey(userId, 'cursor');
 
         const payload = {
             prompt: { text: message },
@@ -108,26 +89,7 @@ export class CursorProvider implements CloudProvider {
     }
 
     async getMessages(agent: Agent) {
-        const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
-        const cursorConnection = await connectionRepository.findOne({
-            where: { userId: agent.workspace.userId, provider: { slug: 'cursor' } },
-            relations: ['provider'],
-        });
-
-        if (!cursorConnection) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'Cursor not connected',
-            });
-        }
-
-        const apiKey = cursorConnection.getDataConfig()?.api_key;
-        if (!apiKey) {
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Cursor API key not found',
-            });
-        }
+        const apiKey = await getIntegrationApiKey(agent.workspace.userId, 'cursor');
 
         try {
             const response = await axios.get(`https://api.cursor.com/v0/agents/${agent.conversationId}/conversation`, {
@@ -169,26 +131,7 @@ export class CursorProvider implements CloudProvider {
     }
 
     async sendMessage(agent: Agent, message: string): Promise<boolean> {
-        const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
-        const cursorConnection = await connectionRepository.findOne({
-            where: { userId: agent.workspace.userId, provider: { slug: 'cursor' } },
-            relations: ['provider'],
-        });
-
-        if (!cursorConnection) {
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'Cursor not connected',
-            });
-        }
-
-        const apiKey = cursorConnection.getDataConfig()?.api_key;
-        if (!apiKey) {
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'Cursor API key not found',
-            });
-        }
+        const apiKey = await getIntegrationApiKey(agent.workspace.userId, 'cursor');
 
         const payload = {
             prompt: {

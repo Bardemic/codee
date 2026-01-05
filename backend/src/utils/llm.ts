@@ -5,7 +5,6 @@ import { z } from 'zod';
 
 const openaiClient = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY,
-    compatibility: 'strict',
 });
 
 export async function generateTitle(prompt: string): Promise<string> {

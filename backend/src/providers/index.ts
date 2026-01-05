@@ -39,6 +39,7 @@ export async function createAgentsFromProviders(params: {
                 toolSlugs: params.toolSlugs,
                 baseBranch: params.branchName,
                 model: agentConfig.model,
+                isOrchestratorAgent: false,
             });
             if (!first) first = agent;
         }

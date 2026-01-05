@@ -24,13 +24,14 @@
         "typescript-eslint": "^8.50.1"
     },
     "dependencies": {
-        "@ai-sdk/openai": "^1.0.0",
+        "@ai-sdk/openai": "^3.0.0",
         "@posthog/agent-toolkit": "^0.2.4",
         "@posthog/ai": "^7.3.0",
         "@trpc/server": "^11.0.0-rc.553",
         "@types/bcryptjs": "^3.0.0",
         "@vercel/sandbox": "^1.1.1",
-        "ai": "^4.0.0",
+        "ai": "^6.0.0",
+        "axios": "^1.7.9",
         "better-auth": "^1.4.9",
         "bullmq": "^5.25.4",
         "cors": "^2.8.5",
@@ -43,7 +44,6 @@
         "superjson": "^2.2.1",
         "typeorm": "^0.3.20",
         "uuid": "^11.0.3",
-        "zod": "^3.23.8",
-        "axios": "^1.7.9"
+        "zod": "^3.23.8"
     }
 }
