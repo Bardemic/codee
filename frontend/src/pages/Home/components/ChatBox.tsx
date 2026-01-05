@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback, type ReactNode } from 'react';
-import { BsSend, BsTools } from 'react-icons/bs';
+import { BsSend, BsTools, BsCheck } from 'react-icons/bs';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
-import { BsCheck } from 'react-icons/bs';
 import { IoClose, IoImage } from 'react-icons/io5';
 import type { Integration, MessageImage } from '../../../lib/types';
 import { PromptEditor, type PromptEditorRef } from './PromptEditor';
@@ -43,9 +42,11 @@ export function ChatBox({
     const [selectedTools, setSelectedTools] = useState<string[]>([]);
     const [attachedImages, setAttachedImages] = useState<MessageImage[]>([]);
     const [isDragging, setIsDragging] = useState(false);
+    const [hasContent, setHasContent] = useState(false);
     const editorRef = useRef<PromptEditorRef>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const isBlocked = isLoading || isDisabled;
+    const isEmpty = !hasContent && attachedImages.length === 0;
 
     const integrationDropdownOptions = useMemo<DropdownOption[]>(
         () =>
@@ -103,6 +104,7 @@ export function ChatBox({
             editorRef.current?.clear();
             setSelectedTools([]);
             setAttachedImages([]);
+            setHasContent(false);
         }
     }, [resetKey]);
 
@@ -165,11 +167,13 @@ export function ChatBox({
                 onSubmit={(message) => {
                     onSubmit(message, selectedTools, attachedImages);
                     setAttachedImages([]);
+                    setHasContent(false);
                 }}
                 disabled={isBlocked}
                 placeholder={placeholder}
                 onImagesPaste={processFiles}
                 hasAttachments={attachedImages.length > 0}
+                onContentChange={setHasContent}
             />
             <div className={styles.chatFooter}>
                 <div className={styles.pillsContainer}>
@@ -193,9 +197,10 @@ export function ChatBox({
                         if (message || attachedImages.length > 0) {
                             onSubmit(message || '', selectedTools, attachedImages);
                             setAttachedImages([]);
+                            setHasContent(false);
                         }
                     }}
-                    disabled={isBlocked}
+                    disabled={isBlocked || isEmpty}
                 >
                     {isLoading ? <AiOutlineLoading3Quarters size={16} className={styles.spinIcon} /> : <BsSend size={16} />}
                 </button>

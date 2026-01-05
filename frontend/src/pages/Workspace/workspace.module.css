@@ -305,27 +305,31 @@
     position: absolute;
     right: 12px;
     bottom: 12px;
-    background: transparent;
+    background: none;
+    border: none;
     color: var(--color-accent);
     padding: 8px;
-    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    border: none;
     height: 32px;
-    align-self: center;
 }
 
 .sendButton:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background: none;
     color: var(--color-accent-hover);
 }
 
 .sendButton:disabled {
-    opacity: 0.5;
+    background: none;
+    color: var(--color-muted);
     cursor: not-allowed;
+}
+
+.sendButton:disabled:hover {
+    background: none;
+    color: var(--color-muted);
 }
 
 .spinIcon {

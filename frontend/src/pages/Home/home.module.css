@@ -1,6 +1,6 @@
 .sendButton {
-    all: unset;
-    border-radius: 50%;
+    background: none;
+    border: none;
     padding: 8px;
     display: flex;
     align-items: center;
@@ -9,16 +9,22 @@
     color: var(--color-accent);
 
     &:hover {
-        background-color: var(--color-surface-strong);
+        background: none;
         color: var(--color-accent-hover);
     }
 
     &:disabled {
+        background: none;
         cursor: not-allowed;
-        opacity: 0.5;
+        color: var(--color-muted);
+    }
+
+    &:disabled:hover {
+        background: none;
         color: var(--color-muted);
     }
 }
+
 
 .spinIcon {
     animation: spin 1s linear infinite;

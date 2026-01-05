@@ -11,6 +11,7 @@ interface PromptEditorProps {
     placeholder?: string;
     onImagesPaste?: (files: File[]) => void;
     hasAttachments?: boolean;
+    onContentChange?: (hasContent: boolean) => void;
 }
 
 export interface PromptEditorRef {
@@ -36,7 +37,7 @@ export interface MentionOption {
 }
 
 export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(function PromptEditor(
-    { integrations, onSelectedToolsChange, onSubmit, disabled = false, placeholder, onImagesPaste, hasAttachments = false },
+    { integrations, onSelectedToolsChange, onSubmit, disabled = false, placeholder, onImagesPaste, hasAttachments = false, onContentChange },
     ref
 ) {
     const editorRef = useRef<HTMLDivElement>(null);
@@ -131,7 +132,8 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
         syncToolsFromPills(currentSlugsFromPills);
         prevPillSlugsRef.current = currentSlugsFromPills;
         setMentionState(detectMentionTrigger());
-    }, [detectMentionTrigger, extractSlugsFromPill, syncToolsFromPills]);
+        onContentChange?.(editorRef.current.innerText.trim().length > 0);
+    }, [detectMentionTrigger, extractSlugsFromPill, syncToolsFromPills, onContentChange]);
 
     const handlePaste = useCallback(
         (event: React.ClipboardEvent<HTMLDivElement>) => {
