@@ -2,6 +2,17 @@ import { useState } from 'react';
 import type { Integration } from '../../lib/types';
 import styles from './integrations.module.css';
 
+const svgModules = import.meta.glob('../../assets/svgs/*.svg', { eager: true, import: 'default' }) as Record<string, string>;
+const iconsByKey = Object.fromEntries(
+    Object.entries(svgModules).map(([path, url]) => [
+        path
+            .split('/')
+            .pop()!
+            .replace(/\.svg$/i, ''),
+        url,
+    ])
+) as Record<string, string>;
+
 interface IntegrationCardProps {
     integration: Integration;
     onDelete: (id: number) => void;
@@ -14,8 +25,6 @@ export default function IntegrationCard(props: IntegrationCardProps) {
 
     const normalizedSlug = (props.integration.slug ?? props.integration.name).toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
     const isGithub = normalizedSlug.includes('github');
-    const iconKey = isGithub ? 'github' : normalizedSlug;
-    const iconSrc = `/assets/svgs/${iconKey}.svg`;
     const isAPIkey = !isGithub;
 
     function handleConnectClick() {
@@ -42,7 +51,7 @@ export default function IntegrationCard(props: IntegrationCardProps) {
         <div className={styles.integration}>
             <div className={styles.integrationHeader}>
                 <div className={styles.iconContainer}>
-                    <img className={styles.icon} src={iconSrc} alt={props.integration.name} />
+                    <img className={styles.icon} src={iconsByKey[normalizedSlug]} alt={props.integration.name} />
                     {props.integration.name}
                 </div>
                 {props.integration.connection_id ? (

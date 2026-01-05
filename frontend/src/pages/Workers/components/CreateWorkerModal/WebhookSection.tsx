@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { BsChevronDown } from 'react-icons/bs';
-import githubIcon from '../../../../assets/svgs/github.svg';
+import githubIcon from '../../../../assets/svgs/github-app.svg';
 import posthogIcon from '../../../../assets/svgs/posthog.svg';
 import { WebhookSelection } from '../WebhookSelection/index';
 import styles from './styles.module.css';
