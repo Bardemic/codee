@@ -24,9 +24,6 @@ export function buildOrchestratorAgentTools({ agentId, userId, workspace, reposi
             inputSchema: zodSchema(spawnSubAgentInputSchema),
             execute: async (input) => {
                 const { prompt } = input;
-                // Emit status before creating agent to show it's happening
-                await emitStatus(agentId, 'running', 'tool_spawn_sub_agent', `Spawning agent with prompt: ${prompt}`, { arguments: input });
-
                 const agent = await new CodeeProvider().createAgent({
                     userId,
                     workspace,
@@ -37,8 +34,8 @@ export function buildOrchestratorAgentTools({ agentId, userId, workspace, reposi
                     isOrchestratorAgent: false,
                 });
 
-                // Update status with result
-                await emitStatus(agentId, 'running', 'tool_spawn_sub_agent', String(agent.id), { arguments: input });
+                if (agent.id) await emitStatus(agentId, 'running', 'tool_spawn_sub_agent', String(agent.id), { arguments: input });
+                else await emitStatus(agentId, 'error', 'tool_spawn_sub_agent', 'Failed to spawn agent', { arguments: input });
 
                 return agent.id;
             },
