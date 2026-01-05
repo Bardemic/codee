@@ -251,7 +251,7 @@
 
 .attachButton {
     position: absolute;
-    left: 12px;
+    right: 52px;
     bottom: 12px;
     background: transparent;
     color: var(--color-muted);
@@ -281,7 +281,7 @@
     background-color: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
-    padding: 16px 50px 16px 48px;
+    padding: 16px 52px 16px 20px;
     color: var(--color-foreground);
     resize: none;
     height: auto;
@@ -399,20 +399,15 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    padding: 12px 12px 0 12px;
+    padding: 12px;
 }
 
 .messageImage {
-    max-width: 240px;
-    max-height: 180px;
+    max-width: 90px;
+    max-height: 60px;
     border-radius: 8px;
     object-fit: contain;
     cursor: pointer;
-    transition: transform 0.15s ease;
-}
-
-.messageImage:hover {
-    transform: scale(1.02);
 }
 
 .messageContent {
@@ -424,7 +419,7 @@
 }
 
 .messageImages + .messageContent {
-    padding-top: 8px;
+    padding-top: 4px;
 }
 
 .failedToolCallItem {

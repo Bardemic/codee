@@ -359,11 +359,14 @@ export default function Workspace() {
                                         }
                                     }}
                                 />
-                                {(userMessage.length > 0 || attachedImages.length > 0) && (
-                                    <button className={style.sendButton} onClick={handleSendMessage} disabled={sendMessage.isPending}>
-                                        {sendMessage.isPending ? <AiOutlineLoading3Quarters size={16} className={style.spinIcon} /> : <BsSend size={16} />}
-                                    </button>
-                                )}
+                                <button
+                                    className={style.sendButton}
+                                    onClick={handleSendMessage}
+                                    disabled={sendMessage.isPending || (userMessage.length === 0 && attachedImages.length === 0)}
+                                    title="Send message"
+                                >
+                                    {sendMessage.isPending ? <AiOutlineLoading3Quarters size={16} className={style.spinIcon} /> : <BsSend size={16} />}
+                                </button>
                             </div>
                         </div>
                     </div>
