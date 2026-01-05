@@ -235,7 +235,7 @@ export async function runAgentJob(payload: AgentJobPayload) {
         });
 
         if (!agent.githubBranchName && !payload.isOrchestratorAgent) {
-            const branchName = generateBranchName(agent.id);
+            const branchName = generateBranchName({ title: agent.workspace.name, agentId: agent.id });
             await emitStatus(agent.id, 'running', 'agent_create_branch', `creating branch ${branchName}`);
             await sandbox.runCommand({
                 cmd: 'git',
