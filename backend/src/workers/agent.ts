@@ -15,6 +15,17 @@ import { Message } from '../db/entities/Message';
 import { buildOrchestratorAgentTools } from '../tools/primaryAgent';
 import { PostHog } from 'posthog-node';
 
+if (!process.env.POSTHOG_API_KEY) {
+    throw new Error('POSTHOG_API_KEY is not set');
+}
+const phClient = new PostHog(process.env.POSTHOG_API_KEY, { host: 'https://us.i.posthog.com' });
+
+const openaiClient = createOpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+
+const model = (agentId: number) => withTracing(openaiClient('gpt-5-nano'), phClient, { posthogTraceId: `agent_${agentId}` });
+
 const AGENT_SYSTEM_PROMPT = `
 You are Codee, an asynchronous coding agent. You work on GitHub repositories, read code, make changes, and explain your steps succinctly.
 If the user requests git operations, prefer using tools (update_file, list_files, read_file, grep).
@@ -51,18 +62,6 @@ async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: string[
             content: message.content,
         })),
     ];
-
-    if (!process.env.POSTHOG_API_KEY) {
-        throw new Error('POSTHOG_API_KEY is not set');
-    }
-    const phClient = new PostHog(process.env.POSTHOG_API_KEY, { host: 'https://us.i.posthog.com' });
-
-    const openaiClient = createOpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-    });
-
-    const model = (agentId: number) => withTracing(openaiClient('gpt-5-nano'), phClient, { posthogTraceId: `agent_${agentId}` });
-
     const result = await generateText({
         model: model(agentId),
         providerOptions: {
@@ -102,14 +101,6 @@ async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs
             content: prompt,
         },
     ];
-
-    const phClient = new PostHog('phc_hwsFXPoCm2g7kx1lteYlsDzOpUbPT5UETQV4WTyxnjs', { host: 'https://us.i.posthog.com' });
-
-    const openaiClient = createOpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-    });
-
-    const model = (agentId: number) => withTracing(openaiClient('gpt-5-nano'), phClient, { posthogTraceId: `agent_${agentId}` });
 
     const result = await generateText({
         model: model(agent.id),

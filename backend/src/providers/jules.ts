@@ -16,6 +16,7 @@ export class JulesProvider implements CloudProvider {
         message,
         model,
         baseBranch,
+        isOrchestratorAgent,
     }: {
         userId: string;
         workspace: Workspace;
@@ -24,6 +25,7 @@ export class JulesProvider implements CloudProvider {
         toolSlugs: string[];
         baseBranch: string;
         model?: string | null;
+        isOrchestratorAgent: boolean;
     }): Promise<Agent> {
         const agentRepository = AppDataSource.getRepository(Agent);
         const agent = agentRepository.create({
@@ -34,6 +36,7 @@ export class JulesProvider implements CloudProvider {
             status: AgentStatus.PENDING,
             name: `Jules Agent${model ? ` (${model})` : ''}`,
             model: model || null,
+            isOrchestratorAgent,
         });
         await agentRepository.save(agent);
 
