@@ -18,7 +18,14 @@ export default function Message({ message, isLastInGroup }: MessageProps) {
 
     return (
         <div className={`${style.messageWrapper} ${isUser ? style.userWrapper : style.agentWrapper} ${notLastClass}`}>
-            {!isUser && <ToolsContainer toolCalls={message.tool_calls} showFullContent={showFullContent} setShowFullContent={setShowFullContent} />}
+            {!isUser && (
+                <ToolsContainer
+                    toolCalls={message.tool_calls}
+                    showFullContent={showFullContent}
+                    setShowFullContent={setShowFullContent}
+                    isThinking={message.isPendingAgent ?? false}
+                />
+            )}
             {showBubble && (
                 <div className={`${isUser ? style.userMessage : style.agentMessage} ${style.message} ${notLastClass}`}>
                     <div className={style.messageContent}>{message.content}</div>
