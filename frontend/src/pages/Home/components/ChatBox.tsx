@@ -45,7 +45,7 @@ export function ChatBox({
     const [hasContent, setHasContent] = useState(false);
     const editorRef = useRef<PromptEditorRef>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const isBlocked = isLoading || isDisabled;
+    const isSubmitBlocked = isLoading || isDisabled;
     const isEmpty = !hasContent && attachedImages.length === 0;
 
     const integrationDropdownOptions = useMemo<DropdownOption[]>(
@@ -169,7 +169,7 @@ export function ChatBox({
                     setAttachedImages([]);
                     setHasContent(false);
                 }}
-                disabled={isBlocked}
+                submitDisabled={isSubmitBlocked}
                 placeholder={placeholder}
                 onImagesPaste={processFiles}
                 hasAttachments={attachedImages.length > 0}
@@ -200,7 +200,7 @@ export function ChatBox({
                             setHasContent(false);
                         }
                     }}
-                    disabled={isBlocked || isEmpty}
+                    disabled={isSubmitBlocked || isEmpty}
                 >
                     {isLoading ? <AiOutlineLoading3Quarters size={16} className={styles.spinIcon} /> : <BsSend size={16} />}
                 </button>

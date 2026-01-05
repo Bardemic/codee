@@ -7,7 +7,7 @@ interface PromptEditorProps {
     integrations: Integration[];
     onSelectedToolsChange: (next: string[] | ((prev: string[]) => string[])) => void;
     onSubmit: (message: string) => void;
-    disabled?: boolean;
+    submitDisabled?: boolean;
     placeholder?: string;
     onImagesPaste?: (files: File[]) => void;
     hasAttachments?: boolean;
@@ -37,7 +37,7 @@ export interface MentionOption {
 }
 
 export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(function PromptEditor(
-    { integrations, onSelectedToolsChange, onSubmit, disabled = false, placeholder, onImagesPaste, hasAttachments = false, onContentChange },
+    { integrations, onSelectedToolsChange, onSubmit, submitDisabled = false, placeholder, onImagesPaste, hasAttachments = false, onContentChange },
     ref
 ) {
     const editorRef = useRef<HTMLDivElement>(null);
@@ -286,20 +286,20 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
                 }
             }
 
-            if (event.key === 'Enter' && !event.shiftKey && !disabled) {
+            if (event.key === 'Enter' && !event.shiftKey && !submitDisabled) {
                 event.preventDefault();
                 const message = editorRef.current?.innerText.trim();
                 if (message || hasAttachments) onSubmit(message || '');
             }
         },
-        [disabled, handleSelectMention, mentionOptions, mentionState, onSubmit, hasAttachments]
+        [handleSelectMention, mentionOptions, mentionState, onSubmit, hasAttachments, submitDisabled]
     );
 
     return (
         <>
             <div
                 className={styles.editor}
-                contentEditable={!disabled}
+                contentEditable
                 ref={editorRef}
                 onInput={handleInput}
                 onKeyDown={handleKeyDown}
