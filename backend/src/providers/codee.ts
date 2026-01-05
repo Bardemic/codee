@@ -50,7 +50,7 @@ export class CodeeProvider implements CloudProvider {
         });
         await messageRepository.save(userMessage);
 
-        emitStatus(agent.id, 'queued', 'init', 'queued agent job');
+        emitStatus(agent.id, 'queued', 'agent_queued', 'queued agent job');
         enqueueAgentJob({
             agentId: agent.id,
             prompt: message,
@@ -107,7 +107,7 @@ export class CodeeProvider implements CloudProvider {
         });
         await messageRepository.save(userMessage);
 
-        emitStatus(agent.id, 'queued', 'init', 'queued follow-up').catch((err) => {
+        emitStatus(agent.id, 'queued', 'agent_queued', 'queued follow-up').catch((err) => {
             console.error('Failed to emit status:', err);
         });
 

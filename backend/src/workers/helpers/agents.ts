@@ -40,8 +40,8 @@ export async function persistToolCallsFromRedis(agentId: number, message: Messag
         const toolCallsToSave: ToolCall[] = [];
 
         for (const event of events) {
-            const isToolEvent = event.event === 'status' && typeof event.step === 'string' && event.step.startsWith('tool_');
-            if (!isToolEvent) continue;
+            const isToolOrAgentEvent = event.event === 'status' && typeof event.step === 'string' && (event.step.startsWith('tool_') || event.step.startsWith('agent_'));
+            if (!isToolOrAgentEvent) continue;
 
             let parsedArguments: Record<string, unknown> = {};
             const rawArguments = event.arguments as unknown;

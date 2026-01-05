@@ -131,17 +131,17 @@ export async function runOrchestratorAgentJob(payload: AgentJobPayload) {
     const repositoryFullName = payload.repositoryFullName || agent.workspace.githubRepositoryName;
     const baseBranch = payload.baseBranch || agent.workspace.currentBranch;
     if (!repositoryFullName) {
-        await emitError(agent.id, 'missing_repository', 'No repository specified', 'init');
+        await emitError(agent.id, 'missing_repository', 'No repository specified', 'agent_init');
         return;
     }
 
     const token = await getGithubTokenForUser(agent.workspace.userId);
     if (!token) {
-        await emitError(agent.id, 'github_token_missing', 'GitHub token missing', 'init');
+        await emitError(agent.id, 'github_token_missing', 'GitHub token missing', 'agent_init');
         return;
     }
 
-    await emitStatus(agent.id, 'starting', 'init', 'preparing sandbox');
+    await emitStatus(agent.id, 'starting', 'agent_init', 'preparing sandbox');
 
     let sandbox: Sandbox;
 
@@ -149,13 +149,13 @@ export async function runOrchestratorAgentJob(payload: AgentJobPayload) {
         sandbox = await createSandbox(agent, token, repositoryFullName, baseBranch);
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Failed to create sandbox';
-        await emitError(agent.id, 'sandbox_creation_failed', message, 'init');
+        await emitError(agent.id, 'sandbox_creation_failed', message, 'agent_init');
         return;
     }
 
     try {
         await Promise.all([
-            emitStatus(agent.id, 'running', 'orchestrator_agent_start', 'running orchestrator agent'),
+            emitStatus(agent.id, 'running', 'agent_orchestrator_start', 'running orchestrator agent'),
             updateAgent(agent, { status: AgentStatus.RUNNING }),
         ]);
 
@@ -183,17 +183,17 @@ export async function runAgentJob(payload: AgentJobPayload) {
     const repositoryFullName = payload.repositoryFullName || agent.workspace.githubRepositoryName;
     const baseBranch = payload.baseBranch || agent.workspace.currentBranch;
     if (!repositoryFullName) {
-        await emitError(agent.id, 'missing_repository', 'No repository specified', 'init');
+        await emitError(agent.id, 'missing_repository', 'No repository specified', 'agent_init');
         return;
     }
 
     const token = await getGithubTokenForUser(agent.workspace.userId);
     if (!token) {
-        await emitError(agent.id, 'github_token_missing', 'GitHub token missing', 'init');
+        await emitError(agent.id, 'github_token_missing', 'GitHub token missing', 'agent_init');
         return;
     }
 
-    await emitStatus(agent.id, 'starting', 'init', 'preparing sandbox');
+    await emitStatus(agent.id, 'starting', 'agent_init', 'preparing sandbox');
 
     let sandbox: Sandbox;
 
@@ -201,7 +201,7 @@ export async function runAgentJob(payload: AgentJobPayload) {
         sandbox = await createSandbox(agent, token, repositoryFullName, baseBranch);
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Failed to create sandbox';
-        await emitError(agent.id, 'sandbox_creation_failed', message, 'init');
+        await emitError(agent.id, 'sandbox_creation_failed', message, 'agent_init');
         return;
     }
 
@@ -213,7 +213,7 @@ export async function runAgentJob(payload: AgentJobPayload) {
 
         if (!agent.githubBranchName && !payload.isOrchestratorAgent) {
             const branchName = generateBranchName(agent.id);
-            await emitStatus(agent.id, 'running', 'create_branch', `creating branch ${branchName}`);
+            await emitStatus(agent.id, 'running', 'agent_create_branch', `creating branch ${branchName}`);
             await sandbox.runCommand({
                 cmd: 'git',
                 args: ['checkout', '-b', branchName],
@@ -227,7 +227,7 @@ export async function runAgentJob(payload: AgentJobPayload) {
 
         const previousMessages = await previousMessagesPromise;
 
-        await Promise.all([emitStatus(agent.id, 'running', 'agent_start', 'running AI'), updateAgent(agent, { status: AgentStatus.RUNNING })]);
+        await Promise.all([emitStatus(agent.id, 'running', 'sandboxagent_starting', 'running AI'), updateAgent(agent, { status: AgentStatus.RUNNING })]);
 
         const response = await runAgentLLM(agent.id, sandbox, payload.toolSlugs || [], previousMessages);
 
@@ -248,7 +248,7 @@ export async function runAgentJob(payload: AgentJobPayload) {
         });
         const hasChanges = (await statusResult.stdout()).trim().length > 0;
         if (hasChanges) {
-            await emitStatus(agent.id, 'running', 'commit', 'committing changes');
+            await emitStatus(agent.id, 'running', 'agent_commit', 'committing changes');
             const commitMessage = `Codee: ${payload.prompt.slice(0, 50)}${payload.prompt.length > 50 ? '...' : ''}`;
             await commitAndPush(sandbox, commitMessage);
         }

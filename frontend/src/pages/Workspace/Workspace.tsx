@@ -86,7 +86,7 @@ export default function Workspace() {
 
         eventSource.addEventListener('status', (event: MessageEvent) => {
             const eventData = JSON.parse(event.data);
-            if (eventData.step?.startsWith('tool_')) {
+            if (eventData.step?.startsWith('tool_') || eventData.step?.startsWith('agent_')) {
                 const eventId = event.lastEventId || `sse_${Date.now()}`;
                 const parsedArguments = (() => {
                     if (!eventData.arguments) return {};
