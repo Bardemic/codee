@@ -25,6 +25,12 @@ export class Workspace {
     @Column({ default: 'main' })
     currentBranch!: string;
 
+    @Column({ nullable: true })
+    slackChannelId!: string | null;
+
+    @Column({ nullable: true })
+    slackMessageTs!: string | null;
+
     @OneToMany('Agent', 'workspace')
     providerAgents!: Agent[];
 }

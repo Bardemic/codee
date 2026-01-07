@@ -4,11 +4,16 @@ import { AppDataSource } from '../db/data-source';
 import { Workspace } from '../db/entities/Workspace';
 import { IntegrationProvider } from '../db/entities/IntegrationProvider';
 import { IntegrationConnection } from '../db/entities/IntegrationConnection';
+import { Tool } from '../db/entities/Tool';
+import { WorkspaceTool } from '../db/entities/WorkspaceTool';
 import { getGithubTokenForUser } from '../services/githubService';
+import { createAgentsFromProviders } from '../providers';
+import { generateTitle } from '../utils/llm';
+import { sendWorkspaceCreatedMessage } from './notifications';
 import axios from 'axios';
-import { Like } from 'typeorm';
+import { Like, In } from 'typeorm';
 
-export function createSlackTools(userId: string) {
+export function createSlackTools(userId: string, slackChannel: string) {
     const listWorkspacesInputSchema = z.object({
         limit: z.number().default(10).describe('Number of workspaces to return'),
     });
@@ -19,6 +24,32 @@ export function createSlackTools(userId: string) {
 
     const searchWorkspacesInputSchema = z.object({
         query: z.string().describe('Search query for workspace names'),
+    });
+
+    const listBranchesInputSchema = z.object({
+        repository: z.string().describe('Repository full name (e.g., user/repo)'),
+    });
+
+    const createWorkspaceInputSchema = z.object({
+        prompt: z.string().describe('User prompt for the workspace'),
+        repository: z.string().describe('Repository full name (e.g., user/repo)'),
+        branch: z.string().optional().describe('Branch name (optional, defaults to repository default branch)'),
+        tool_slugs: z.array(z.string()).default([]).describe('Array of tool slugs to use'),
+        provider_config: z
+            .array(
+                z.object({
+                    name: z.string().describe('Provider name (Codee, Cursor, or Jules)'),
+                    agents: z
+                        .array(
+                            z.object({
+                                model: z.string().nullable().optional().describe('Model name for the agent'),
+                            })
+                        )
+                        .describe('Array of agent configs'),
+                })
+            )
+            .default([{ name: 'Codee', agents: [{}] }])
+            .describe('Provider configuration (defaults to 1 Codee agent)'),
     });
 
     return {
@@ -175,6 +206,137 @@ export function createSlackTools(userId: string) {
             },
         }),
 
+        listBranches: tool({
+            description: 'List available branches for a specific repository',
+            inputSchema: zodSchema(listBranchesInputSchema),
+            execute: async (input) => {
+                const { repository } = input;
+                try {
+                    const token = await getGithubTokenForUser(userId);
+
+                    const response = await axios.get(`https://api.github.com/repos/${repository}/branches?per_page=100`, {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            Accept: 'application/vnd.github+json',
+                        },
+                    });
+
+                    const branches = response.data || [];
+                    return {
+                        branches: branches.map((branch: { name: string; commit: { sha: string } }) => ({
+                            name: branch.name,
+                            commit_sha: branch.commit.sha,
+                        })),
+                    };
+                } catch (_error) {
+                    return { error: 'Failed to fetch branches' };
+                }
+            },
+        }),
+
+        listAvailableTools: tool({
+            description: 'List available tools from user connected integrations',
+            inputSchema: zodSchema(z.object({})),
+            execute: async () => {
+                const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
+
+                const userConnections = await connectionRepository.find({
+                    where: { userId },
+                    relations: ['provider', 'provider.tools'],
+                });
+
+                const allTools: Array<{ slug: string; name: string; provider: string }> = [];
+
+                for (const connection of userConnections) {
+                    if (connection.provider.tools) {
+                        for (const tool of connection.provider.tools) {
+                            allTools.push({
+                                slug: tool.slugName,
+                                name: tool.displayName,
+                                provider: connection.provider.displayName,
+                            });
+                        }
+                    }
+                }
+
+                return { tools: allTools };
+            },
+        }),
+
+        createWorkspace: tool({
+            description: 'Create a new workspace with agents for coding tasks',
+            inputSchema: zodSchema(createWorkspaceInputSchema),
+            execute: async (input) => {
+                const { prompt, repository, branch, tool_slugs, provider_config } = input;
+
+                try {
+                    const title = await generateTitle(prompt);
+                    const workspaceRepository = AppDataSource.getRepository(Workspace);
+                    const toolRepository = AppDataSource.getRepository(Tool);
+
+                    let branchName = branch;
+                    if (!branchName) {
+                        const token = await getGithubTokenForUser(userId);
+                        const repoResponse = await axios.get(`https://api.github.com/repos/${repository}`, {
+                            headers: {
+                                Authorization: `Bearer ${token}`,
+                                Accept: 'application/vnd.github+json',
+                            },
+                        });
+                        branchName = repoResponse.data.default_branch || 'main';
+                    }
+
+                    const newWorkspace = workspaceRepository.create({
+                        name: title,
+                        userId,
+                        githubRepositoryName: repository,
+                        currentBranch: branchName,
+                    });
+                    await workspaceRepository.save(newWorkspace);
+
+                    if (tool_slugs.length > 0) {
+                        const tools = await toolRepository.findBy({
+                            slugName: In(tool_slugs),
+                        });
+
+                        const workspaceToolRepository = AppDataSource.getRepository(WorkspaceTool);
+                        const workspaceTools = tools.map((tool) =>
+                            workspaceToolRepository.create({
+                                workspace: newWorkspace,
+                                tool,
+                            })
+                        );
+                        if (workspaceTools.length > 0) {
+                            await workspaceToolRepository.save(workspaceTools);
+                        }
+                    }
+
+                    const firstAgent = await createAgentsFromProviders({
+                        userId,
+                        workspace: newWorkspace,
+                        repositoryFullName: repository,
+                        message: prompt,
+                        toolSlugs: tool_slugs,
+                        branchName: branchName!,
+                        cloudProviders: provider_config,
+                        images: [],
+                    });
+
+                    await sendWorkspaceCreatedMessage(newWorkspace.id, slackChannel, userId);
+
+                    return {
+                        workspace_id: newWorkspace.id,
+                        workspace_name: newWorkspace.name,
+                        agent_id: firstAgent.id,
+                        message: 'Workspace created successfully! You will receive updates as agents complete their work.',
+                    };
+                } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+                    return { error: `Failed to create workspace: ${errorMessage}` };
+                }
+            },
+        }),
+
         help: tool({
             description: 'Get help information about what the bot can do',
             inputSchema: zodSchema(z.object({})),
@@ -185,9 +347,12 @@ export function createSlackTools(userId: string) {
                         'Get workspace agents - View all agents for a specific workspace',
                         'Search workspaces - Find workspaces by name',
                         'List repositories - View available GitHub repositories',
+                        'List branches - View branches for a specific repository',
+                        'List available tools - View tools from your connected integrations',
+                        'Create workspace - Create a new workspace with agents for coding tasks',
                         'List integrations - See available integrations and connection status',
                     ],
-                    usage: 'Just mention me with what you need, like "@codee list my workspaces" or "@codee show agents for workspace 123"',
+                    usage: 'Just mention me with what you need, like "@codee list my workspaces" or "@codee create workspace to fix login bug in user/repo"',
                 };
             },
         }),

@@ -1,10 +1,11 @@
 import { TRPCError } from '@trpc/server';
 import { AppDataSource } from '../../db/data-source';
-import { Agent } from '../../db/entities/Agent';
+import { Agent, AgentStatus } from '../../db/entities/Agent';
 import { IntegrationConnection } from '../../db/entities/IntegrationConnection';
 import { Message, type SenderType } from '../../db/entities/Message';
 import { ToolCall } from '../../db/entities/ToolCall';
 import { readHistorySince } from '../../stream/events';
+import { updateAgentStatus } from '../../slack/notifications';
 
 export async function getAgentById(agentId: number) {
     return AppDataSource.getRepository(Agent).findOne({
@@ -20,8 +21,21 @@ export async function saveMessage(agent: Agent, content: string, sender: SenderT
 }
 
 export async function updateAgent(agent: Agent, updates: Partial<Agent>) {
+    const statusChanged = updates.status && updates.status !== agent.status;
+    const isTerminalStatus = updates.status === AgentStatus.COMPLETED || updates.status === AgentStatus.FAILED;
+
     Object.assign(agent, updates);
-    return AppDataSource.getRepository(Agent).save(agent);
+    const savedAgent = await AppDataSource.getRepository(Agent).save(agent);
+
+    if (statusChanged && isTerminalStatus) {
+        setImmediate(() => {
+            updateAgentStatus(agent.id).catch((error) => {
+                console.error('Failed to update Slack agent status:', error);
+            });
+        });
+    }
+
+    return savedAgent;
 }
 
 export async function persistToolCallsFromRedis(agentId: number, message: Message): Promise<void> {

@@ -39,18 +39,29 @@ export async function processSlackMessage({ userId, channel, text, messageTs }: 
     const cleanedText = text.replace(/<@[A-Z0-9]+>/g, '').trim();
 
     try {
-        const tools = createSlackTools(userId);
+        const tools = createSlackTools(userId, channel);
 
         const result = await generateText({
             model: openaiClient('gpt-5-nano'),
             system: `You are Codee, an async coding agent assistant. You help users manage their workspaces, agents, repositories, and integrations through Slack.
 
-When users ask about workspaces, agents, repositories, or integrations, use the available tools to fetch the information.
+IMPORTANT: When a user asks you to create a workspace or perform an action, DO IT immediately. Don't ask for confirmation or list options.
 
-Be concise and helpful. Format your responses clearly for Slack messages.`,
+When creating workspaces:
+1. Use listRepositories tool to get the user's actual repositories
+2. Use listAvailableTools tool to get the user's actual tools (tool_slugs)
+3. Pick the most relevant repository based on the user's request
+4. Use empty tool_slugs array [] if no tools are obviously needed
+5. Use default provider config: [{"name":"Codee","agents":[{}]}]
+6. CRITICAL: For the "prompt" parameter, use the user's EXACT original message. DO NOT rephrase, summarize, or modify it.
+7. Call createWorkspace immediately with these parameters
+
+When users ask to list/view data, use the appropriate tools and present the results.
+
+Be concise and action-oriented. Don't make up data - always use tools to fetch real information.`,
             prompt: cleanedText,
             tools,
-            stopWhen: stepCountIs(5),
+            stopWhen: stepCountIs(20),
         });
 
         await sendSlackMessage({
