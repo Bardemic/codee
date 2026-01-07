@@ -51,6 +51,12 @@ const PROVIDER_SEEDS: ProviderSeed[] = [
         hasCloudAgent: true,
         tools: [],
     },
+    {
+        slug: 'slack',
+        displayName: 'Slack',
+        hasCloudAgent: false,
+        tools: [],
+    },
 ];
 
 export async function seedDefaults(ds: DataSource) {

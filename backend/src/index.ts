@@ -15,6 +15,8 @@ import { startWorkers } from './workers/queue';
 import { closeRedis } from './utils/redis';
 import { flushPostHog } from './utils/posthog';
 import { validateEnvironment } from './utils/env';
+import { slackOAuthRouter } from './slack/oauth';
+import { slackEventsRouter } from './slack/events';
 
 const PORT = Number(process.env.PORT || 5001);
 
@@ -40,6 +42,13 @@ async function bootstrap() {
         if (req.path.startsWith('/webhooks/github/events') || req.path.startsWith('/api/auth')) {
             return next();
         }
+        if (req.path.startsWith('/webhooks/slack/events')) {
+            return express.raw({ type: 'application/json' })(req, res, (err) => {
+                if (err) return next(err);
+                (req as any).rawBody = req.body.toString('utf8');
+                next();
+            });
+        }
         return express.json({ limit: '5mb' })(req, res, next);
     });
     app.use(morgan('dev'));
@@ -60,6 +69,8 @@ async function bootstrap() {
 
     registerWebhooks(app);
     app.use('/stream', sseRouter);
+    app.use('/api/slack', slackOAuthRouter);
+    app.use('/webhooks/slack', slackEventsRouter);
 
     app.listen(PORT, () => {
         console.log(`[backend] listening on http://localhost:${PORT}`);
