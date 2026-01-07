@@ -9,7 +9,6 @@ import { WorkspaceTool } from '../db/entities/WorkspaceTool';
 import { getGithubTokenForUser } from '../services/githubService';
 import { createAgentsFromProviders } from '../providers';
 import { generateTitle } from '../utils/llm';
-import { sendWorkspaceCreatedMessage } from './notifications';
 import axios from 'axios';
 import { Like, In } from 'typeorm';
 
@@ -311,7 +310,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
                         }
                     }
 
-                    const firstAgent = await createAgentsFromProviders({
+                    await createAgentsFromProviders({
                         userId,
                         workspace: newWorkspace,
                         repositoryFullName: repository,
@@ -322,13 +321,39 @@ export function createSlackTools(userId: string, slackChannel: string) {
                         images: [],
                     });
 
-                    await sendWorkspaceCreatedMessage(newWorkspace.id, slackChannel, userId);
+                    const updatedWorkspace = await workspaceRepository.findOne({
+                        where: { id: newWorkspace.id },
+                        relations: ['providerAgents'],
+                    });
+
+                    if (updatedWorkspace) {
+                        updatedWorkspace.slackChannelId = slackChannel;
+                        await workspaceRepository.save(updatedWorkspace);
+                    }
+
+                    const agents = updatedWorkspace?.providerAgents || [];
+                    const agentLines = agents.map((agent) => {
+                        let statusEmoji = '⏳';
+                        let statusText = 'Pending';
+                        if (agent.status === 'COMPLETED') {
+                            statusEmoji = '✅';
+                            statusText = 'Completed';
+                        } else if (agent.status === 'RUNNING') {
+                            statusEmoji = '🚧';
+                            statusText = 'In Progress';
+                        } else if (agent.status === 'FAILED') {
+                            statusEmoji = '❌';
+                            statusText = 'Failed';
+                        }
+                        return `${statusEmoji} <${agent.url}|${agent.name}> - ${statusText}`;
+                    });
 
                     return {
                         workspace_id: newWorkspace.id,
                         workspace_name: newWorkspace.name,
-                        agent_id: firstAgent.id,
-                        message: 'Workspace created successfully! You will receive updates as agents complete their work.',
+                        repository: repository,
+                        branch: branchName,
+                        formatted_message: `*Workspace "${newWorkspace.name}" created!*\nRepository: ${repository} (branch: ${branchName})\n\n*Agents:*\n${agentLines.join('\n')}`,
                     };
                 } catch (error) {
                     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

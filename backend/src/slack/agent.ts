@@ -3,6 +3,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import axios from 'axios';
 import { AppDataSource } from '../db/data-source';
 import { IntegrationConnection } from '../db/entities/IntegrationConnection';
+import { Workspace } from '../db/entities/Workspace';
 import { createSlackTools } from './tools';
 
 const openaiClient = createOpenAI({
@@ -43,33 +44,47 @@ export async function processSlackMessage({ userId, channel, text, messageTs }: 
 
         const result = await generateText({
             model: openaiClient('gpt-5-nano'),
-            system: `You are Codee, an async coding agent assistant. You help users manage their workspaces, agents, repositories, and integrations through Slack.
+            system: `You are Codee, an async coding agent that creates workspaces with AI agents to complete coding tasks.
 
-IMPORTANT: When a user asks you to create a workspace or perform an action, DO IT immediately. Don't ask for confirmation or list options.
+CRITICAL RULES:
+1. If the user asks you to modify code, add a feature, fix a bug, or make ANY changes to a codebase - you MUST create a workspace using the createWorkspace tool. NEVER give advice or instructions. ALWAYS create a workspace.
+2. If the user asks to list workspaces, repos, integrations, etc - use the appropriate listing tools.
+3. If the user asks for help - use the help tool.
 
 When creating workspaces:
-1. Use listRepositories tool to get the user's actual repositories
-2. Use listAvailableTools tool to get the user's actual tools (tool_slugs)
-3. Pick the most relevant repository based on the user's request
-4. Use empty tool_slugs array [] if no tools are obviously needed
-5. Use default provider config: [{"name":"Codee","agents":[{}]}]
-6. CRITICAL: For the "prompt" parameter, use the user's EXACT original message. DO NOT rephrase, summarize, or modify it.
-7. Call createWorkspace immediately with these parameters
+1. Call listRepositories to get available repos
+2. Pick the repository mentioned by the user, or the most relevant one
+3. Use empty tool_slugs: []
+4. Use default provider_config: [{"name":"Codee","agents":[{}]}]
+5. For "prompt", use the user's EXACT original message verbatim
+6. Call createWorkspace immediately
+7. Respond with ONLY the "formatted_message" from the result. No extra text.
 
-When users ask to list/view data, use the appropriate tools and present the results.
-
-Be concise and action-oriented. Don't make up data - always use tools to fetch real information.`,
+You are NOT a coding assistant that gives advice. You CREATE WORKSPACES with agents that do the work.`,
             prompt: cleanedText,
             tools,
             stopWhen: stepCountIs(20),
         });
 
-        await sendSlackMessage({
+        const workspaceResult = result.toolResults
+            ?.filter((toolResult) => toolResult.toolName === 'createWorkspace')
+            .map((toolResult) => (toolResult as { result?: { workspace_id?: number; formatted_message?: string } }).result)
+            .find((res) => res?.workspace_id);
+
+        const messageToSend = workspaceResult?.formatted_message ?? result.text;
+        const workspaceId = workspaceResult?.workspace_id ?? null;
+
+        const sentMessageTs = await sendSlackMessage({
             token: accessToken,
             channel,
-            text: result.text,
+            text: messageToSend,
             threadTs: messageTs,
         });
+
+        if (sentMessageTs && workspaceId) {
+            const workspaceRepository = AppDataSource.getRepository(Workspace);
+            await workspaceRepository.update(workspaceId, { slackMessageTs: sentMessageTs });
+        }
     } catch (error) {
         console.error('Error processing Slack message:', error);
         await sendSlackMessage({
@@ -81,14 +96,25 @@ Be concise and action-oriented. Don't make up data - always use tools to fetch r
     }
 }
 
-async function sendSlackMessage({ token, channel, text, threadTs }: { token: string; channel: string; text: string; threadTs?: string }) {
+async function sendSlackMessage({
+    token,
+    channel,
+    text,
+    threadTs,
+}: {
+    token: string;
+    channel: string;
+    text: string;
+    threadTs?: string;
+}): Promise<string | null> {
     try {
-        await axios.post(
+        const response = await axios.post(
             'https://slack.com/api/chat.postMessage',
             {
                 channel,
                 text,
                 thread_ts: threadTs,
+                mrkdwn: true,
             },
             {
                 headers: {
@@ -97,6 +123,7 @@ async function sendSlackMessage({ token, channel, text, threadTs }: { token: str
                 },
             }
         );
+        return response.data.ts || null;
     } catch (error) {
         console.error('Failed to send Slack message:', error);
         throw error;
