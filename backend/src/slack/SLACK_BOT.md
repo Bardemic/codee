@@ -16,30 +16,30 @@ SLACK_REDIRECT_URI=http://localhost:5001/api/slack/oauth/callback
 ## Slack App Configuration
 
 1. **Create a Slack App** at https://api.slack.com/apps
-   - Choose "From scratch"
-   - Name it "Codee Bot" (or your preferred name)
-   - Select your workspace
+    - Choose "From scratch"
+    - Name it "Codee Bot" (or your preferred name)
+    - Select your workspace
 
 2. **OAuth & Permissions** - Add these Bot Token Scopes:
-   - `app_mentions:read` - Listen to mentions
-   - `chat:write` - Post messages
-   - `users:read` - Read user information
+    - `app_mentions:read` - Listen to mentions
+    - `chat:write` - Post messages
+    - `users:read` - Read user information
 
 3. **Event Subscriptions**:
-   - Enable Events
-   - Request URL: `https://your-domain.com/webhooks/slack/events`
-   - Subscribe to bot event: `app_mention`
+    - Enable Events
+    - Request URL: `https://your-domain.com/webhooks/slack/events`
+    - Subscribe to bot event: `app_mention`
 
-   https://b14126ab418a.ngrok-free.app/webhooks/slack/events
+    https://b14126ab418a.ngrok-free.app/webhooks/slack/events
 
 4. **OAuth Redirect URLs**:
-   - Add: `http://localhost:5001/api/slack/oauth/callback` (for development)
-   - Add your production URL when deploying
+    - Add: `http://localhost:5001/api/slack/oauth/callback` (for development)
+    - Add your production URL when deploying
 
 5. **Copy Credentials**:
-   - Client ID from "Basic Information"
-   - Client Secret from "Basic Information"
-   - Signing Secret from "Basic Information"
+    - Client ID from "Basic Information"
+    - Client Secret from "Basic Information"
+    - Signing Secret from "Basic Information"
 
 ## Database Migration
 

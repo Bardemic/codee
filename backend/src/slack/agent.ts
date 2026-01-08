@@ -66,10 +66,9 @@ You are NOT a coding assistant that gives advice. You CREATE WORKSPACES with age
             stopWhen: stepCountIs(20),
         });
 
-        const workspaceResult = result.toolResults
-            ?.filter((toolResult) => toolResult.toolName === 'createWorkspace')
-            .map((toolResult) => (toolResult as { result?: { workspace_id?: number; formatted_message?: string } }).result)
-            .find((res) => res?.workspace_id);
+        const workspaceResult = result.steps.flatMap((step) => step.toolResults).find((toolResult) => toolResult.toolName === 'createWorkspace')?.output as
+            | { workspace_id?: Workspace['id']; formatted_message?: string }
+            | undefined;
 
         const messageToSend = workspaceResult?.formatted_message ?? result.text;
         const workspaceId = workspaceResult?.workspace_id ?? null;

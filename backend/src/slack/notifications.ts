@@ -106,14 +106,22 @@ export async function sendWorkspaceCreatedMessage(workspaceId: number, channel: 
     }
 }
 
-export async function updateAgentStatus(agentId: number): Promise<void> {
+export async function updateAgentStatus(agentId: number, retryCount = 0): Promise<void> {
     const agentRepository = AppDataSource.getRepository(Agent);
     const agent = await agentRepository.findOne({
         where: { id: agentId },
         relations: ['workspace', 'workspace.providerAgents'],
     });
 
-    if (!agent || !agent.workspace.slackChannelId || !agent.workspace.slackMessageTs) {
+    if (!agent?.workspace) {
+        return;
+    }
+
+    if (!agent.workspace.slackChannelId || !agent.workspace.slackMessageTs) {
+        if (retryCount < 5) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            return updateAgentStatus(agentId, retryCount + 1);
+        }
         return;
     }
 

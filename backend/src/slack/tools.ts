@@ -290,6 +290,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
                         userId,
                         githubRepositoryName: repository,
                         currentBranch: branchName,
+                        slackChannelId: slackChannel,
                     });
                     await workspaceRepository.save(newWorkspace);
 
@@ -325,11 +326,6 @@ export function createSlackTools(userId: string, slackChannel: string) {
                         where: { id: newWorkspace.id },
                         relations: ['providerAgents'],
                     });
-
-                    if (updatedWorkspace) {
-                        updatedWorkspace.slackChannelId = slackChannel;
-                        await workspaceRepository.save(updatedWorkspace);
-                    }
 
                     const agents = updatedWorkspace?.providerAgents || [];
                     const agentLines = agents.map((agent) => {
