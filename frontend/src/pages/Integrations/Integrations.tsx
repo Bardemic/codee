@@ -51,6 +51,14 @@ export default function Integrations() {
         );
     }, [searchParams, addIntegration, navigate]);
 
+    useEffect(() => {
+        const slack = searchParams.get('slack');
+        if (slack === 'success') {
+            utils.integrations.list.invalidate();
+            navigate('/integrations', { replace: true });
+        }
+    }, [searchParams, navigate, utils.integrations.list]);
+
     function handleConnect(integration: Integration, data?: { api_key: string }) {
         const slug = (integration.slug ?? integration.name).toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
 
@@ -62,6 +70,10 @@ export default function Integrations() {
                 '_blank'
             );
             navigate('/integrations');
+            return;
+        }
+        if (slug === 'slack') {
+            window.location.href = 'http://localhost:5001/api/slack/oauth';
             return;
         }
         if (data?.api_key) {
