@@ -43,8 +43,9 @@ export class CodeeProvider implements CloudProvider {
             model: model || null,
             isOrchestratorAgent,
         });
-        agent.url = `http://localhost:5173/agent/${agent.id}`;
         await agentRepository.save(agent);
+        agent.url = `http://localhost:5173/agent/${agent.id}`;
+        await agentRepository.update(agent.id, { url: agent.url });
 
         const userMessage = messageRepository.create({
             agent,
