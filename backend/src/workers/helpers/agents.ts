@@ -5,7 +5,7 @@ import { IntegrationConnection } from '../../db/entities/IntegrationConnection';
 import { Message, type SenderType } from '../../db/entities/Message';
 import { ToolCall } from '../../db/entities/ToolCall';
 import { readHistorySince } from '../../stream/events';
-import { updateAgentStatus } from '../../slack/notifications';
+import { updateSlackWorkspaceStatus } from '../../slack/notifications';
 
 export async function getAgentById(agentId: number) {
     return AppDataSource.getRepository(Agent).findOne({
@@ -28,7 +28,7 @@ export async function updateAgent(agent: Agent, updates: Partial<Agent>) {
 
     if (statusChanged) {
         setImmediate(() => {
-            updateAgentStatus(agent.id).catch((error) => {
+            updateSlackWorkspaceStatus(agent.id).catch((error) => {
                 console.error('Failed to update Slack agent status:', error);
             });
         });
