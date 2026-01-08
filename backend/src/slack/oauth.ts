@@ -27,7 +27,7 @@ router.get('/oauth', async (req, res) => {
 
     const authUrl = new URL('https://slack.com/oauth/v2/authorize');
     authUrl.searchParams.set('client_id', SLACK_CLIENT_ID);
-    authUrl.searchParams.set('scope', 'chat:write,app_mentions:read,users:read');
+    authUrl.searchParams.set('scope', 'chat:write,app_mentions:read,users:read,reactions:write');
     authUrl.searchParams.set('redirect_uri', SLACK_REDIRECT_URI);
     authUrl.searchParams.set('state', state);
 

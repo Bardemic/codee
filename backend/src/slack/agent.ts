@@ -39,7 +39,15 @@ export async function processSlackMessage({ userId, channel, text, messageTs }: 
 
     const cleanedText = text.replace(/<@[A-Z0-9]+>/g, '').trim();
 
+    let reactionAdded = false;
     try {
+        reactionAdded = await addSlackReaction({
+            token: accessToken,
+            channel,
+            messageTs,
+            name: 'hourglass_flowing_sand',
+        });
+
         const tools = createSlackTools(userId, channel);
 
         const result = await generateText({
@@ -92,6 +100,30 @@ You are NOT a coding assistant that gives advice. You CREATE WORKSPACES with age
             text: 'Sorry, I encountered an error processing your request. Please try again later.',
             threadTs: messageTs,
         });
+    } finally {
+        if (reactionAdded) {
+            try {
+                await removeSlackReaction({
+                    token: accessToken,
+                    channel,
+                    messageTs,
+                    name: 'hourglass_flowing_sand',
+                });
+            } catch (error) {
+                console.error('Failed to remove Slack reaction:', error);
+            }
+        }
+
+        try {
+            await addSlackReaction({
+                token: accessToken,
+                channel,
+                messageTs,
+                name: 'white_check_mark',
+            });
+        } catch (error) {
+            console.error('Failed to add completion reaction:', error);
+        }
     }
 }
 
@@ -126,5 +158,71 @@ async function sendSlackMessage({
     } catch (error) {
         console.error('Failed to send Slack message:', error);
         throw error;
+    }
+}
+
+async function addSlackReaction({
+    token,
+    channel,
+    messageTs,
+    name,
+}: {
+    token: string;
+    channel: string;
+    messageTs: string;
+    name: string;
+}): Promise<boolean> {
+    try {
+        const response = await axios.post(
+            'https://slack.com/api/reactions.add',
+            {
+                channel,
+                name,
+                timestamp: messageTs,
+            },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            }
+        );
+        if (!response.data?.ok) {
+            console.error('Slack reaction add failed:', response.data);
+        }
+        return Boolean(response.data?.ok);
+    } catch (error) {
+        console.error('Failed to add Slack reaction:', error);
+        return false;
+    }
+}
+
+async function removeSlackReaction({
+    token,
+    channel,
+    messageTs,
+    name,
+}: {
+    token: string;
+    channel: string;
+    messageTs: string;
+    name: string;
+}): Promise<void> {
+    const response = await axios.post(
+        'https://slack.com/api/reactions.remove',
+        {
+            channel,
+            name,
+            timestamp: messageTs,
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        }
+    );
+    if (!response.data?.ok) {
+        console.error('Slack reaction remove failed:', response.data);
     }
 }
