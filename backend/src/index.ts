@@ -45,7 +45,8 @@ async function bootstrap() {
         if (req.path.startsWith('/webhooks/slack/events')) {
             return express.raw({ type: 'application/json' })(req, res, (err) => {
                 if (err) return next(err);
-                (req as any).rawBody = req.body.toString('utf8');
+                const rawBodyRequest = req as express.Request & { rawBody: string };
+                rawBodyRequest.rawBody = req.body.toString('utf8');
                 next();
             });
         }
