@@ -19,11 +19,17 @@ export class Workspace {
     githubRepositoryName!: string;
 
     @Column({ nullable: true })
-    workerId!: number | null;
+    workerId?: number;
 
     @Index()
     @Column({ default: 'main' })
     currentBranch!: string;
+
+    @Column({ nullable: true })
+    slackChannelId?: string;
+
+    @Column({ nullable: true })
+    slackMessageTs?: string;
 
     @OneToMany('Agent', 'workspace')
     providerAgents!: Agent[];

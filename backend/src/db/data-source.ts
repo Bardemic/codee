@@ -11,6 +11,7 @@ import { ToolCall } from './entities/ToolCall';
 import { WorkspaceTool } from './entities/WorkspaceTool';
 import { WorkerDefinitionTool } from './entities/WorkerDefinitionTool';
 import { seedDefaults } from './seed';
+import { SlackUserMapping } from './entities/SlackUserMapping';
 
 const {
     PGHOST = 'localhost',
@@ -34,7 +35,19 @@ export const AppDataSource = new DataSource({
               }
             : undefined,
     synchronize: NODE_ENV !== 'production',
-    entities: [IntegrationProvider, IntegrationConnection, Tool, WorkerDefinition, Workspace, Agent, Message, ToolCall, WorkspaceTool, WorkerDefinitionTool],
+    entities: [
+        IntegrationProvider,
+        IntegrationConnection,
+        Tool,
+        WorkerDefinition,
+        Workspace,
+        Agent,
+        Message,
+        ToolCall,
+        WorkspaceTool,
+        WorkerDefinitionTool,
+        SlackUserMapping,
+    ],
 });
 
 export async function initDataSource() {
