@@ -1,10 +1,8 @@
 # Slack Bot Setup Guide
 
-The Slack bot integration for Codee has been fully implemented. Follow these steps to configure and use it.
+## Environment Variables
 
-## Environment Variables Required
-
-Add these to your `.env` file in the backend:
+These environment variables are required:
 
 ```env
 SLACK_CLIENT_ID=your_slack_client_id
@@ -17,7 +15,7 @@ SLACK_REDIRECT_URI=http://localhost:5001/api/slack/oauth/callback
 
 1. **Create a Slack App** at https://api.slack.com/apps
     - Choose "From scratch"
-    - Name it "Codee Bot" (or your preferred name)
+    - Give it a name
     - Select your workspace
 
 2. **OAuth & Permissions** - Add these Bot Token Scopes:
@@ -30,11 +28,9 @@ SLACK_REDIRECT_URI=http://localhost:5001/api/slack/oauth/callback
     - Request URL: `https://your-domain.com/webhooks/slack/events`
     - Subscribe to bot event: `app_mention`
 
-    https://b14126ab418a.ngrok-free.app/webhooks/slack/events
-
 4. **OAuth Redirect URLs**:
-    - Add: `http://localhost:5001/api/slack/oauth/callback` (for development)
-    - Add your production URL when deploying
+    - Add: `http://localhost:5001/api/slack/oauth/callback`
+    - Add production URL when deploying
 
 5. **Copy Credentials**:
     - Client ID from "Basic Information"
@@ -42,13 +38,6 @@ SLACK_REDIRECT_URI=http://localhost:5001/api/slack/oauth/callback
     - Signing Secret from "Basic Information"
 
 ## Database Migration
-
-Run the seed script to add the Slack provider:
-
-```bash
-cd backend
-bun run src/db/seed.ts
-```
 
 The new `SlackUserMapping` entity will be automatically created by TypeORM.
 
@@ -68,17 +57,13 @@ Users can mention the bot in any channel where it's added:
 - **Get Workspace Agents**: `@codee show agents for workspace 123`
 - **Search Workspaces**: `@codee search workspaces with "bug fix"`
 - **List Repositories**: `@codee what repositories do I have?`
+- **List Branches**: `@codee list branches for user/repo`
+- **List Tools**: `@codee list available tools`
+- **Create Workspace**: `@codee create a workspace to fix login bug in user/repo`
 - **List Integrations**: `@codee show my integrations`
 - **Help**: `@codee help`
 
 The LLM will process natural language requests and invoke the appropriate tools.
-
-## Architecture
-
-- **OAuth Flow**: `/api/slack/oauth` and `/api/slack/oauth/callback`
-- **Events Webhook**: `/webhooks/slack/events` with HMAC-SHA256 signature verification
-- **LLM Agent**: Uses GPT-4o-mini with structured tools
-- **Tools**: Workspace management, repository listing, integration status
 
 ## Files
 
