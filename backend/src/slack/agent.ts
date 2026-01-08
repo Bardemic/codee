@@ -161,17 +161,7 @@ async function sendSlackMessage({
     }
 }
 
-async function addSlackReaction({
-    token,
-    channel,
-    messageTs,
-    name,
-}: {
-    token: string;
-    channel: string;
-    messageTs: string;
-    name: string;
-}): Promise<boolean> {
+async function addSlackReaction({ token, channel, messageTs, name }: { token: string; channel: string; messageTs: string; name: string }): Promise<boolean> {
     try {
         const response = await axios.post(
             'https://slack.com/api/reactions.add',
@@ -197,17 +187,7 @@ async function addSlackReaction({
     }
 }
 
-async function removeSlackReaction({
-    token,
-    channel,
-    messageTs,
-    name,
-}: {
-    token: string;
-    channel: string;
-    messageTs: string;
-    name: string;
-}): Promise<void> {
+async function removeSlackReaction({ token, channel, messageTs, name }: { token: string; channel: string; messageTs: string; name: string }): Promise<void> {
     const response = await axios.post(
         'https://slack.com/api/reactions.remove',
         {
