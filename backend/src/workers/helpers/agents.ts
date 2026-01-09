@@ -34,8 +34,6 @@ export async function saveAgentActivity(agent: Agent, message: Message, steps: R
     const savedToolCalls: ToolCall[] = [];
 
     for (const step of steps) {
-        console.log(step.reasoning);
-        console.log(step.content);
         for (const reasoning of step.reasoning) {
             const reasoningText = typeof reasoning.text === 'string' ? reasoning.text : '';
             if (reasoningText.trim() === '' || reasoningText.length === 0) continue;

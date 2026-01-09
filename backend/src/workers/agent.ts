@@ -54,6 +54,16 @@ A user will only use a primary agent in order to have a lot of thinking done for
 without creating sub agents, unless there is truly no further work to be done relating to the request.
 `;
 
+function createReasoningStreamer(agentId: number) {
+    return (step: { reasoningText?: string; reasoning?: ReadonlyArray<{ text?: string | null }> }) => {
+        const reasoningText = (step.reasoningText ?? step.reasoning?.map((part) => part.text ?? '').join('\n') ?? '').trim();
+        if (!reasoningText) return;
+        emitStatus(agentId, 'running', 'reasoning', reasoningText).catch((error) => {
+            console.warn('Failed to emit reasoning status:', error);
+        });
+    };
+}
+
 function transformMessagesToModelMessages(previousMessages: Message[]): ModelMessage[] {
     return previousMessages.map<ModelMessage>((message) => {
         if (message.sender === 'USER' && message.images.length > 0) {
@@ -83,6 +93,7 @@ async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: string[
     const tools = sandboxTools(agentId, sandbox);
     const dynamicTools = await buildDynamicTools(agentId, toolSlugs, sandbox);
     const messages = transformMessagesToModelMessages(previousMessages);
+    const streamReasoning = createReasoningStreamer(agentId);
     const result = await generateText({
         model: model(agentId),
         providerOptions: {
@@ -96,6 +107,7 @@ async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: string[
         messages,
         tools: { ...tools, ...dynamicTools },
         stopWhen: stepCountIs(32),
+        onStepFinish: streamReasoning,
     });
 
     phClient.shutdown();
@@ -120,6 +132,7 @@ async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs
     });
     const dynamicTools = await buildDynamicTools(agent.id, toolSlugs, sandbox);
     const messages = transformMessagesToModelMessages(previousMessages);
+    const streamReasoning = createReasoningStreamer(agent.id);
 
     const result = await generateText({
         model: model(agent.id),
@@ -134,6 +147,7 @@ async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs
         messages,
         tools: { ...orchestratorAgentTools, ...dynamicTools, ...tools },
         stopWhen: stepCountIs(32),
+        onStepFinish: streamReasoning,
     });
 
     phClient.shutdown();
