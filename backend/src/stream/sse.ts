@@ -1,8 +1,5 @@
 import express from 'express';
-import Redis from 'ioredis';
-import { getChannelName, readHistorySince, type AgentEventEnvelope } from './events';
-
-const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379/0';
+import { readHistorySince, subscribeToAgentEvents, type AgentEventEnvelope } from './events';
 
 export const sseRouter = express.Router();
 
@@ -34,21 +31,11 @@ sseRouter.get('/agent/:agentId', async (req, res) => {
     let closed = false;
     let historyLoaded = false;
     const bufferedEvents: AgentEventEnvelope[] = [];
-    const channelName = getChannelName(agentId);
-    const subscriber = new Redis(REDIS_URL, {
-        maxRetriesPerRequest: null,
-        enableReadyCheck: false,
-    });
-
+    let unsubscribe = () => {};
     const cleanup = async () => {
         if (closed) return;
         closed = true;
-        try {
-            await subscriber.unsubscribe(channelName);
-        } catch {
-            //
-        }
-        subscriber.disconnect();
+        unsubscribe();
         res.end();
     };
 
@@ -64,28 +51,13 @@ sseRouter.get('/agent/:agentId', async (req, res) => {
 
     req.on('close', cleanup);
 
-    try {
-        subscriber.on('error', (error) => {
-            console.warn('sse subscriber error', error);
-        });
-        subscriber.on('message', (_channel, rawMessage) => {
-            try {
-                const agentEvent = JSON.parse(rawMessage) as AgentEventEnvelope;
-                if (historyLoaded) {
-                    processEvent(agentEvent);
-                } else {
-                    bufferedEvents.push(agentEvent);
-                }
-            } catch (error) {
-                console.warn('sse message parse error', error);
-            }
-        });
-        await subscriber.subscribe(channelName);
-    } catch (error) {
-        console.warn('sse subscribe error', error);
-        await cleanup();
-        return;
-    }
+    unsubscribe = subscribeToAgentEvents(agentId, (agentEvent) => {
+        if (historyLoaded) {
+            processEvent(agentEvent);
+        } else {
+            bufferedEvents.push(agentEvent);
+        }
+    });
 
     if (!skipBacklog) {
         try {

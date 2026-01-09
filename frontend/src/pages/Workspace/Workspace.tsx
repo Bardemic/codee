@@ -94,7 +94,10 @@ export default function Workspace() {
             if (eventData.step === 'agent_branch_created') {
                 utils.workspace.list.invalidate();
             }
-            if (eventData.step?.startsWith('tool_') || eventData.step?.startsWith('agent_')) {
+            const isToolActivity =
+                eventData.step === 'reasoning' || eventData.step?.startsWith('tool_') || eventData.step?.startsWith('agent_');
+
+            if (isToolActivity) {
                 const eventId = event.lastEventId || `sse_${Date.now()}`;
                 const parsedArguments = (() => {
                     if (!eventData.arguments) return {};

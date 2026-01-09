@@ -27,7 +27,13 @@ export default function ToolsContainer({
                         <p className={isThinking ? style.previewTitle : style.previewTitleFinished}>{isThinking ? 'Thinking' : 'Finished thinking'}</p>
                     </div>
                     <div className={style.previewContent}>
-                        <p>{lastToolCall ? `${lastToolCall.tool_name}(${JSON.stringify(lastToolCall.arguments, null, 2)})` : 'Setting up sandbox...'}</p>
+                        <p>
+                            {lastToolCall
+                                ? lastToolCall.tool_name !== 'reasoning'
+                                    ? `${lastToolCall.tool_name}(${JSON.stringify(lastToolCall.arguments, null, 2)})`
+                                    : `${lastToolCall.result}`
+                                : 'Setting up sandbox...'}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -36,7 +42,7 @@ export default function ToolsContainer({
     return (
         <div className={style.toolCallStack}>
             <div className={style.stackHeader} onClick={() => setShowFullContent(false)}>
-                <span className={style.stackTitle}>Tool Calls ({toolCalls.length})</span>
+                <span className={style.stackTitle}>Activity</span>
                 <div className={style.closeButton}>
                     <BsX size={16} />
                 </div>
@@ -45,15 +51,10 @@ export default function ToolsContainer({
                 <div key={toolCall.id} className={style.toolCallItem}>
                     <div className={style.toolCallHeader}>
                         <span>
-                            <strong>Codee-Sandbox % </strong>
-                            {toolCall.tool_name}({toolCall.arguments && Object.keys(toolCall.arguments).length > 0 && JSON.stringify(toolCall.arguments)})
+                            {toolCall.tool_name !== 'reasoning' && <strong>Codee-Sandbox % </strong>}
+                            {toolCall.tool_name !== 'reasoning' &&
+                                `${toolCall.tool_name}(${toolCall.arguments && Object.keys(toolCall.arguments).length > 0 && JSON.stringify(toolCall.arguments)})`}
                         </span>
-                        {toolCall.duration_ms && (
-                            <span>
-                                {toolCall.duration_ms}
-                                ms
-                            </span>
-                        )}
                     </div>
                     {toolCall.result && (
                         <div className={style.toolCallResult}>
