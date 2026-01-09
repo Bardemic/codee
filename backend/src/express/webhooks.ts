@@ -81,6 +81,7 @@ async function createWorkspaceFromWebhook(params: {
         toolSlugs,
         branchName: params.currentBranch,
         cloudProviders,
+        images: [],
     });
     return workspace;
 }

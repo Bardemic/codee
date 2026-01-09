@@ -4,8 +4,17 @@ import { Agent } from '../../db/entities/Agent';
 import { IntegrationConnection } from '../../db/entities/IntegrationConnection';
 import { Message, type SenderType } from '../../db/entities/Message';
 import { ToolCall } from '../../db/entities/ToolCall';
-import { readHistorySince } from '../../stream/events';
 import { updateSlackWorkspaceStatus } from '../../slack/notifications';
+
+type AgentActivityStep = {
+    reasoning: ReadonlyArray<{ text?: string | null }>;
+    toolResults: ReadonlyArray<{
+        toolName: string;
+        input?: unknown;
+        output?: unknown;
+    }>;
+    content?: unknown;
+};
 
 export async function getAgentById(agentId: number) {
     return AppDataSource.getRepository(Agent).findOne({
@@ -18,6 +27,47 @@ export async function saveMessage(agent: Agent, content: string, sender: SenderT
     const messageRepository = AppDataSource.getRepository(Message);
     const message = messageRepository.create({ agent, content, sender });
     return messageRepository.save(message);
+}
+
+export async function saveAgentActivity(agent: Agent, message: Message, steps: ReadonlyArray<AgentActivityStep>) {
+    const toolCallRepository = AppDataSource.getRepository(ToolCall);
+    const savedToolCalls: ToolCall[] = [];
+
+    for (const step of steps) {
+        console.log(step.reasoning);
+        console.log(step.content);
+        for (const reasoning of step.reasoning) {
+            const reasoningText = typeof reasoning.text === 'string' ? reasoning.text : '';
+            if (reasoningText.trim() === '' || reasoningText.length === 0) continue;
+            savedToolCalls.push(
+                toolCallRepository.create({
+                    agent,
+                    message,
+                    toolName: 'reasoning',
+                    arguments: {},
+                    result: reasoningText,
+                    status: 'success',
+                })
+            );
+        }
+        for (const toolResult of step.toolResults) {
+            const toolArguments = (toolResult.input ?? {}) as Record<string, unknown>;
+            savedToolCalls.push(
+                toolCallRepository.create({
+                    agent,
+                    message,
+                    toolName: toolResult.toolName,
+                    arguments: toolArguments,
+                    result: (toolResult.output as string) || '',
+                    status: 'success',
+                })
+            );
+        }
+    }
+
+    if (savedToolCalls.length === 0) return;
+
+    await toolCallRepository.save(savedToolCalls);
 }
 
 export async function updateAgent(agent: Agent, updates: Partial<Agent>) {
@@ -35,60 +85,6 @@ export async function updateAgent(agent: Agent, updates: Partial<Agent>) {
     }
 
     return savedAgent;
-}
-
-export async function persistToolCallsFromRedis(agentId: number, message: Message): Promise<void> {
-    try {
-        const events = await readHistorySince(agentId, 0);
-        if (events.length === 0) return;
-
-        const toolCallRepository = AppDataSource.getRepository(ToolCall);
-        const agent = await getAgentById(agentId);
-
-        if (!agent) {
-            console.warn(`persistToolCallsFromRedis: agent ${agentId} not found`);
-            return;
-        }
-
-        const toolCallsToSave: ToolCall[] = [];
-
-        for (const event of events) {
-            const isToolOrAgentEvent =
-                event.event === 'status' && typeof event.step === 'string' && (event.step.startsWith('tool_') || event.step.startsWith('agent_'));
-            if (!isToolOrAgentEvent) continue;
-
-            let parsedArguments: Record<string, unknown> = {};
-            const rawArguments = event.arguments as unknown;
-            if (typeof rawArguments === 'string') {
-                try {
-                    parsedArguments = JSON.parse(rawArguments);
-                } catch {
-                    parsedArguments = { raw: rawArguments };
-                }
-            } else if (rawArguments && typeof rawArguments === 'object') {
-                parsedArguments = rawArguments as Record<string, unknown>;
-            }
-
-            const toolCall = toolCallRepository.create({
-                agent,
-                message,
-                toolName: event.step as string,
-                arguments: parsedArguments,
-                result: (event.detail as string) ?? '',
-                status: (event.phase as string) ?? 'success',
-                durationMs: null,
-            });
-
-            toolCall.createdAt = new Date(event.timestamp);
-            toolCallsToSave.push(toolCall);
-        }
-
-        if (toolCallsToSave.length > 0) {
-            await toolCallRepository.save(toolCallsToSave);
-        }
-    } catch (error) {
-        console.warn('persistToolCallsFromRedis error:', error);
-    }
 }
 
 export async function getIntegrationApiKey(userId: string, providerSlug: string): Promise<string> {
