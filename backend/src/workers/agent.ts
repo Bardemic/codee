@@ -7,7 +7,7 @@ import { sandboxTools } from '../tools/sandboxTools';
 import { emitDone, emitError, emitStatus } from '../stream/events';
 import type { AgentJobPayload } from './queue';
 import { buildDynamicTools } from '../tools/dynamic';
-import { getAgentById, saveMessage, updateAgent, persistToolCallsFromRedis } from './helpers/agents';
+import { getAgentById, saveMessage, saveAgentActivity, updateAgent } from './helpers/agents';
 import { commitAndPush, generateBranchName, getGithubTokenForUser } from './helpers/github';
 import { createSandbox } from './helpers/sandbox';
 import { AppDataSource } from '../db/data-source';
@@ -24,7 +24,7 @@ const openaiClient = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-const model = (agentId: number) => withTracing(openaiClient('gpt-5-nano'), phClient, { posthogTraceId: `agent_${agentId}` });
+const model = (agentId: number) => withTracing(openaiClient('gpt-5-mini'), phClient, { posthogTraceId: `agent_${agentId}` });
 
 const AGENT_SYSTEM_PROMPT = `
 You are Codee, an asynchronous coding agent. You work on GitHub repositories, read code, make changes, and explain your steps succinctly.
@@ -53,6 +53,16 @@ use those tools. At the very end, you should spawn a number of agents to help yo
 A user will only use a primary agent in order to have a lot of thinking done for other sub agents to be created. Under no circumstances should you finish a conversation
 without creating sub agents, unless there is truly no further work to be done relating to the request.
 `;
+
+function createReasoningStreamer(agentId: number) {
+    return (step: { reasoningText?: string; reasoning?: ReadonlyArray<{ text?: string | null }> }) => {
+        const reasoningText = (step.reasoningText ?? step.reasoning?.map((part) => part.text ?? '').join('\n') ?? '').trim();
+        if (!reasoningText) return;
+        emitStatus(agentId, 'running', 'reasoning', reasoningText).catch((error) => {
+            console.warn('Failed to emit reasoning status:', error);
+        });
+    };
+}
 
 function transformMessagesToModelMessages(previousMessages: Message[]): ModelMessage[] {
     return previousMessages.map<ModelMessage>((message) => {
@@ -83,25 +93,28 @@ async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: string[
     const tools = sandboxTools(agentId, sandbox);
     const dynamicTools = await buildDynamicTools(agentId, toolSlugs, sandbox);
     const messages = transformMessagesToModelMessages(previousMessages);
+    const streamReasoning = createReasoningStreamer(agentId);
     const result = await generateText({
         model: model(agentId),
         providerOptions: {
             openai: {
                 //temp, for testing
-                reasoningEffort: 'minimal',
+                reasoningEffort: 'medium',
+                reasoningSummary: 'concise',
             },
         },
         system: AGENT_SYSTEM_PROMPT,
         messages,
         tools: { ...tools, ...dynamicTools },
         stopWhen: stepCountIs(32),
+        onStepFinish: streamReasoning,
     });
 
     phClient.shutdown();
 
     return {
         final: result.text,
-        toolCalls: result.toolCalls,
+        steps: result.steps,
     };
 }
 
@@ -119,6 +132,7 @@ async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs
     });
     const dynamicTools = await buildDynamicTools(agent.id, toolSlugs, sandbox);
     const messages = transformMessagesToModelMessages(previousMessages);
+    const streamReasoning = createReasoningStreamer(agent.id);
 
     const result = await generateText({
         model: model(agent.id),
@@ -126,19 +140,21 @@ async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs
             openai: {
                 //temp, for testing
                 reasoningEffort: 'high',
+                reasoningSummary: 'concise',
             },
         },
         system: ORCHESTRATOR_AGENT_SYSTEM_PROMPT,
         messages,
         tools: { ...orchestratorAgentTools, ...dynamicTools, ...tools },
         stopWhen: stepCountIs(32),
+        onStepFinish: streamReasoning,
     });
 
     phClient.shutdown();
 
     return {
         final: result.text,
-        toolCalls: result.toolCalls,
+        steps: result.steps,
     };
 }
 
@@ -186,7 +202,7 @@ export async function runOrchestratorAgentJob(payload: AgentJobPayload) {
 
         const savedMessage = await saveMessage(agent, response.final, 'AGENT');
 
-        await persistToolCallsFromRedis(agent.id, savedMessage);
+        await saveAgentActivity(agent, savedMessage, response.steps);
 
         await sandbox.stop();
 
@@ -257,7 +273,7 @@ export async function runAgentJob(payload: AgentJobPayload) {
 
         const savedMessage = await saveMessage(agent, response.final, 'AGENT');
 
-        await persistToolCallsFromRedis(agent.id, savedMessage);
+        await saveAgentActivity(agent, savedMessage, response.steps);
 
         if (payload.isOrchestratorAgent) {
             await sandbox.stop();
