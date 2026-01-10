@@ -1,26 +1,32 @@
 .sendButton {
-    background: none;
-    border: none;
-    padding: 8px;
+    background: var(--color-accent);
+    border: 1px solid transparent;
+    padding: 8px 16px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: var(--color-accent);
+    color: #1a1b1f;
+    border-radius: 10px;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 10px 20px rgba(246, 213, 74, 0.2);
 
     &:hover {
-        background: none;
-        color: var(--color-accent-hover);
+        background: var(--color-accent-hover);
+        color: #1a1b1f;
     }
 
     &:disabled {
-        background: none;
+        background: var(--color-surface);
         cursor: not-allowed;
         color: var(--color-muted);
+        box-shadow: none;
     }
 
     &:disabled:hover {
-        background: none;
+        background: var(--color-surface);
         color: var(--color-muted);
     }
 }
@@ -40,8 +46,8 @@
 
 .chatContainer {
     position: relative;
-    width: min(700px, 90%);
-    margin: 0 auto;
+    width: min(760px, 100%);
+    margin: 0 auto 40px;
     display: flex;
     flex-direction: column;
 }
@@ -49,16 +55,21 @@
 .chatBox {
     display: flex;
     flex-direction: column;
-    border-radius: 12px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: #20242b;
+    border: 1px solid #2c313a;
     position: relative;
     transition: border-color 0.2s ease;
+    box-shadow:
+        0 20px 60px rgba(6, 8, 12, 0.6),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
 .chatBox:focus-within {
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 1px var(--color-accent);
+    border-color: #3b3f47;
+    box-shadow:
+        0 20px 60px rgba(6, 8, 12, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .chatBoxDragging {
@@ -68,11 +79,11 @@
 .dropOverlay {
     position: absolute;
     inset: 0;
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    background-color: rgba(12, 13, 16, 0.6);
+    backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(4px);
     border: 1px dashed var(--color-accent);
-    border-radius: 12px;
+    border-radius: 14px;
     z-index: 20;
     pointer-events: none;
     transition: all 0.2s ease;
@@ -134,16 +145,18 @@
     align-items: center;
     justify-content: center;
     padding: 6px 8px;
-    border-radius: 6px;
+    border-radius: 10px;
     cursor: pointer;
     color: var(--color-muted);
+    border: 1px solid #2f343c;
+    background: rgba(255, 255, 255, 0.02);
     transition:
         color 0.15s ease,
         background-color 0.15s ease;
 }
 
 .attachButton:hover {
-    background-color: var(--color-surface-strong);
+    background-color: #2a2d36;
     color: var(--color-foreground);
 }
 
@@ -154,18 +167,25 @@
 .chatToolbar {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
-    gap: 8px;
-    border-bottom: 1px solid var(--color-border);
-    background-color: rgba(255, 255, 255, 0.01);
+    padding: 12px 14px;
+    gap: 12px;
+    border-bottom: 1px solid #2c313a;
+    background-color: rgba(255, 255, 255, 0.02);
+    justify-content: space-between;
+}
+
+.toolbarGroup {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .editor {
-    min-height: 120px;
-    padding: 16px;
+    min-height: 160px;
+    padding: 18px;
     box-sizing: border-box;
     width: 100%;
-    background: transparent;
+    background: #24272f;
     border: none;
     color: var(--color-foreground);
     font-family: inherit;
@@ -250,10 +270,10 @@
 }
 
 .header {
-    font-size: 3rem;
-    margin-bottom: 48px;
-    font-weight: 300;
-    color: var(--color-muted);
+    font-size: 36px;
+    margin-bottom: 24px;
+    font-weight: 600;
+    color: var(--color-foreground);
     letter-spacing: -0.02em;
     text-align: center;
 }
@@ -265,23 +285,28 @@
 }
 
 .homeContainer {
-    padding: 48px 24px;
+    padding: 32px 24px 80px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-height: 80vh;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, rgba(39, 42, 50, 0.35), transparent 60%);
+}
+
+.contentWrap {
+    width: min(960px, 100%);
 }
 
 .chatFooter {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 12px;
+    padding: 10px 14px 14px;
 }
 
 .pillsContainer {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
 }
 
@@ -289,19 +314,21 @@
     position: relative;
     font-size: 12px;
     padding: 6px 12px;
-    border-radius: 6px;
+    border-radius: 10px;
     cursor: pointer;
     user-select: none;
     display: flex;
     align-items: center;
     gap: 8px;
     color: var(--color-muted);
-    font-weight: 500;
+    font-weight: 600;
+    border: 1px solid #30343d;
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .pillContainer:hover {
-    background-color: var(--color-surface-strong);
-    border-color: var(--color-accent);
+    background-color: #2a2e37;
+    border-color: #3a3f48;
     color: var(--color-foreground);
 }
 
@@ -310,8 +337,8 @@
     top: calc(100% + 8px);
     left: 0;
     bottom: auto;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: #23262d;
+    border: 1px solid #2f343c;
     border-radius: 8px;
     width: 220px;
     max-height: 300px;
@@ -339,7 +366,7 @@
 }
 
 .dropdownOption:hover {
-    background-color: var(--color-surface-strong);
+    background-color: #2b3038;
     color: var(--color-foreground);
 }
 
@@ -347,15 +374,15 @@
     margin: 0 0 6px 0;
     padding: 8px 10px;
     border-radius: 6px;
-    border: 1px solid var(--color-border);
-    background: var(--color-background);
+    border: 1px solid #2f343c;
+    background: #1d2026;
     color: var(--color-foreground);
     font-size: 13px;
 }
 
 .searchInput:focus {
     outline: none;
-    border-color: var(--color-accent);
+    border-color: #3a3f48;
 }
 
 .emptyState {
@@ -368,8 +395,8 @@
 
 .toolsDropdown {
     position: fixed;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: #23262d;
+    border: 1px solid #2f343c;
     border-radius: 8px;
     width: 240px;
     max-height: 320px;
@@ -385,7 +412,7 @@
 .integrationItem {
     display: flex;
     flex-direction: column;
-    border: 1px solid var(--color-border);
+    border: 1px solid #2f343c;
     border-radius: 6px;
     overflow: hidden;
     margin-bottom: 4px;
@@ -443,7 +470,7 @@
 .checkbox {
     width: 14px;
     height: 14px;
-    border: 1px solid var(--color-muted);
+    border: 1px solid #4b5563;
     border-radius: 3px;
     display: flex;
     align-items: center;
@@ -527,7 +554,7 @@
     justify-content: space-between;
     gap: 6px;
     padding: 4px 8px;
-    border: 1px solid var(--color-border);
+    border: 1px solid #2f343c;
     border-radius: 4px;
     cursor: pointer;
     font-size: 11px;
@@ -535,13 +562,13 @@
 }
 
 .modelSelectButton:hover {
-    background-color: var(--color-surface-strong);
+    background-color: #2a2e37;
 }
 
 .modelMenu {
     position: fixed;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
+    background: #23262d;
+    border: 1px solid #2f343c;
     border-radius: 8px;
     max-height: 240px;
     overflow-y: auto;
@@ -556,7 +583,7 @@
 }
 
 .selectedOption {
-    background-color: var(--color-surface-strong);
+    background-color: #2a2e37;
     color: var(--color-foreground);
 }
 
@@ -569,4 +596,109 @@
     font-size: 11px;
     color: var(--color-muted);
     font-style: italic;
+}
+
+.toggleLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--color-muted);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.toggleButton {
+    width: 40px;
+    height: 22px;
+    border-radius: 999px;
+    background: #2b2f37;
+    border: 1px solid #3a3f48;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    cursor: pointer;
+    transition:
+        background-color 0.2s,
+        border-color 0.2s;
+}
+
+.toggleThumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #f5f6f8;
+    transform: translateX(0);
+    transition: transform 0.2s;
+}
+
+.toggleActive {
+    background: #3f3b1f;
+    border-color: #f6d54a;
+}
+
+.toggleActive .toggleThumb {
+    transform: translateX(18px);
+    background: #f6d54a;
+}
+
+.activitySection {
+    width: min(760px, 100%);
+    margin: 0 auto;
+}
+
+.sectionTitle {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-foreground);
+    margin: 0 0 12px;
+}
+
+.activityList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #20242b;
+    border: 1px solid #2c313a;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.activityRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.activityRow:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.activityLink {
+    text-decoration: none;
+    color: inherit;
+}
+
+.activityInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.activityTitle {
+    color: var(--color-foreground);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.activityTime {
+    color: var(--color-muted);
+    font-size: 12px;
 }
