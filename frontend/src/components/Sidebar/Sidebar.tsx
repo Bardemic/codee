@@ -39,7 +39,7 @@ export default function Sidebar({ children }: SidebarProps) {
                             workspace.agents.length > 0 && (
                                 <NavLink
                                     key={workspace.id}
-                                    to={`agent/${workspace.agents[0].id}`}
+                                    to={`/agent/${workspace.agents[0].id}`}
                                     className={({ isActive }) => `${styles.workspaceButton} ${isActive ? styles.workspaceButtonActive : ''}`}
                                 >
                                     {workspace.name}
