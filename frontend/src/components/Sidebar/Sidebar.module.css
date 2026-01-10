@@ -3,30 +3,30 @@
     flex-direction: row;
     width: 100%;
     min-height: 100vh;
-    background-color: var(--color-sidebar-bg);
+    background-color: var(--color-background);
 }
 
 h3 {
     padding: 0;
     margin: 0;
-    font-size: 17px;
-    font-weight: 400;
-    color: var(--color-foreground);
-    text-transform: none;
-    letter-spacing: normal;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
 .sidebar {
-    width: 220px;
+    width: 240px;
     box-sizing: border-box;
     background-color: var(--color-sidebar-bg);
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    border-right: 1px solid var(--color-border);
+    gap: 16px;
+    border-right: 1px solid #242830;
     text-align: left;
-    font-size: 12px;
-    padding: 12px 32px 24px 32px;
+    font-size: 13px;
+    padding: 18px 20px 24px 20px;
     height: 100vh;
     position: sticky;
     top: 0;
@@ -41,57 +41,105 @@ h3 {
 .profileSection {
     margin-top: auto;
     padding-top: 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid #242830;
 }
 
 .navigationSection {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 4px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #242830;
 }
 
-.button {
+.navButton {
+    all: unset;
     box-sizing: border-box;
-    border-bottom: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    color: var(--color-muted);
     cursor: pointer;
-    font-size: 15px;
-    display: block;
+    font-size: 14px;
+    transition:
+        background-color 0.2s,
+        color 0.2s;
+}
+
+.navButton:hover {
+    background-color: #21242b;
+    color: var(--color-foreground);
+}
+
+.navButtonActive {
+    background-color: #262a33;
+    color: var(--color-foreground);
+}
+
+.workspaceButton {
+    all: unset;
+    box-sizing: border-box;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    padding: 6px 4px;
     max-width: 100%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     min-height: 24px;
-    padding: 0;
     color: var(--color-muted);
-    border-radius: 0;
     background-color: transparent;
     transition:
-        border-color 0.2s,
-        color 0.2s;
+        color 0.2s,
+        background-color 0.2s;
 }
 
-.button:hover {
-    border-bottom: 1px solid var(--color-foreground);
-    background-color: transparent;
+.workspaceButton:hover {
+    background-color: #1e2127;
     color: var(--color-foreground);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.brandIcon {
+    width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: var(--color-accent);
+    color: #1a1b1f;
+    box-shadow: 0 6px 14px rgba(246, 213, 74, 0.35);
 }
 
 .header {
     padding: 0;
     margin: 0;
-    margin-bottom: 8px;
-    font-size: 2em;
+    font-size: 20px;
     font-weight: 700;
     color: var(--color-foreground);
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
 }
 
 .workspaces {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     overflow-y: auto;
     padding-right: 16px;
     flex: 1;
+}
+
+.sectionHeading {
+    margin-top: 8px;
 }

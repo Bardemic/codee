@@ -93,35 +93,57 @@ function Home() {
         }
     }, [isPending, session, navigate]);
 
+    const recentActivity = [
+        { title: 'Fix bugs in auth service', status: 'Completed', statusTone: 'success', time: '2h ago' },
+        { title: 'Refactor data fetching', status: 'In Progress', statusTone: 'info', time: '4h ago' },
+        { title: 'Deploy to staging', status: 'Completed', statusTone: 'success', time: 'Yesterday' },
+    ] as const;
+
     return (
         <div className={styles.homeContainer}>
-            <h1 className={styles.header}>
-                say hi to <span className={styles.focusedHeader}>Codee</span>.
-            </h1>
-            <div className={styles.chatContainer}>
-                <ChatBox
-                    integrations={integrations ?? []}
-                    cloudAgents={cloudAgents}
-                    onCloudAgentsChange={setCloudAgents}
-                    onSubmit={createNewWorkspace}
-                    isLoading={createWorkspace.isPending}
-                    isDisabled={!selectedBranch}
-                    placeholder="Find all errors from the recent commit and fix them"
-                    subAgents={subAgents}
-                    onSubAgentsChange={setSubAgents}
-                    leftPills={
-                        <>
-                            <RepositoriesPill selected={selectedRepo} setSelected={selectRepository} />
-                            <SelectionPill
-                                options={branchOptions}
-                                selected={selectedBranchOption}
-                                onSelect={(option) => setSelectedBranch(option.value)}
-                                placeholder="Select branch"
-                                icon={<FiGitBranch size={14} />}
-                            />
-                        </>
-                    }
-                />
+            <div className={styles.contentWrap}>
+                <h1 className={styles.header}>New Task</h1>
+                <div className={styles.chatContainer}>
+                    <ChatBox
+                        integrations={integrations ?? []}
+                        cloudAgents={cloudAgents}
+                        onCloudAgentsChange={setCloudAgents}
+                        onSubmit={createNewWorkspace}
+                        isLoading={createWorkspace.isPending}
+                        isDisabled={!selectedBranch}
+                        placeholder="Describe your coding task..."
+                        subAgents={subAgents}
+                        onSubAgentsChange={setSubAgents}
+                        leftPills={
+                            <>
+                                <RepositoriesPill selected={selectedRepo} setSelected={selectRepository} />
+                                <SelectionPill
+                                    options={branchOptions}
+                                    selected={selectedBranchOption}
+                                    onSelect={(option) => setSelectedBranch(option.value)}
+                                    placeholder="Select branch"
+                                    icon={<FiGitBranch size={14} />}
+                                />
+                            </>
+                        }
+                    />
+                </div>
+                <div className={styles.activitySection}>
+                    <h2 className={styles.sectionTitle}>Recent Activity</h2>
+                    <div className={styles.activityList}>
+                        {recentActivity.map((item) => (
+                            <div key={item.title} className={styles.activityRow}>
+                                <div className={styles.activityInfo}>
+                                    <span className={styles.activityTitle}>{item.title}</span>
+                                </div>
+                                <div className={`${styles.activityStatus} ${styles[`status${item.statusTone}`]}`}>
+                                    {item.status}
+                                </div>
+                                <span className={styles.activityTime}>{item.time}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );

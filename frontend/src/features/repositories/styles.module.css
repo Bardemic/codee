@@ -2,30 +2,33 @@
     position: relative;
     font-size: 12px;
     padding: 6px 12px;
-    border-radius: 6px;
+    border-radius: 10px;
     cursor: pointer;
     user-select: none;
-    border: 1px solid transparent;
+    border: 1px solid #2f343c;
     transition:
         background-color 0.2s,
         border-color 0.2s;
     display: flex;
     align-items: center;
     gap: 6px;
-    color: var(--color-foreground);
+    color: var(--color-muted);
+    background: rgba(255, 255, 255, 0.02);
     width: fit-content;
     max-width: 200px;
 }
 
 .container:hover {
-    background-color: var(--color-background-secondary, rgba(255, 255, 255, 0.05));
+    background-color: #2a2e37;
+    border-color: #3a3f48;
+    color: var(--color-foreground);
 }
 
 .dropdown {
     position: absolute;
     left: 0;
-    background: var(--color-surface, #1e1e1e);
-    border: 1px solid var(--color-border, #333);
+    background: #23262d;
+    border: 1px solid #2f343c;
     border-radius: 8px;
     width: 200px;
     max-height: 300px;
@@ -65,7 +68,7 @@
 }
 
 .option:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: #2b3038;
     color: var(--color-foreground);
 }
 
@@ -73,15 +76,15 @@
     margin: 4px 8px 8px 8px;
     padding: 6px 8px;
     border-radius: 4px;
-    border: 1px solid var(--color-border, #333);
-    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #2f343c;
+    background: #1d2026;
     color: var(--color-foreground);
     font-size: 12px;
 }
 
 .searchInput:focus {
     outline: none;
-    border-color: var(--color-link-hover, #3b82f6);
+    border-color: #3a3f48;
 }
 
 .emptyState {

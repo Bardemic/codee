@@ -64,7 +64,7 @@ export function ChatBox({
         [integrations]
     );
 
-    const toolsLabel = selectedTools.length === 0 ? 'Select Tools' : `${selectedTools.length} Tool${selectedTools.length > 1 ? 's' : ''} Selected`;
+    const toolsLabel = selectedTools.length === 0 ? 'Tools' : `${selectedTools.length} Tool${selectedTools.length > 1 ? 's' : ''} Selected`;
 
     const processFiles = useCallback(async (files: FileList | File[]) => {
         const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
@@ -130,18 +130,29 @@ export function ChatBox({
         >
             {isDragging && <div className={styles.dropOverlay} />}
             <div className={styles.chatToolbar}>
-                <CloudAgentsDropdown integrations={integrations} value={cloudAgents} onChange={onCloudAgentsChange} />
-                <DropdownSelector
-                    icon={<BsTools size={14} />}
-                    options={integrationDropdownOptions}
-                    selectedValues={selectedTools}
-                    onChange={setSelectedTools}
-                    label={toolsLabel}
-                    dropdownVariant="floating"
-                />
-                <div className={styles.pillContainer} onClick={() => onSubAgentsChange(!subAgents)} role="button" tabIndex={0}>
-                    <div className={`${styles.checkbox} ${subAgents ? styles.checked : ''}`}>{subAgents && <BsCheck size={12} />}</div>
-                    <span>subagent mode</span>
+                <div className={styles.toolbarGroup}>
+                    <CloudAgentsDropdown integrations={integrations} value={cloudAgents} onChange={onCloudAgentsChange} label="Agent/Provider" />
+                    <DropdownSelector
+                        icon={<BsTools size={14} />}
+                        options={integrationDropdownOptions}
+                        selectedValues={selectedTools}
+                        onChange={setSelectedTools}
+                        label={toolsLabel}
+                        dropdownVariant="floating"
+                    />
+                </div>
+                <div className={styles.toolbarGroup}>
+                    <span className={styles.toggleLabel}>
+                        Subagent Mode
+                        <button
+                            type="button"
+                            className={`${styles.toggleButton} ${subAgents ? styles.toggleActive : ''}`}
+                            onClick={() => onSubAgentsChange(!subAgents)}
+                            aria-pressed={subAgents}
+                        >
+                            <span className={styles.toggleThumb} />
+                        </button>
+                    </span>
                 </div>
             </div>
             {attachedImages.length > 0 && (
@@ -180,6 +191,7 @@ export function ChatBox({
                     {leftPills}
                     <button type="button" className={styles.attachButton} onClick={() => fileInputRef.current?.click()} title="Attach images">
                         <IoImage size={16} />
+                        <span>Attach Files</span>
                     </button>
                     <input
                         type="file"
@@ -203,6 +215,7 @@ export function ChatBox({
                     disabled={isSubmitBlocked || isEmpty}
                 >
                     {isLoading ? <AiOutlineLoading3Quarters size={16} className={styles.spinIcon} /> : <BsSend size={16} />}
+                    <span>Send</span>
                 </button>
             </div>
         </div>
