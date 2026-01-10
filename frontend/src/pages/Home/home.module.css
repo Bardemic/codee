@@ -144,11 +144,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 6px 10px;
+    padding: 6px 8px;
     border-radius: 10px;
     cursor: pointer;
     color: var(--color-muted);
-    gap: 6px;
     border: 1px solid #2f343c;
     background: rgba(255, 255, 255, 0.02);
     transition:
@@ -668,13 +667,23 @@
 
 .activityRow {
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto;
     align-items: center;
     gap: 12px;
     padding: 10px 12px;
     border-radius: 8px;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.activityRow:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.activityLink {
+    text-decoration: none;
+    color: inherit;
 }
 
 .activityInfo {
@@ -687,25 +696,6 @@
     color: var(--color-foreground);
     font-size: 14px;
     font-weight: 500;
-}
-
-.activityStatus {
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 600;
-}
-
-.statussuccess {
-    color: #86efac;
-    background: rgba(34, 197, 94, 0.15);
-    border: 1px solid rgba(34, 197, 94, 0.35);
-}
-
-.statusinfo {
-    color: #93c5fd;
-    background: rgba(59, 130, 246, 0.15);
-    border: 1px solid rgba(59, 130, 246, 0.35);
 }
 
 .activityTime {

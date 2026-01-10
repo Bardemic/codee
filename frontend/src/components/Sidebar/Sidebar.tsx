@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import styles from './Sidebar.module.css';
 import SidebarButton from './SidebarButton';
 import { signOut } from '../../lib/auth';
-import { useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { trpc } from '../../lib/trpc';
 import { FiHome, FiGrid, FiUsers, FiZap, FiLogOut } from 'react-icons/fi';
 
@@ -38,14 +38,13 @@ export default function Sidebar({ children }: SidebarProps) {
                     {workspaces?.map(
                         (workspace) =>
                             workspace.agents.length > 0 && (
-                                <button
-                                    type="button"
+                                <NavLink
                                     key={workspace.id}
-                                    className={styles.workspaceButton}
-                                    onClick={() => navigate(`agent/${workspace.agents[0].id}`)}
+                                    to={`agent/${workspace.agents[0].id}`}
+                                    className={({ isActive }) => `${styles.workspaceButton} ${isActive ? styles.workspaceButtonActive : ''}`}
                                 >
                                     {workspace.name}
-                                </button>
+                                </NavLink>
                             )
                     )}
                 </div>

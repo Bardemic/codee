@@ -191,7 +191,6 @@ export function ChatBox({
                     {leftPills}
                     <button type="button" className={styles.attachButton} onClick={() => fileInputRef.current?.click()} title="Attach images">
                         <IoImage size={16} />
-                        <span>Attach Files</span>
                     </button>
                     <input
                         type="file"

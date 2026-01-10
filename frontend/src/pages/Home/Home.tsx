@@ -1,5 +1,5 @@
 import { RepositoriesPill, SelectionPill } from '../../features/repositories/RepositoriesPill';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { trpc } from '../../lib/trpc';
 import { useSession } from '../../lib/auth';
@@ -40,6 +40,7 @@ function Home() {
     });
     const { data: session, isPending } = useSession();
     const { data: integrations } = trpc.integrations.list.useQuery();
+    const { data: workspaces } = trpc.workspace.list.useQuery();
 
     const activeProviders = useMemo(
         () =>
@@ -93,11 +94,14 @@ function Home() {
         }
     }, [isPending, session, navigate]);
 
-    const recentActivity = [
-        { title: 'Fix bugs in auth service', status: 'Completed', statusTone: 'success', time: '2h ago' },
-        { title: 'Refactor data fetching', status: 'In Progress', statusTone: 'info', time: '4h ago' },
-        { title: 'Deploy to staging', status: 'Completed', statusTone: 'success', time: 'Yesterday' },
-    ] as const;
+    const recentWorkspaces = useMemo(
+        () =>
+            (workspaces ?? [])
+                .filter((workspace) => workspace.agents.length > 0)
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .slice(0, 3),
+        [workspaces]
+    );
 
     return (
         <div className={styles.homeContainer}>
@@ -131,16 +135,17 @@ function Home() {
                 <div className={styles.activitySection}>
                     <h2 className={styles.sectionTitle}>Recent Activity</h2>
                     <div className={styles.activityList}>
-                        {recentActivity.map((item) => (
-                            <div key={item.title} className={styles.activityRow}>
+                        {recentWorkspaces.map((workspace) => (
+                            <Link
+                                key={workspace.id}
+                                to={`/agent/${workspace.agents[0].id}`}
+                                className={`${styles.activityRow} ${styles.activityLink}`}
+                            >
                                 <div className={styles.activityInfo}>
-                                    <span className={styles.activityTitle}>{item.title}</span>
+                                    <span className={styles.activityTitle}>{workspace.name}</span>
                                 </div>
-                                <div className={`${styles.activityStatus} ${styles[`status${item.statusTone}`]}`}>
-                                    {item.status}
-                                </div>
-                                <span className={styles.activityTime}>{item.time}</span>
-                            </div>
+                                <span className={styles.activityTime}>View workspace</span>
+                            </Link>
                         ))}
                     </div>
                 </div>
