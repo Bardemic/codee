@@ -136,11 +136,7 @@ function Home() {
                     <h2 className={styles.sectionTitle}>Recent Activity</h2>
                     <div className={styles.activityList}>
                         {recentWorkspaces.map((workspace) => (
-                            <Link
-                                key={workspace.id}
-                                to={`/agent/${workspace.agents[0].id}`}
-                                className={`${styles.activityRow} ${styles.activityLink}`}
-                            >
+                            <Link key={workspace.id} to={`/agent/${workspace.agents[0].id}`} className={`${styles.activityRow} ${styles.activityLink}`}>
                                 <div className={styles.activityInfo}>
                                     <span className={styles.activityTitle}>{workspace.name}</span>
                                 </div>

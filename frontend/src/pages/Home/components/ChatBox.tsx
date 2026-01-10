@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback, type ReactNode } from 'react';
-import { BsSend, BsTools, BsCheck } from 'react-icons/bs';
+import { BsSend, BsTools } from 'react-icons/bs';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { IoClose, IoImage } from 'react-icons/io5';
 import type { Integration, MessageImage } from '../../../lib/types';

@@ -4,7 +4,8 @@ import SidebarButton from './SidebarButton';
 import { signOut } from '../../lib/auth';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { trpc } from '../../lib/trpc';
-import { FiHome, FiGrid, FiUsers, FiZap, FiLogOut } from 'react-icons/fi';
+import { FiHome, FiGrid, FiUsers, FiLogOut } from 'react-icons/fi';
+import codeeLogo from '../../assets/svgs/CodeeLogo.svg';
 
 type SidebarProps = {
     children?: ReactNode;
@@ -23,9 +24,7 @@ export default function Sidebar({ children }: SidebarProps) {
         <div className={styles.container}>
             <nav className={styles.sidebar}>
                 <div className={styles.brand}>
-                    <span className={styles.brandIcon}>
-                        <FiZap size={18} />
-                    </span>
+                    <img src={codeeLogo} alt="codee" className={styles.brandIcon} />
                     <h2 className={styles.header}>codee</h2>
                 </div>
                 <div className={styles.navigationSection}>

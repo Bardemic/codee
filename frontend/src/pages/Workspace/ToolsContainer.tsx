@@ -36,7 +36,7 @@ export default function ToolsContainer({
     return (
         <div className={style.toolCallStack}>
             <div className={style.stackHeader} onClick={() => setShowFullContent(false)}>
-                <span className={style.stackTitle}>Tool Calls ({toolCalls.length})</span>
+                <span className={style.stackTitle}>Activity</span>
                 <div className={style.closeButton}>
                     <BsX size={16} />
                 </div>

@@ -12,11 +12,7 @@ interface ButtonProps {
 export default function SidebarButton({ text, icon, to, onClick }: ButtonProps) {
     if (to) {
         return (
-            <NavLink
-                to={to}
-                className={({ isActive }) => `${styles.navButton} ${isActive ? styles.navButtonActive : ''}`}
-                aria-label={text}
-            >
+            <NavLink to={to} className={({ isActive }) => `${styles.navButton} ${isActive ? styles.navButtonActive : ''}`} aria-label={text}>
                 {icon}
                 <span>{text}</span>
             </NavLink>
