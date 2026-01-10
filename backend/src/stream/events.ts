@@ -1,6 +1,6 @@
-import { getRedis } from '../utils/redis';
-
 const HISTORY_MAX = 500;
+const CLEANUP_INTERVAL_MS = 60 * 1000;
+const IDLE_TTL_MS = 5 * 60 * 1000;
 
 export type AgentEventPayload = {
     event: 'status' | 'error' | 'done' | string;
@@ -17,19 +17,58 @@ export type AgentEventEnvelope = AgentEventPayload & {
     timestamp: number;
 };
 
-export function getChannelName(agentId: number) {
-    return `agent:events:${agentId}`;
+type AgentEventState = {
+    nextId: number;
+    history: AgentEventEnvelope[];
+    listeners: Set<(event: AgentEventEnvelope) => void>;
+    lastTouched: number;
+};
+
+const agentStreams = new Map<number, AgentEventState>();
+
+const cleanupInterval = setInterval(() => {
+    const now = Date.now();
+    for (const [agentId, state] of agentStreams) {
+        if (state.listeners.size > 0) continue;
+        if (now - state.lastTouched < IDLE_TTL_MS) continue;
+        agentStreams.delete(agentId);
+    }
+}, CLEANUP_INTERVAL_MS);
+cleanupInterval.unref();
+
+function getOrCreateState(agentId: number): AgentEventState {
+    const now = Date.now();
+    const existing = agentStreams.get(agentId);
+    if (existing) {
+        existing.lastTouched = now;
+        return existing;
+    }
+    const state: AgentEventState = {
+        nextId: 0,
+        history: [],
+        listeners: new Set(),
+        lastTouched: now,
+    };
+    agentStreams.set(agentId, state);
+    return state;
 }
 
 export async function publishAgentEvent(agentId: number, payload: AgentEventPayload): Promise<AgentEventEnvelope> {
-    const redis = getRedis();
-    const eventId = await redis.incr(`agent:seq:${agentId}`);
+    const state = getOrCreateState(agentId);
+    const eventId = state.nextId + 1;
+    state.nextId = eventId;
     const envelope: AgentEventEnvelope = { id: eventId, timestamp: Date.now(), ...payload };
-    const serialized = JSON.stringify(envelope);
-    const historyKey = `agent:history:${agentId}`;
-
-    await redis.multi().rpush(historyKey, serialized).ltrim(historyKey, -HISTORY_MAX, -1).publish(getChannelName(agentId), serialized).exec();
-
+    state.history.push(envelope);
+    if (state.history.length > HISTORY_MAX) {
+        state.history.splice(0, state.history.length - HISTORY_MAX);
+    }
+    for (const listener of state.listeners) {
+        try {
+            listener(envelope);
+        } catch (error) {
+            console.warn('agent event listener error', error);
+        }
+    }
     return envelope;
 }
 
@@ -57,20 +96,20 @@ export async function emitDone(agentId: number, reason: string) {
 }
 
 export async function readHistorySince(agentId: number, afterEventId: number): Promise<AgentEventEnvelope[]> {
-    const redis = getRedis();
-    const historyItems = await redis.lrange(`agent:history:${agentId}`, 0, -1);
-    const events: AgentEventEnvelope[] = [];
+    const state = agentStreams.get(agentId);
+    if (!state) return [];
+    state.lastTouched = Date.now();
+    return state.history.filter((event) => event.id > afterEventId);
+}
 
-    for (const item of historyItems) {
-        try {
-            const parsed = JSON.parse(item) as AgentEventEnvelope;
-            if (parsed.id > afterEventId) {
-                events.push(parsed);
-            }
-        } catch {
-            continue;
-        }
-    }
-
-    return events;
+export function subscribeToAgentEvents(agentId: number, listener: (event: AgentEventEnvelope) => void) {
+    const state = getOrCreateState(agentId);
+    state.listeners.add(listener);
+    state.lastTouched = Date.now();
+    return () => {
+        const current = agentStreams.get(agentId);
+        if (!current) return;
+        current.listeners.delete(listener);
+        current.lastTouched = Date.now();
+    };
 }
