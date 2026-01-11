@@ -6,16 +6,6 @@ import { Message, type SenderType } from '../../db/entities/Message';
 import { ToolCall } from '../../db/entities/ToolCall';
 import { updateSlackWorkspaceStatus } from '../../slack/notifications';
 
-type AgentActivityStep = {
-    reasoning: ReadonlyArray<{ text?: string | null }>;
-    toolResults: ReadonlyArray<{
-        toolName: string;
-        input?: unknown;
-        output?: unknown;
-    }>;
-    content?: unknown;
-};
-
 export async function getAgentById(agentId: number) {
     return AppDataSource.getRepository(Agent).findOne({
         where: { id: agentId },
@@ -29,7 +19,11 @@ export async function saveMessage(agent: Agent, content: string, sender: SenderT
     return messageRepository.save(message);
 }
 
-export async function saveAgentActivity(agent: Agent, message: Message, steps: ReadonlyArray<AgentActivityStep>) {
+export async function saveAgentActivity(
+    agent: Agent,
+    message: Message,
+    steps: Array<{ reasoning: ReadonlyArray<{ text?: string | null }>; toolResults: ReadonlyArray<{ toolName: string; input?: unknown; output?: unknown }> }>
+) {
     const toolCallRepository = AppDataSource.getRepository(ToolCall);
     const savedToolCalls: ToolCall[] = [];
 

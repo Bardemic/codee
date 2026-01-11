@@ -2,8 +2,10 @@ import type { ReactNode } from 'react';
 import styles from './Sidebar.module.css';
 import SidebarButton from './SidebarButton';
 import { signOut } from '../../lib/auth';
-import { useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { trpc } from '../../lib/trpc';
+import { FiHome, FiGrid, FiUsers, FiLogOut } from 'react-icons/fi';
+import codeeLogo from '../../assets/svgs/CodeeLogo.svg';
 
 type SidebarProps = {
     children?: ReactNode;
@@ -21,25 +23,32 @@ export default function Sidebar({ children }: SidebarProps) {
     return (
         <div className={styles.container}>
             <nav className={styles.sidebar}>
-                <h2 className={styles.header}>codee</h2>
-                <div className={styles.navigationSection}>
-                    <SidebarButton text="Home" onClick={() => navigate('/')} />
-                    <SidebarButton text="Integrations" onClick={() => navigate('/integrations')} />
-                    <SidebarButton text="Workers" onClick={() => navigate('/workers')} />
+                <div className={styles.brand}>
+                    <img src={codeeLogo} alt="codee" className={styles.brandIcon} />
+                    <h2 className={styles.header}>codee</h2>
                 </div>
-                <h3>Workspaces</h3>
+                <div className={styles.navigationSection}>
+                    <SidebarButton text="Home" to="/" icon={<FiHome size={16} />} />
+                    <SidebarButton text="Integrations" to="/integrations" icon={<FiGrid size={16} />} />
+                    <SidebarButton text="Workers" to="/workers" icon={<FiUsers size={16} />} />
+                </div>
+                <h3 className={styles.sectionHeading}>Workspaces</h3>
                 <div className={styles.workspaces}>
                     {workspaces?.map(
                         (workspace) =>
                             workspace.agents.length > 0 && (
-                                <div key={workspace.id} className={styles.button} onClick={() => navigate(`agent/${workspace.agents[0].id}`)}>
+                                <NavLink
+                                    key={workspace.id}
+                                    to={`/agent/${workspace.agents[0].id}`}
+                                    className={({ isActive }) => `${styles.workspaceButton} ${isActive ? styles.workspaceButtonActive : ''}`}
+                                >
                                     {workspace.name}
-                                </div>
+                                </NavLink>
                             )
                     )}
                 </div>
                 <div className={styles.profileSection}>
-                    <SidebarButton text="Logout" onClick={handleSignOut} />
+                    <SidebarButton text="Logout" onClick={handleSignOut} icon={<FiLogOut size={16} />} />
                 </div>
             </nav>
             <main className={styles.content}>{children}</main>

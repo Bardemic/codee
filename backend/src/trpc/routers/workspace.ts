@@ -10,7 +10,7 @@ import { createAgentsFromProviders, PROVIDERS } from '../../providers';
 import { generateTitle } from '../../utils/llm';
 import { In } from 'typeorm';
 import { CodeeProvider } from '../../providers/codee';
-import { generateBranchName } from '../../workers/helpers/github';
+import { generateBranchName } from '../../workflows/helpers/github';
 
 const providerConfig = z.object({
     name: z.string(),

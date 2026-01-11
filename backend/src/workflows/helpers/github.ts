@@ -42,5 +42,5 @@ export async function commitAndPush(sandbox: Sandbox, message: string): Promise<
             GIT_COMMITTER_EMAIL: 'agent@codee.dev',
         },
     });
-    await sandbox.runCommand({ cmd: 'git', args: ['push'] });
+    await sandbox.runCommand({ cmd: 'git', args: ['push', '-u', 'origin', 'HEAD'] });
 }

@@ -1,5 +1,5 @@
 import { RepositoriesPill, SelectionPill } from '../../features/repositories/RepositoriesPill';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { trpc } from '../../lib/trpc';
 import { useSession } from '../../lib/auth';
@@ -40,6 +40,7 @@ function Home() {
     });
     const { data: session, isPending } = useSession();
     const { data: integrations } = trpc.integrations.list.useQuery();
+    const { data: workspaces } = trpc.workspace.list.useQuery();
 
     const activeProviders = useMemo(
         () =>
@@ -93,35 +94,57 @@ function Home() {
         }
     }, [isPending, session, navigate]);
 
+    const recentWorkspaces = useMemo(
+        () =>
+            (workspaces ?? [])
+                .filter((workspace) => workspace.agents.length > 0)
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .slice(0, 3),
+        [workspaces]
+    );
+
     return (
         <div className={styles.homeContainer}>
-            <h1 className={styles.header}>
-                say hi to <span className={styles.focusedHeader}>Codee</span>.
-            </h1>
-            <div className={styles.chatContainer}>
-                <ChatBox
-                    integrations={integrations ?? []}
-                    cloudAgents={cloudAgents}
-                    onCloudAgentsChange={setCloudAgents}
-                    onSubmit={createNewWorkspace}
-                    isLoading={createWorkspace.isPending}
-                    isDisabled={!selectedBranch}
-                    placeholder="Find all errors from the recent commit and fix them"
-                    subAgents={subAgents}
-                    onSubAgentsChange={setSubAgents}
-                    leftPills={
-                        <>
-                            <RepositoriesPill selected={selectedRepo} setSelected={selectRepository} />
-                            <SelectionPill
-                                options={branchOptions}
-                                selected={selectedBranchOption}
-                                onSelect={(option) => setSelectedBranch(option.value)}
-                                placeholder="Select branch"
-                                icon={<FiGitBranch size={14} />}
-                            />
-                        </>
-                    }
-                />
+            <div className={styles.contentWrap}>
+                <h1 className={styles.header}>New Task</h1>
+                <div className={styles.chatContainer}>
+                    <ChatBox
+                        integrations={integrations ?? []}
+                        cloudAgents={cloudAgents}
+                        onCloudAgentsChange={setCloudAgents}
+                        onSubmit={createNewWorkspace}
+                        isLoading={createWorkspace.isPending}
+                        isDisabled={!selectedBranch}
+                        placeholder="Describe your coding task..."
+                        subAgents={subAgents}
+                        onSubAgentsChange={setSubAgents}
+                        leftPills={
+                            <>
+                                <RepositoriesPill selected={selectedRepo} setSelected={selectRepository} />
+                                <SelectionPill
+                                    options={branchOptions}
+                                    selected={selectedBranchOption}
+                                    onSelect={(option) => setSelectedBranch(option.value)}
+                                    placeholder="Select branch"
+                                    icon={<FiGitBranch size={14} />}
+                                />
+                            </>
+                        }
+                    />
+                </div>
+                <div className={styles.activitySection}>
+                    <h2 className={styles.sectionTitle}>Recent Activity</h2>
+                    <div className={styles.activityList}>
+                        {recentWorkspaces.map((workspace) => (
+                            <Link key={workspace.id} to={`/agent/${workspace.agents[0].id}`} className={`${styles.activityRow} ${styles.activityLink}`}>
+                                <div className={styles.activityInfo}>
+                                    <span className={styles.activityTitle}>{workspace.name}</span>
+                                </div>
+                                <span className={styles.activityTime}>View workspace</span>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -1,6 +1,7 @@
-import { generateObject } from 'ai';
+import { generateObject, type ModelMessage } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
+import type { Message } from '../db/entities/Message';
 // import { getPostHog } from './posthog';
 
 const openaiClient = createOpenAI({
@@ -39,4 +40,29 @@ export async function generateTitle(prompt: string): Promise<string> {
         // posthog.capture({ event: 'generateTitleError', distinctId: '', properties: { prompt, error: err } });
     }
     return 'Default Title';
+}
+
+export function transformMessagesToModelMessages(previousMessages: Message[]): ModelMessage[] {
+    return previousMessages.map<ModelMessage>((message) => {
+        if (message.sender === 'USER' && message.images.length > 0) {
+            const content: Array<{ type: 'text'; text: string } | { type: 'image'; image: string; mimeType?: string }> = [
+                { type: 'text', text: message.content },
+            ];
+            for (const image of message.images) {
+                content.push({
+                    type: 'image',
+                    image: image.data,
+                    mimeType: image.mimeType,
+                });
+            }
+            return {
+                role: 'user',
+                content,
+            };
+        }
+        return {
+            role: message.sender === 'USER' ? 'user' : 'assistant',
+            content: message.content,
+        };
+    });
 }
