@@ -8,6 +8,7 @@ import { emitDone, emitError, emitStatus } from '../stream/events';
 import { getAgentById, saveMessage, saveAgentActivity, updateAgent } from './helpers/agents';
 import { commitAndPush, generateBranchName, getGithubTokenForUser } from './helpers/github';
 import { createSandbox } from './helpers/sandbox';
+import type { runAgentLLM, runOrchestratorAgentLLM } from './llm';
 
 export async function loadAgent(agentId: number) {
     const agent = await getAgentById(agentId);
@@ -86,7 +87,7 @@ export async function createBranchIfNeeded(agent: Agent, sandbox: Sandbox, isOrc
     return agent.githubBranchName;
 }
 
-export async function saveAgentResponse(agent: Agent, response: { final: string; steps: any[] }) {
+export async function saveAgentResponse(agent: Agent, response: Awaited<ReturnType<typeof runAgentLLM>> | Awaited<ReturnType<typeof runOrchestratorAgentLLM>>) {
     const savedMessage = await saveMessage(agent, response.final, 'AGENT');
     await saveAgentActivity(agent, savedMessage, response.steps);
     return savedMessage;

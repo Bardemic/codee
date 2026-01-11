@@ -1,6 +1,6 @@
 'use step';
 
-import { generateText, stepCountIs } from 'ai';
+import { generateText, stepCountIs, type StepResult, type ToolSet } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { withTracing } from '@posthog/ai';
 import { Sandbox } from '@vercel/sandbox';
