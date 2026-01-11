@@ -2,7 +2,7 @@ import type { CloudProvider, ProviderToolCall } from './base';
 import { Workspace } from '../db/entities/Workspace';
 import { Agent, AgentStatus, ProviderType } from '../db/entities/Agent';
 import { AppDataSource } from '../db/data-source';
-import { enqueueAgentJob } from '../workers/queue';
+import { runAgentWorkflow, runOrchestratorAgentWorkflow } from '../workflows/agent';
 import { Message, type MessageImage } from '../db/entities/Message';
 import { emitStatus } from '../stream/events';
 import { ToolCall } from '../db/entities/ToolCall';
@@ -56,14 +56,27 @@ export class CodeeProvider implements CloudProvider {
         await messageRepository.save(userMessage);
 
         emitStatus(agent.id, 'queued', 'agent_queued', 'queued agent job');
-        enqueueAgentJob({
+
+        const payload = {
             agentId: agent.id,
             prompt: message,
             repositoryFullName,
             toolSlugs,
             baseBranch,
             isOrchestratorAgent,
-        });
+        };
+
+        // Run workflow asynchronously (fire-and-forget)
+        if (isOrchestratorAgent) {
+            runOrchestratorAgentWorkflow(payload).catch((err) => {
+                console.error('Failed to run orchestrator agent workflow:', err);
+            });
+        } else {
+            runAgentWorkflow(payload).catch((err) => {
+                console.error('Failed to run agent workflow:', err);
+            });
+        }
+
         return agent;
     }
 
@@ -118,14 +131,23 @@ export class CodeeProvider implements CloudProvider {
             console.error('Failed to emit status:', err);
         });
 
-        enqueueAgentJob({
+        const payload = {
             agentId: agent.id,
             prompt: message,
             baseBranch: agent.workspace.currentBranch,
             isOrchestratorAgent: agent.isOrchestratorAgent,
-        }).catch((err) => {
-            console.error('Failed to enqueue agent job:', err);
-        });
+        };
+
+        // Run workflow asynchronously (fire-and-forget)
+        if (agent.isOrchestratorAgent) {
+            runOrchestratorAgentWorkflow(payload).catch((err) => {
+                console.error('Failed to run orchestrator agent workflow:', err);
+            });
+        } else {
+            runAgentWorkflow(payload).catch((err) => {
+                console.error('Failed to run agent workflow:', err);
+            });
+        }
 
         return true;
     }

@@ -11,8 +11,6 @@ import { createContext } from './trpc/context';
 import { appRouter } from './trpc/router';
 import { registerWebhooks } from './express/webhooks';
 import { sseRouter } from './stream/sse';
-import { startWorkers } from './workers/queue';
-import { closeRedis } from './utils/redis';
 import { flushPostHog } from './utils/posthog';
 import { validateEnvironment } from './utils/env';
 import { slackOAuthRouter } from './slack/oauth';
@@ -21,7 +19,6 @@ import { slackEventsRouter } from './slack/events';
 const PORT = Number(process.env.PORT || 5001);
 
 async function shutdown() {
-    await closeRedis();
     await flushPostHog();
     process.exit(0);
 }
@@ -83,8 +80,6 @@ async function bootstrap() {
         console.error('[backend] uncaught exception:', err);
         shutdown();
     });
-
-    await startWorkers();
 }
 
 bootstrap().catch((err) => {

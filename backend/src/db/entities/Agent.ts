@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import type { Workspace } from './Workspace';
 import type { Message } from './Message';
 
@@ -52,6 +52,12 @@ export class Agent {
 
     @Column({ type: 'boolean', default: false })
     isOrchestratorAgent!: boolean;
+
+    @CreateDateColumn({ default: 'now()' })
+    createdAt!: Date;
+
+    @UpdateDateColumn({ default: 'now()', onUpdate: 'now()' })
+    updatedAt!: Date;
 
     @OneToMany('Message', 'agent')
     messages!: Message[];
