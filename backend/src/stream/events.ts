@@ -113,3 +113,13 @@ export function subscribeToAgentEvents(agentId: number, listener: (event: AgentE
         current.lastTouched = Date.now();
     };
 }
+
+export function createReasoningStreamer(agentId: number) {
+    return (step: { reasoningText?: string; reasoning?: ReadonlyArray<{ text?: string | null }> }) => {
+        const reasoningText = (step.reasoningText ?? step.reasoning?.map((part) => part.text ?? '').join('\n') ?? '').trim();
+        if (!reasoningText) return;
+        emitStatus(agentId, 'running', 'reasoning', reasoningText).catch((error) => {
+            console.warn('Failed to emit reasoning status:', error);
+        });
+    };
+}
