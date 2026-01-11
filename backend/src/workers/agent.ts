@@ -5,7 +5,7 @@ import { Sandbox } from '@vercel/sandbox';
 import { Agent, AgentStatus } from '../db/entities/Agent';
 import { sandboxTools } from '../tools/sandboxTools';
 import { emitDone, emitError, emitStatus } from '../stream/events';
-import type { AgentJobPayload } from './queue';
+import type { AgentJobPayload } from '../workflows/agent';
 import { buildDynamicTools } from '../tools/dynamic';
 import { getAgentById, saveMessage, saveAgentActivity, updateAgent } from './helpers/agents';
 import { commitAndPush, generateBranchName, getGithubTokenForUser } from './helpers/github';

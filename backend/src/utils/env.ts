@@ -26,11 +26,6 @@ export function validateEnvironment() {
     if (!process.env.VERCEL_TEAM_ID) errors.push('VERCEL_TEAM_ID environment variable is required');
     if (!process.env.VERCEL_PROJECT_ID) errors.push('VERCEL_PROJECT_ID environment variable is required');
 
-    // Redis
-    if (!process.env.REDIS_URL && !process.env.REDIS_HOST) {
-        errors.push('REDIS_URL or REDIS_HOST environment variable is required');
-    }
-
     // Optional: PostHog
     if (!process.env.POSTHOG_API_KEY) {
         console.warn('POSTHOG_API_KEY not set - analytics will be disabled');
