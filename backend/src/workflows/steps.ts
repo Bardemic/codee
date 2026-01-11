@@ -73,11 +73,15 @@ export async function createBranchIfNeeded(agent: Agent, sandbox: Sandbox, isOrc
         return branchName;
     }
 
-    // Checkout existing branch for follow-up messages
+    await sandbox.runCommand({
+        cmd: 'git',
+        args: ['fetch', 'origin', `${agent.githubBranchName}:refs/remotes/origin/${agent.githubBranchName}`],
+    });
+
     await emitStatus(agent.id, 'running', 'agent_checkout_branch', `checking out branch ${agent.githubBranchName}`);
     await sandbox.runCommand({
         cmd: 'git',
-        args: ['checkout', agent.githubBranchName],
+        args: ['checkout', '-b', agent.githubBranchName, 'FETCH_HEAD'],
     });
     return agent.githubBranchName;
 }
