@@ -34,9 +34,9 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
 
     try {
         const agent = await loadAgent(payload.agentId);
-        const { repositoryFullName, baseBranch, token } = await validateAndGetToken(agent, payload.repositoryFullName, payload.baseBranch);
+        const { repositoryFullName, token } = await validateAndGetToken(agent, payload.repositoryFullName);
 
-        sandbox = await prepareSandbox(agent, token, repositoryFullName, baseBranch);
+        sandbox = await prepareSandbox(agent, token, repositoryFullName, payload.baseBranch);
         if (!sandbox) throw new Error('Failed to create sandbox');
 
         const previousMessages = await loadPreviousMessages(payload.agentId);
@@ -73,9 +73,9 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
 
     try {
         const agent = await loadAgent(payload.agentId);
-        const { repositoryFullName, baseBranch, token } = await validateAndGetToken(agent, payload.repositoryFullName, payload.baseBranch);
+        const { repositoryFullName, token } = await validateAndGetToken(agent, payload.repositoryFullName);
 
-        sandbox = await prepareSandbox(agent, token, repositoryFullName, baseBranch);
+        sandbox = await prepareSandbox(agent, token, repositoryFullName, payload.baseBranch);
         if (!sandbox) throw new Error('Failed to create sandbox');
 
         await createBranchIfNeeded(agent, sandbox, payload.isOrchestratorAgent);

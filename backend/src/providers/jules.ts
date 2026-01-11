@@ -4,7 +4,7 @@ import { Agent, AgentStatus, ProviderType } from '../db/entities/Agent';
 import { AppDataSource } from '../db/data-source';
 import { z } from 'zod';
 import axios from 'axios';
-import { getIntegrationApiKey } from '../workers/helpers/agents';
+import { getIntegrationApiKey } from '../workflows/helpers/agents';
 import type { MessageImage } from '../db/entities/Message';
 
 export class JulesProvider implements CloudProvider {

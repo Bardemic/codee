@@ -15,7 +15,7 @@ export async function loadAgent(agentId: number) {
     return agent;
 }
 
-export async function validateAndGetToken(agent: Agent, repositoryFullName: string | undefined, baseBranch: string) {
+export async function validateAndGetToken(agent: Agent, repositoryFullName: string | undefined) {
     const repoName = repositoryFullName || agent.workspace.githubRepositoryName;
     if (!repoName) {
         await emitError(agent.id, 'missing_repository', 'No repository specified', 'agent_init');
@@ -28,7 +28,7 @@ export async function validateAndGetToken(agent: Agent, repositoryFullName: stri
         throw new Error('GitHub token missing');
     }
 
-    return { repositoryFullName: repoName, baseBranch, token };
+    return { repositoryFullName: repoName, token };
 }
 
 export async function prepareSandbox(agent: Agent, token: string, repositoryFullName: string, baseBranch: string) {
