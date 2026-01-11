@@ -224,7 +224,12 @@ async function loadPreviousMessages(agentId: number) {
 
 async function createBranchIfNeeded(agent: Agent, sandbox: Sandbox, isOrchestratorAgent: boolean) {
     'use step';
-    if (!agent.githubBranchName && !isOrchestratorAgent) {
+    if (isOrchestratorAgent) {
+        return null;
+    }
+
+    if (!agent.githubBranchName) {
+        // Create new branch for first-time agent
         const branchName = generateBranchName({ title: agent.workspace.name, agentId: agent.id });
         await emitStatus(agent.id, 'running', 'agent_create_branch', `creating branch ${branchName}`);
         await sandbox.runCommand({
@@ -239,6 +244,13 @@ async function createBranchIfNeeded(agent: Agent, sandbox: Sandbox, isOrchestrat
         await emitStatus(agent.id, 'running', 'agent_branch_created', branchName);
         return branchName;
     }
+
+    // Checkout existing branch for follow-up messages
+    await emitStatus(agent.id, 'running', 'agent_checkout_branch', `checking out branch ${agent.githubBranchName}`);
+    await sandbox.runCommand({
+        cmd: 'git',
+        args: ['checkout', agent.githubBranchName],
+    });
     return agent.githubBranchName;
 }
 
