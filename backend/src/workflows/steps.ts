@@ -5,9 +5,9 @@ import { Agent, AgentStatus } from '../db/entities/Agent';
 import { Message } from '../db/entities/Message';
 import { AppDataSource } from '../db/data-source';
 import { emitDone, emitError, emitStatus } from '../stream/events';
-import { getAgentById, saveMessage, saveAgentActivity, updateAgent } from '../workers/helpers/agents';
-import { commitAndPush, generateBranchName, getGithubTokenForUser } from '../workers/helpers/github';
-import { createSandbox } from '../workers/helpers/sandbox';
+import { getAgentById, saveMessage, saveAgentActivity, updateAgent } from './helpers/agents';
+import { commitAndPush, generateBranchName, getGithubTokenForUser } from './helpers/github';
+import { createSandbox } from './helpers/sandbox';
 
 export async function loadAgent(agentId: number) {
     const agent = await getAgentById(agentId);

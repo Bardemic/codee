@@ -2,7 +2,6 @@
 
 import { Sandbox } from '@vercel/sandbox';
 import { AgentStatus } from '../db/entities/Agent';
-import { updateAgent } from '../workers/helpers/agents';
 import { emitStatus } from '../stream/events';
 import { runAgentLLM, runOrchestratorAgentLLM } from './llm';
 import {
@@ -17,6 +16,7 @@ import {
     markAgentComplete,
     markAgentFailed,
 } from './steps';
+import { updateAgent } from './helpers/agents';
 
 export type AgentJobPayload = {
     agentId: number;
@@ -37,6 +37,7 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
         const { repositoryFullName, baseBranch, token } = await validateAndGetToken(agent, payload.repositoryFullName, payload.baseBranch);
 
         sandbox = await prepareSandbox(agent, token, repositoryFullName, baseBranch);
+        if (!sandbox) throw new Error('Failed to create sandbox');
 
         const previousMessages = await loadPreviousMessages(payload.agentId);
 
@@ -75,6 +76,7 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
         const { repositoryFullName, baseBranch, token } = await validateAndGetToken(agent, payload.repositoryFullName, payload.baseBranch);
 
         sandbox = await prepareSandbox(agent, token, repositoryFullName, baseBranch);
+        if (!sandbox) throw new Error('Failed to create sandbox');
 
         await createBranchIfNeeded(agent, sandbox, payload.isOrchestratorAgent);
 
