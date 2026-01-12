@@ -66,3 +66,13 @@ export async function getOrganizationMembers(organizationId: number) {
         order: { createdAt: 'ASC' },
     });
 }
+
+export async function getOrganizationIdByUserId(userId: string): Promise<number | null> {
+    const orgMemberRepo = AppDataSource.getRepository(OrganizationMember);
+
+    const membership = await orgMemberRepo.findOne({
+        where: { userId },
+    });
+
+    return membership?.organizationId || null;
+}

@@ -93,7 +93,7 @@ export class CursorProvider implements CloudProvider {
     }
 
     async getMessages(agent: Agent) {
-        const apiKey = await getIntegrationApiKey(agent.workspace.userId, 'cursor');
+        const apiKey = await getIntegrationApiKey(agent.workspace.organizationId, 'cursor');
 
         try {
             const response = await axios.get(`https://api.cursor.com/v0/agents/${agent.conversationId}/conversation`, {
@@ -136,7 +136,7 @@ export class CursorProvider implements CloudProvider {
     }
 
     async sendMessage(agent: Agent, message: string, images: MessageImage[]): Promise<boolean> {
-        const apiKey = await getIntegrationApiKey(agent.workspace.userId, 'cursor');
+        const apiKey = await getIntegrationApiKey(agent.workspace.organizationId, 'cursor');
 
         const payload = {
             prompt: {

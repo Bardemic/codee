@@ -23,7 +23,7 @@ export async function validateAndGetToken(agent: Agent, repositoryFullName: stri
         throw new Error('No repository specified');
     }
 
-    const token = await getGithubTokenForUser(agent.workspace.userId);
+    const token = await getGithubTokenForUser(agent.workspace.organizationId);
     if (!token) {
         await emitError(agent.id, 'github_token_missing', 'GitHub token missing', 'agent_init');
         throw new Error('GitHub token missing');

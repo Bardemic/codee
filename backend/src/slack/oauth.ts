@@ -7,6 +7,7 @@ import { IntegrationConnection } from '../db/entities/IntegrationConnection';
 import { IntegrationProvider } from '../db/entities/IntegrationProvider';
 import { SlackUserMapping } from '../db/entities/SlackUserMapping';
 import { workos, COOKIE_NAME } from '../auth/auth';
+import { getOrganizationIdByUserId } from '../services/organizationService';
 
 const router = Router();
 
@@ -180,15 +181,20 @@ router.get('/oauth/callback', async (req, res) => {
             return res.status(500).json({ error: 'Slack provider not found in database' });
         }
 
+        const organizationId = await getOrganizationIdByUserId(userId);
+        if (!organizationId) {
+            return res.status(500).json({ error: 'User has no organization' });
+        }
+
         const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
         let connection = await connectionRepository.findOne({
-            where: { userId, provider: { id: slackProvider.id } },
+            where: { organizationId, provider: { id: slackProvider.id } },
             relations: ['provider'],
         });
 
         if (!connection) {
             connection = connectionRepository.create({
-                userId,
+                organizationId,
                 provider: slackProvider,
                 externalId: team.id,
             });

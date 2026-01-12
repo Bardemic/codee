@@ -12,7 +12,7 @@ import { generateTitle } from '../utils/llm';
 import axios from 'axios';
 import { Like, In } from 'typeorm';
 
-export function createSlackTools(userId: string, slackChannel: string) {
+export function createSlackTools(organizationId: number, slackChannel: string) {
     const listWorkspacesInputSchema = z.object({
         limit: z.number().default(10).describe('Number of workspaces to return'),
     });
@@ -59,7 +59,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
                 const { limit } = input;
                 const workspaceRepository = AppDataSource.getRepository(Workspace);
                 const workspaces = await workspaceRepository.find({
-                    where: { userId },
+                    where: { organizationId },
                     relations: ['providerAgents'],
                     order: { createdAt: 'DESC' },
                     take: limit,
@@ -85,7 +85,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
                 const { workspace_id } = input;
                 const workspaceRepository = AppDataSource.getRepository(Workspace);
                 const workspace = await workspaceRepository.findOne({
-                    where: { id: workspace_id, userId },
+                    where: { id: workspace_id, organizationId },
                     relations: ['providerAgents'],
                 });
 
@@ -114,7 +114,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
                 const { query } = input;
                 const workspaceRepository = AppDataSource.getRepository(Workspace);
                 const workspaces = await workspaceRepository.find({
-                    where: { userId, name: Like(`%${query}%`) },
+                    where: { organizationId, name: Like(`%${query}%`) },
                     relations: ['providerAgents'],
                     order: { createdAt: 'DESC' },
                     take: 20,
@@ -139,7 +139,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
                 try {
                     const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
                     const connection = await connectionRepository.findOne({
-                        where: { userId, provider: { slug: 'github_app' } },
+                        where: { organizationId, provider: { slug: 'github_app' } },
                         relations: ['provider'],
                     });
 
@@ -152,7 +152,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
                         return { error: 'GitHub installation not found' };
                     }
 
-                    const token = await getGithubTokenForUser(userId);
+                    const token = await getGithubTokenForUser(organizationId);
 
                     const response = await axios.get('https://api.github.com/installation/repositories?per_page=100', {
                         headers: {
@@ -186,7 +186,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
                 });
 
                 const userConnections = await connectionRepository.find({
-                    where: { userId },
+                    where: { organizationId },
                     relations: ['provider'],
                 });
 
@@ -211,7 +211,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
             execute: async (input) => {
                 const { repository } = input;
                 try {
-                    const token = await getGithubTokenForUser(userId);
+                    const token = await getGithubTokenForUser(organizationId);
 
                     const response = await axios.get(`https://api.github.com/repos/${repository}/branches?per_page=100`, {
                         headers: {
@@ -240,7 +240,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
                 const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
 
                 const userConnections = await connectionRepository.find({
-                    where: { userId },
+                    where: { organizationId },
                     relations: ['provider', 'provider.tools'],
                 });
 
@@ -275,7 +275,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
 
                     let branchName = branch;
                     if (!branchName) {
-                        const token = await getGithubTokenForUser(userId);
+                        const token = await getGithubTokenForUser(organizationId);
                         const repoResponse = await axios.get(`https://api.github.com/repos/${repository}`, {
                             headers: {
                                 Authorization: `Bearer ${token}`,
@@ -287,7 +287,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
 
                     const newWorkspace = workspaceRepository.create({
                         name: title,
-                        userId,
+                        organizationId,
                         githubRepositoryName: repository,
                         currentBranch: branchName,
                         slackChannelId: slackChannel,
@@ -312,7 +312,7 @@ export function createSlackTools(userId: string, slackChannel: string) {
                     }
 
                     await createAgentsFromProviders({
-                        userId,
+                        organizationId,
                         workspace: newWorkspace,
                         repositoryFullName: repository,
                         message: prompt,
