@@ -11,6 +11,7 @@ import { generateTitle } from '../../utils/llm';
 import { In } from 'typeorm';
 import { CodeeProvider } from '../../providers/codee';
 import { generateBranchName } from '../../workflows/helpers/github';
+import { checkMessageQuota, trackMessageUsage } from '../../services/billingService';
 
 const providerConfig = z.object({
     name: z.string(),
@@ -78,6 +79,15 @@ export const workspaceRouter = router({
             })
         )
         .mutation(async ({ ctx, input }) => {
+            // Check message quota before creating workspace with initial message
+            const quota = await checkMessageQuota(ctx.organization.id);
+            if (!quota.allowed) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: `Message limit reached. You have used ${quota.limit} of ${quota.limit} messages this month. Please upgrade to send more messages.`,
+                });
+            }
+
             const title = await generateTitle(input.message);
             const workspaceRepository = AppDataSource.getRepository(Workspace);
             const toolRepository = AppDataSource.getRepository(Tool);
@@ -114,6 +124,8 @@ export const workspaceRouter = router({
                 await workspaceToolRepository.save(workspaceTools);
             }
 
+            let agentId: number;
+
             if (!input.sub_agents) {
                 const firstAgent = await createAgentsFromProviders({
                     organizationId: ctx.organization.id,
@@ -125,7 +137,7 @@ export const workspaceRouter = router({
                     cloudProviders: input.cloud_providers,
                     images: input.images,
                 });
-                return { agent_id: firstAgent.id };
+                agentId = firstAgent.id;
             } else {
                 const orchestratorAgent = await new CodeeProvider().createAgent({
                     organizationId: ctx.organization.id,
@@ -137,8 +149,13 @@ export const workspaceRouter = router({
                     isOrchestratorAgent: true,
                     images: input.images,
                 });
-                return { agent_id: orchestratorAgent.id };
+                agentId = orchestratorAgent.id;
             }
+
+            // Track message usage for the initial message
+            await trackMessageUsage(ctx.organization.id);
+
+            return { agent_id: agentId };
         }),
 
     messages: authedProcedure.input(z.object({ agent_id: z.number() })).query(async ({ ctx, input }) => {
@@ -158,6 +175,15 @@ export const workspaceRouter = router({
     sendMessage: authedProcedure
         .input(z.object({ agent_id: z.number(), message: z.string(), images: z.array(imageSchema).default([]) }))
         .mutation(async ({ ctx, input }) => {
+            // Check message quota before sending
+            const quota = await checkMessageQuota(ctx.organization.id);
+            if (!quota.allowed) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: `Message limit reached. You have used ${quota.limit} of ${quota.limit} messages this month. Please upgrade to send more messages.`,
+                });
+            }
+
             const agent = await AppDataSource.getRepository(Agent).findOne({
                 where: { id: input.agent_id },
                 relations: ['workspace'],
@@ -174,6 +200,12 @@ export const workspaceRouter = router({
             }
             const provider = new ProviderClass();
             const success = await provider.sendMessage(agent, input.message, input.images);
+
+            // Track message usage after successful send
+            if (success) {
+                await trackMessageUsage(ctx.organization.id);
+            }
+
             return { ok: success };
         }),
 

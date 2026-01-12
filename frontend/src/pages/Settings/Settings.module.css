@@ -101,3 +101,130 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
+
+/* Billing Section */
+.billingContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.usageInfo {
+    background-color: var(--color-sidebar-bg);
+    border: 1px solid #242830;
+    border-radius: 4px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.usageText {
+    font-size: 14px;
+    color: var(--color-foreground);
+}
+
+.usageBar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--color-background);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 8px;
+}
+
+.usageBarFill {
+    height: 100%;
+    background-color: #4caf50;
+    transition: width 0.3s ease;
+}
+
+.plansGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.planCard {
+    background-color: var(--color-sidebar-bg);
+    border: 1px solid #242830;
+    border-radius: 4px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+}
+
+.planCard h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-foreground);
+    margin: 0;
+}
+
+.planPrice {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-foreground);
+}
+
+.planFeatures {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.planFeatures li {
+    font-size: 14px;
+    color: var(--color-muted);
+    padding-left: 20px;
+    position: relative;
+}
+
+.planFeatures li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #4caf50;
+}
+
+.currentPlan {
+    border-color: #4caf50;
+}
+
+.currentBadge {
+    background-color: #4caf50;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    margin-top: auto;
+}
+
+.upgradeButton {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: auto;
+}
+
+.upgradeButton:hover:not(:disabled) {
+    background-color: #45a049;
+}
+
+.upgradeButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

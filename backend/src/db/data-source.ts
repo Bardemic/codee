@@ -14,6 +14,7 @@ import { WorkspaceTool } from './entities/WorkspaceTool';
 import { WorkerDefinitionTool } from './entities/WorkerDefinitionTool';
 import { seedDefaults } from './seed';
 import { SlackUserMapping } from './entities/SlackUserMapping';
+import { Subscription } from './entities/Subscription';
 
 const {
     PGHOST = 'localhost',
@@ -51,6 +52,7 @@ export const AppDataSource = new DataSource({
         WorkspaceTool,
         WorkerDefinitionTool,
         SlackUserMapping,
+        Subscription,
     ],
 });
 
