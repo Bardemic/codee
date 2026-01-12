@@ -11,7 +11,7 @@ export class CursorProvider implements CloudProvider {
     slug = 'Cursor';
 
     async createAgent({
-        userId,
+        organizationId,
         workspace,
         repositoryFullName,
         message,
@@ -19,7 +19,7 @@ export class CursorProvider implements CloudProvider {
         baseBranch,
         images,
     }: {
-        userId: string;
+        organizationId: number;
         workspace: Workspace;
         repositoryFullName: string;
         message: string;
@@ -41,7 +41,7 @@ export class CursorProvider implements CloudProvider {
         });
         await agentRepository.save(agent);
 
-        const apiKey = await getIntegrationApiKey(userId, 'cursor');
+        const apiKey = await getIntegrationApiKey(organizationId, 'cursor');
 
         const payload = {
             prompt: {

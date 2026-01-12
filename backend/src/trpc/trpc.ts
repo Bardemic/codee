@@ -15,5 +15,11 @@ export const authedProcedure = t.procedure.use(({ ctx, next }) => {
     if (!ctx.user) {
         throw new TRPCError({ code: 'UNAUTHORIZED' });
     }
-    return next({ ctx: { ...ctx, user: ctx.user } });
+    if (!ctx.organization) {
+        throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'No organization found for user',
+        });
+    }
+    return next({ ctx: { ...ctx, user: ctx.user, organization: ctx.organization } });
 });

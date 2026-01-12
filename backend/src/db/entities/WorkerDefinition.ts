@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index, OneToMany, ManyToOne } from 'typeorm';
 import type { WorkerDefinitionTool } from './WorkerDefinitionTool';
+import type { Organization } from './Organization';
 
 @Entity()
-@Index(['slug', 'userId'], { unique: true })
+@Index(['slug', 'organizationId'], { unique: true })
 export class WorkerDefinition {
     @PrimaryGeneratedColumn()
     id!: number;
@@ -11,7 +12,12 @@ export class WorkerDefinition {
     prompt!: string;
 
     @Column()
-    userId!: string;
+    organizationId!: number;
+
+    @ManyToOne('Organization', {
+        onDelete: 'CASCADE',
+    })
+    organization!: Organization;
 
     @CreateDateColumn()
     createdAt!: Date;

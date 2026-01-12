@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { workos, COOKIE_NAME, config } from '../auth/auth';
+import { ensureUserHasOrganization } from '../services/organizationService';
+import { AuthenticateWithSessionCookieFailureReason } from '@workos-inc/node';
 
 const router = Router();
 
@@ -29,6 +31,9 @@ router.get('/callback', async (req, res) => {
                 cookiePassword: config.cookiePassword,
             },
         });
+
+        // Auto-create organization if this is first login
+        await ensureUserHasOrganization(user);
 
         res.cookie(COOKIE_NAME, sealedSession, {
             path: '/',
@@ -90,21 +95,19 @@ router.get('/session', async (req, res) => {
         const authResult = await session.authenticate();
 
         if (!authResult.authenticated) {
-            // Try to refresh the session if authentication failed
-            if (authResult.reason === 'session_expired') {
-                try {
-                    const { sealedSession: newSealedSession } = await session.refresh();
+            try {
+                const sessionResponse = await session.refresh();
 
-                    res.cookie(COOKIE_NAME, newSealedSession, {
+                if (sessionResponse.authenticated && sessionResponse.sealedSession) {
+                    res.cookie(COOKIE_NAME, sessionResponse.sealedSession, {
                         path: '/',
                         httpOnly: true,
                         secure: process.env.NODE_ENV === 'production',
                         sameSite: 'lax',
                     });
 
-                    // Re-authenticate with the new session
                     const newSession = workos.userManagement.loadSealedSession({
-                        sessionData: newSealedSession,
+                        sessionData: sessionResponse.sealedSession,
                         cookiePassword: config.cookiePassword,
                     });
                     const newAuthResult = await newSession.authenticate();
@@ -112,9 +115,9 @@ router.get('/session', async (req, res) => {
                     if (newAuthResult.authenticated && 'user' in newAuthResult) {
                         return res.json({ authenticated: true, user: newAuthResult.user });
                     }
-                } catch (refreshError) {
-                    console.error('Session refresh failed:', refreshError);
                 }
+            } catch (refreshError) {
+                console.error('Session refresh failed:', refreshError);
             }
 
             res.clearCookie(COOKIE_NAME);

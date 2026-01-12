@@ -79,10 +79,10 @@ export async function updateAgent(agent: Agent, updates: Partial<Agent>) {
     return savedAgent;
 }
 
-export async function getIntegrationApiKey(userId: string, providerSlug: string): Promise<string> {
+export async function getIntegrationApiKey(organizationId: number, providerSlug: string): Promise<string> {
     const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
     const connection = await connectionRepository.findOne({
-        where: { userId, provider: { slug: providerSlug } },
+        where: { organizationId, provider: { slug: providerSlug } },
         relations: ['provider'],
     });
 

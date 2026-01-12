@@ -1,17 +1,19 @@
 import { workos, COOKIE_NAME } from '../auth/auth';
 import type { Request, Response } from 'express';
+import { getUserOrganization } from '../services/organizationService';
 
 export type Context = {
     req: Request;
     res: Response;
     user: { id: string; email: string } | null;
+    organization: { id: number; name: string; workosOrganizationId: string } | null;
 };
 
 export async function createContext({ req, res }: { req: Request; res: Response }) {
     const sealedSession = req.cookies[COOKIE_NAME];
 
     if (!sealedSession) {
-        return { req, res, user: null };
+        return { req, res, user: null, organization: null };
     }
 
     try {
@@ -23,46 +25,47 @@ export async function createContext({ req, res }: { req: Request; res: Response 
         const authResult = await session.authenticate();
 
         if (!authResult.authenticated) {
-            // Try to refresh the session if authentication failed
-            if (authResult.reason === 'session_expired') {
-                try {
-                    const { sealedSession: newSealedSession } = await session.refresh();
+            try {
+                const sessionResponse = await session.refresh();
 
-                    res.cookie(COOKIE_NAME, newSealedSession, {
+                if (sessionResponse.authenticated && sessionResponse.sealedSession) {
+                    res.cookie(COOKIE_NAME, sessionResponse.sealedSession, {
                         path: '/',
                         httpOnly: true,
                         secure: process.env.NODE_ENV === 'production',
                         sameSite: 'lax',
+                        maxAge: 30 * 24 * 60 * 60 * 1000,
                     });
 
-                    // Re-authenticate with the new session
                     const newSession = workos.userManagement.loadSealedSession({
-                        sessionData: newSealedSession,
+                        sessionData: sessionResponse.sealedSession,
                         cookiePassword: process.env.WORKOS_COOKIE_PASSWORD!,
                     });
                     const newAuthResult = await newSession.authenticate();
 
                     if (newAuthResult.authenticated && 'user' in newAuthResult) {
                         const user = newAuthResult.user;
-                        return { req, res, user: { id: user.id, email: user.email } };
+                        const organization = await getUserOrganization(user.id);
+                        return { req, res, user: { id: user.id, email: user.email }, organization };
                     }
-                } catch (refreshError) {
-                    console.error('TRPC context session refresh failed:', refreshError);
                 }
+            } catch (refreshError) {
+                console.error('TRPC context session refresh failed:', refreshError);
             }
 
-            return { req, res, user: null };
+            return { req, res, user: null, organization: null };
         }
 
-        if (!('user' in authResult)) {
-            return { req, res, user: null };
+        if ('user' in authResult) {
+            const user = authResult.user;
+            const organization = await getUserOrganization(user.id);
+            return { req, res, user: { id: user.id, email: user.email }, organization };
         }
 
-        const user = authResult.user;
-        return { req, res, user: { id: user.id, email: user.email } };
+        return { req, res, user: null, organization: null };
     } catch (error) {
         console.error('TRPC context session validation error:', error);
-        return { req, res, user: null };
+        return { req, res, user: null, organization: null };
     }
 }
 

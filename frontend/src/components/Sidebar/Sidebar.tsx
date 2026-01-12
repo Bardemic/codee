@@ -4,7 +4,7 @@ import SidebarButton from './SidebarButton';
 import { useAuth } from '../../lib/useAuth';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { trpc } from '../../lib/trpc';
-import { FiHome, FiGrid, FiUsers, FiLogOut } from 'react-icons/fi';
+import { FiHome, FiGrid, FiUsers, FiLogOut, FiSettings } from 'react-icons/fi';
 import codeeLogo from '../../assets/svgs/CodeeLogo.svg';
 
 type SidebarProps = {
@@ -16,12 +16,8 @@ export default function Sidebar({ children }: SidebarProps) {
     const { refresh } = useAuth();
     const { data: workspaces } = trpc.workspace.list.useQuery();
 
-    async function handleSignOut() {
-        await fetch('http://localhost:5001/api/auth/logout', {
-            credentials: 'include',
-        });
-        refresh();
-        navigate('/login');
+    function handleSignOut() {
+        window.location.href = 'http://localhost:5001/api/auth/logout';
     }
 
     return (
@@ -52,6 +48,7 @@ export default function Sidebar({ children }: SidebarProps) {
                     )}
                 </div>
                 <div className={styles.profileSection}>
+                    <SidebarButton text="Settings" to="/settings" icon={<FiSettings size={16} />} />
                     <SidebarButton text="Logout" onClick={handleSignOut} icon={<FiLogOut size={16} />} />
                 </div>
             </nav>
