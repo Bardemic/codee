@@ -1,30 +1,28 @@
-import { betterAuth } from 'better-auth';
-import { Pool } from 'pg';
+import { WorkOS } from '@workos-inc/node';
 
-const { PGHOST = 'localhost', PGPORT = '5432', PGUSER = 'postgres', PGPASSWORD = '', PGDATABASE = 'codee', PGSSL = 'false' } = process.env;
+const { WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_COOKIE_PASSWORD, WORKOS_REDIRECT_URI = 'http://localhost:5001/api/auth/callback' } = process.env;
 
-const pool = new Pool({
-    host: PGHOST,
-    port: Number(PGPORT),
-    user: PGUSER,
-    password: PGPASSWORD,
-    database: PGDATABASE,
-    ssl: PGSSL === 'true' ? { rejectUnauthorized: false } : undefined,
+if (!WORKOS_API_KEY) {
+    throw new Error('WORKOS_API_KEY environment variable is not set');
+}
+
+if (!WORKOS_CLIENT_ID) {
+    throw new Error('WORKOS_CLIENT_ID environment variable is not set');
+}
+
+if (!WORKOS_COOKIE_PASSWORD) {
+    throw new Error('WORKOS_COOKIE_PASSWORD environment variable is not set');
+}
+
+export const workos = new WorkOS(WORKOS_API_KEY, {
+    clientId: WORKOS_CLIENT_ID,
 });
 
-export const auth = betterAuth({
-    database: pool,
-    baseURL: 'http://localhost:5001',
-    basePath: '/api/auth',
-    emailAndPassword: {
-        enabled: true,
-    },
-    trustedOrigins: ['http://localhost:5173'],
-    advanced: {
-        useSecureCookies: false,
-        defaultCookieAttributes: {
-            sameSite: 'lax',
-            path: '/',
-        },
-    },
-});
+export const COOKIE_NAME = 'wos-session';
+
+export const config = {
+    apiKey: WORKOS_API_KEY,
+    clientId: WORKOS_CLIENT_ID,
+    cookiePassword: WORKOS_COOKIE_PASSWORD,
+    redirectUri: WORKOS_REDIRECT_URI,
+};

@@ -1,29 +1,97 @@
 import { Router } from 'express';
 import axios from 'axios';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { AppDataSource } from '../db/data-source';
 import { IntegrationConnection } from '../db/entities/IntegrationConnection';
 import { IntegrationProvider } from '../db/entities/IntegrationProvider';
 import { SlackUserMapping } from '../db/entities/SlackUserMapping';
-import { auth } from '../auth/auth';
-import { fromNodeHeaders } from 'better-auth/node';
+import { workos, COOKIE_NAME } from '../auth/auth';
+import { getOrganizationIdByUserId } from '../services/organizationService';
 
 const router = Router();
 
 const SLACK_CLIENT_ID = process.env.SLACK_CLIENT_ID || '';
 const SLACK_CLIENT_SECRET = process.env.SLACK_CLIENT_SECRET || '';
 const SLACK_REDIRECT_URI = process.env.SLACK_REDIRECT_URI || 'http://localhost:5001/api/slack/oauth/callback';
+const SLACK_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const SLACK_OAUTH_STATE_SECRET = process.env.SLACK_OAUTH_STATE_SECRET || process.env.WORKOS_COOKIE_PASSWORD || '';
+
+type SlackOAuthState = {
+    userId: string;
+    nonce: string;
+    issuedAt: number;
+};
+
+const signSlackState = (payload: SlackOAuthState) => {
+    if (!SLACK_OAUTH_STATE_SECRET) {
+        throw new Error('SLACK_OAUTH_STATE_SECRET is not set');
+    }
+
+    const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const signature = crypto.createHmac('sha256', SLACK_OAUTH_STATE_SECRET).update(body).digest('base64url');
+    return `${body}.${signature}`;
+};
+
+const verifySlackState = (state: string) => {
+    if (!SLACK_OAUTH_STATE_SECRET) {
+        return null;
+    }
+
+    const [body, signature] = state.split('.');
+    if (!body || !signature) {
+        return null;
+    }
+
+    const expected = crypto.createHmac('sha256', SLACK_OAUTH_STATE_SECRET).update(body).digest();
+    const provided = Buffer.from(signature, 'base64url');
+    if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+        return null;
+    }
+
+    let payload: SlackOAuthState;
+    try {
+        payload = JSON.parse(Buffer.from(body, 'base64url').toString());
+    } catch {
+        return null;
+    }
+
+    if (!payload.userId || !payload.issuedAt || !payload.nonce) {
+        return null;
+    }
+
+    if (Date.now() - payload.issuedAt > SLACK_OAUTH_STATE_TTL_MS) {
+        return null;
+    }
+
+    return payload;
+};
 
 router.get('/oauth', async (req, res) => {
-    const session = await auth.api.getSession({
-        headers: fromNodeHeaders(req.headers),
-    });
+    const sealedSession = req.cookies[COOKIE_NAME];
 
-    if (!session?.user) {
+    if (!sealedSession) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const state = Buffer.from(JSON.stringify({ userId: session.user.id })).toString('base64');
+    const session = workos.userManagement.loadSealedSession({
+        sessionData: sealedSession,
+        cookiePassword: process.env.WORKOS_COOKIE_PASSWORD!,
+    });
+
+    const authResult = await session.authenticate();
+
+    if (!authResult.authenticated || !('user' in authResult)) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const user = authResult.user;
+
+    const state = signSlackState({
+        userId: user.id,
+        nonce: crypto.randomBytes(16).toString('base64url'),
+        issuedAt: Date.now(),
+    });
 
     const authUrl = new URL('https://slack.com/oauth/v2/authorize');
     authUrl.searchParams.set('client_id', SLACK_CLIENT_ID);
@@ -35,6 +103,23 @@ router.get('/oauth', async (req, res) => {
 });
 
 router.get('/oauth/callback', async (req, res) => {
+    const sealedSession = req.cookies[COOKIE_NAME];
+
+    if (!sealedSession) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const session = workos.userManagement.loadSealedSession({
+        sessionData: sealedSession,
+        cookiePassword: process.env.WORKOS_COOKIE_PASSWORD!,
+    });
+
+    const authResult = await session.authenticate();
+
+    if (!authResult.authenticated || !('user' in authResult)) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
     const code = req.query.code as string;
     const state = req.query.state as string;
 
@@ -42,12 +127,14 @@ router.get('/oauth/callback', async (req, res) => {
         return res.status(400).json({ error: 'Missing code or state' });
     }
 
-    let userId: string;
-    try {
-        const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
-        userId = decoded.userId;
-    } catch {
+    const payload = verifySlackState(state);
+    if (!payload) {
         return res.status(400).json({ error: 'Invalid state' });
+    }
+
+    const userId = payload.userId;
+    if (userId !== authResult.user.id) {
+        return res.status(403).json({ error: 'Invalid state for user' });
     }
 
     try {
@@ -94,15 +181,20 @@ router.get('/oauth/callback', async (req, res) => {
             return res.status(500).json({ error: 'Slack provider not found in database' });
         }
 
+        const organizationId = await getOrganizationIdByUserId(userId);
+        if (!organizationId) {
+            return res.status(500).json({ error: 'User has no organization' });
+        }
+
         const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
         let connection = await connectionRepository.findOne({
-            where: { userId, provider: { id: slackProvider.id } },
+            where: { organizationId, provider: { id: slackProvider.id } },
             relations: ['provider'],
         });
 
         if (!connection) {
             connection = connectionRepository.create({
-                userId,
+                organizationId,
                 provider: slackProvider,
                 externalId: team.id,
             });

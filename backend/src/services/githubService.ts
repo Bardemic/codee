@@ -4,13 +4,13 @@ import { IntegrationConnection } from '../db/entities/IntegrationConnection';
 import { getInstallationToken } from '../utils/github';
 
 /**
- * Get GitHub access token for a user by their user ID.
+ * Get GitHub access token for an organization by their organization ID.
  * This centralizes GitHub token fetching logic used across the codebase.
  */
-export async function getGithubTokenForUser(userId: string): Promise<string> {
+export async function getGithubTokenForUser(organizationId: number): Promise<string> {
     const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
     const connection = await connectionRepository.findOne({
-        where: { userId, provider: { slug: 'github_app' } },
+        where: { organizationId, provider: { slug: 'github_app' } },
         relations: ['provider'],
     });
 

@@ -18,7 +18,7 @@ export type CloudProviderConfig = {
 };
 
 export async function createAgentsFromProviders(params: {
-    userId: string;
+    organizationId: number;
     workspace: Workspace;
     repositoryFullName: string;
     message: string;
@@ -34,7 +34,7 @@ export async function createAgentsFromProviders(params: {
         const provider = new ProviderClass();
         for (const agentConfig of config.agents) {
             const agent = await provider.createAgent({
-                userId: params.userId,
+                organizationId: params.organizationId,
                 workspace: params.workspace,
                 repositoryFullName: params.repositoryFullName,
                 message: params.message,

@@ -21,7 +21,7 @@ export const integrationsRouter = router({
         });
 
         const userConnections = await AppDataSource.getRepository(IntegrationConnection).find({
-            where: { userId: ctx.user.id },
+            where: { organizationId: ctx.organization.id },
             relations: ['provider'],
         });
 
@@ -99,7 +99,7 @@ export const integrationsRouter = router({
 
         const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
         const existing = await connectionRepository.findOne({
-            where: { userId: ctx.user.id, provider: { id: provider.id } },
+            where: { organizationId: ctx.organization.id, provider: { id: provider.id } },
             relations: ['provider'],
         });
         if (existing) {
@@ -110,7 +110,7 @@ export const integrationsRouter = router({
         }
 
         const connection = connectionRepository.create({
-            userId: ctx.user.id,
+            organizationId: ctx.organization.id,
             provider,
             externalId: typeof input.data.external_id === 'string' ? input.data.external_id : '',
         });
@@ -149,7 +149,7 @@ export const integrationsRouter = router({
     disconnect: authedProcedure.input(z.object({ connectionId: z.number() })).mutation(async ({ ctx, input }) => {
         const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
         const connection = await connectionRepository.findOne({
-            where: { id: input.connectionId, userId: ctx.user.id },
+            where: { id: input.connectionId, organizationId: ctx.organization.id },
         });
         if (!connection) throw new TRPCError({ code: 'NOT_FOUND' });
         await connectionRepository.remove(connection);
@@ -159,14 +159,10 @@ export const integrationsRouter = router({
     repositories: authedProcedure.query(async ({ ctx }) => {
         const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
         const connection = await connectionRepository.findOne({
-            where: { userId: ctx.user.id, provider: { slug: 'github_app' } },
+            where: { organizationId: ctx.organization.id, provider: { slug: 'github_app' } },
             relations: ['provider'],
         });
-        if (!connection)
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'GitHub not connected',
-            });
+        if (!connection) return [];
 
         const installationId = connection.getDataConfig()?.installation_id;
         if (!installationId)
@@ -216,7 +212,7 @@ export const integrationsRouter = router({
             })
         )
         .query(async ({ ctx, input }) => {
-            const token = await getGithubTokenForUser(ctx.user.id);
+            const token = await getGithubTokenForUser(ctx.organization.id);
 
             const responseSchema = z.array(
                 z.object({

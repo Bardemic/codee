@@ -21,7 +21,7 @@ export class CodeeProvider implements CloudProvider {
         isOrchestratorAgent,
         images,
     }: {
-        userId: string;
+        organizationId: number;
         workspace: Workspace;
         repositoryFullName: string;
         message: string;

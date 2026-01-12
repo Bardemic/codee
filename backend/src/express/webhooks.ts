@@ -51,7 +51,7 @@ async function createWorkspaceFromWebhook(params: {
     const title = await generateTitle(params.message);
     const workspace = workspaceRepository.create({
         githubRepositoryName: params.repository,
-        userId: params.worker.userId,
+        organizationId: params.worker.organizationId,
         name: title,
         workerId: params.worker.id,
         currentBranch: params.currentBranch,
@@ -74,7 +74,7 @@ async function createWorkspaceFromWebhook(params: {
 
     const toolSlugs = tools.map((tool) => tool.slugName);
     await createAgentsFromProviders({
-        userId: params.worker.userId,
+        organizationId: params.worker.organizationId,
         workspace,
         repositoryFullName: params.repository,
         message: params.message,

@@ -24,7 +24,7 @@ const workerInput = z.object({
 export const workersRouter = router({
     list: authedProcedure.query(async ({ ctx }) => {
         const workers = await AppDataSource.getRepository(WorkerDefinition).find({
-            where: { userId: ctx.user.id },
+            where: { organizationId: ctx.organization.id },
             relations: ['tools', 'tools.tool'],
             order: { id: 'DESC' },
         });
@@ -77,7 +77,7 @@ export const workersRouter = router({
     create: authedProcedure.input(workerInput).mutation(async ({ ctx, input }) => {
         const workerRepository = AppDataSource.getRepository(WorkerDefinition);
         const existing = await workerRepository.findOne({
-            where: { slug: input.slug, userId: ctx.user.id },
+            where: { slug: input.slug, organizationId: ctx.organization.id },
         });
         if (existing)
             throw new TRPCError({
@@ -104,7 +104,7 @@ export const workersRouter = router({
         const worker = workerRepository.create({
             prompt: input.prompt,
             slug: input.slug,
-            userId: ctx.user.id,
+            organizationId: ctx.organization.id,
             cloudProviders: providers,
             key: input.key || null,
         });
@@ -118,12 +118,12 @@ export const workersRouter = router({
     update: authedProcedure.input(workerInput.extend({ id: z.number() })).mutation(async ({ ctx, input }) => {
         const workerRepository = AppDataSource.getRepository(WorkerDefinition);
         const worker = await workerRepository.findOne({
-            where: { id: input.id, userId: ctx.user.id },
+            where: { id: input.id, organizationId: ctx.organization.id },
         });
         if (!worker) throw new TRPCError({ code: 'NOT_FOUND' });
 
         const duplicate = await workerRepository.findOne({
-            where: { slug: input.slug, userId: ctx.user.id },
+            where: { slug: input.slug, organizationId: ctx.organization.id },
         });
         if (duplicate && duplicate.id !== worker.id) {
             throw new TRPCError({
@@ -163,7 +163,7 @@ export const workersRouter = router({
     delete: authedProcedure.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {
         const workerRepository = AppDataSource.getRepository(WorkerDefinition);
         const worker = await workerRepository.findOne({
-            where: { id: input.id, userId: ctx.user.id },
+            where: { id: input.id, organizationId: ctx.organization.id },
         });
         if (!worker) throw new TRPCError({ code: 'NOT_FOUND' });
         await workerRepository.remove(worker);

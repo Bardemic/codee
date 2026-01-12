@@ -1,9 +1,9 @@
 import type { Sandbox } from '@vercel/sandbox';
 import { getGithubTokenForUser as getGithubToken } from '../../services/githubService';
 
-export async function getGithubTokenForUser(userId: string): Promise<string | null> {
+export async function getGithubTokenForUser(organizationId: number): Promise<string | null> {
     try {
-        return await getGithubToken(userId);
+        return await getGithubToken(organizationId);
     } catch {
         return null;
     }

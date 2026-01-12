@@ -11,7 +11,7 @@ export class JulesProvider implements CloudProvider {
     slug = 'Jules';
 
     async createAgent({
-        userId,
+        organizationId,
         workspace,
         repositoryFullName,
         message,
@@ -19,7 +19,7 @@ export class JulesProvider implements CloudProvider {
         baseBranch,
         isOrchestratorAgent,
     }: {
-        userId: string;
+        organizationId: number;
         workspace: Workspace;
         repositoryFullName: string;
         message: string;
@@ -42,7 +42,7 @@ export class JulesProvider implements CloudProvider {
         });
         await agentRepository.save(agent);
 
-        const apiKey = await getIntegrationApiKey(userId, 'jules');
+        const apiKey = await getIntegrationApiKey(organizationId, 'jules');
 
         const payload = {
             prompt: message,
@@ -92,7 +92,7 @@ export class JulesProvider implements CloudProvider {
     }
 
     async getMessages(agent: Agent) {
-        const apiKey = await getIntegrationApiKey(agent.workspace.userId, 'jules');
+        const apiKey = await getIntegrationApiKey(agent.workspace.organizationId, 'jules');
 
         try {
             const [sessionResponse, activitiesResponse] = await Promise.all([
@@ -193,7 +193,7 @@ export class JulesProvider implements CloudProvider {
     async sendMessage(agent: Agent, message: string, _images: MessageImage[]): Promise<boolean> {
         // jules api doesn't support images (99% sure, nothing in docs, but does via Jules site)
         // probably should add ui indication that jules doesn't support images
-        const apiKey = await getIntegrationApiKey(agent.workspace.userId, 'jules');
+        const apiKey = await getIntegrationApiKey(agent.workspace.organizationId, 'jules');
 
         const payload = {
             prompt: message,

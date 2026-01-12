@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
+import { AuthProvider } from './lib/useAuth';
 import Login from './pages/Login/Login';
-import Register from './pages/Register/Register';
 import Home from './pages/Home/Home';
 import Sidebar from './components/Sidebar/Sidebar';
 import Integrations from './pages/Integrations/Integrations';
 import Workspace from './pages/Workspace/Workspace';
 import Workers from './pages/Workers/Workers';
+import Settings from './pages/Settings/Settings';
 import './app.css';
 
 function SidebarLayout() {
@@ -18,18 +19,20 @@ function SidebarLayout() {
 
 function App() {
     return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<SidebarLayout />}>
-                    <Route index element={<Home />} />
-                    <Route path="integrations" element={<Integrations />} />
-                    <Route path="workers" element={<Workers />} />
-                    <Route path="agent/:agentId" element={<Workspace />} />
-                </Route>
-                <Route path="login" element={<Login />} />
-                <Route path="register" element={<Register />} />
-            </Routes>
-        </Router>
+        <AuthProvider>
+            <Router>
+                <Routes>
+                    <Route path="/" element={<SidebarLayout />}>
+                        <Route index element={<Home />} />
+                        <Route path="integrations" element={<Integrations />} />
+                        <Route path="workers" element={<Workers />} />
+                        <Route path="settings" element={<Settings />} />
+                        <Route path="agent/:agentId" element={<Workspace />} />
+                    </Route>
+                    <Route path="login" element={<Login />} />
+                </Routes>
+            </Router>
+        </AuthProvider>
     );
 }
 

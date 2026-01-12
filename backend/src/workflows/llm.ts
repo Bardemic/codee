@@ -64,7 +64,7 @@ export async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, to
     const userImages = previousMessages.filter((message) => message.sender === 'USER').flatMap((message) => message.images);
     const orchestratorAgentTools = buildOrchestratorAgentTools({
         agentId: agent.id,
-        userId: agent.workspace.userId,
+        organizationId: agent.workspace.organizationId,
         workspace: agent.workspace,
         repositoryFullName: agent.workspace.githubRepositoryName,
         baseBranch: agent.workspace.currentBranch,
