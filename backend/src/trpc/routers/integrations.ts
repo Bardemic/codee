@@ -162,11 +162,7 @@ export const integrationsRouter = router({
             where: { userId: ctx.user.id, provider: { slug: 'github_app' } },
             relations: ['provider'],
         });
-        if (!connection)
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'GitHub not connected',
-            });
+        if (!connection) return [];
 
         const installationId = connection.getDataConfig()?.installation_id;
         if (!installationId)
