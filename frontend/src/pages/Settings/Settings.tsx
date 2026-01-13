@@ -7,10 +7,21 @@ export default function Settings() {
     const utils = trpc.useUtils();
     const { data: organization } = trpc.organization.get.useQuery();
     const { data: members } = trpc.organization.listMembers.useQuery();
+    const { data: subscription } = trpc.payment.getSubscriptionStatus.useQuery();
     const updateName = trpc.organization.updateName.useMutation({
         onSuccess: () => {
             utils.organization.get.invalidate();
             setIsEditing(false);
+        },
+    });
+    const createCheckout = trpc.payment.createCheckoutSession.useMutation({
+        onSuccess: (data) => {
+            window.location.href = data.url;
+        },
+    });
+    const createPortal = trpc.payment.createPortalSession.useMutation({
+        onSuccess: (data) => {
+            window.location.href = data.url;
         },
     });
 
@@ -73,6 +84,68 @@ export default function Settings() {
                         </div>
                     ))}
                 </div>
+            </section>
+
+            <section className={styles.section}>
+                <h2>Billing & Usage</h2>
+                {subscription && (
+                    <>
+                        <div className={styles.usageInfo}>
+                            <p>
+                                <strong>Current Plan:</strong> {subscription.tier}
+                            </p>
+                            <p>
+                                <strong>Messages Used:</strong> {subscription.usage.messageCount} / {subscription.usage.messageLimit}
+                            </p>
+                            {subscription.usage.percentUsed >= 80 && (
+                                <p className={styles.warningText}>You've used {subscription.usage.percentUsed}% of your messages this billing period.</p>
+                            )}
+                        </div>
+
+                        <div className={styles.plansContainer}>
+                            {subscription.plans.map((plan) => (
+                                <div key={plan.tier} className={`${styles.planCard} ${subscription.tier === plan.tier ? styles.currentPlan : ''}`}>
+                                    <h3>{plan.name}</h3>
+                                    <p className={styles.planDescription}>{plan.description}</p>
+                                    <p className={styles.planPrice}>{plan.priceMonthly === 0 ? 'Free' : `$${plan.priceMonthly / 100}/month`}</p>
+                                    <p className={styles.planMessages}>{plan.messageLimit} messages/month</p>
+
+                                    {subscription.tier === plan.tier ? (
+                                        <button className={styles.planButton} disabled>
+                                            Current Plan
+                                        </button>
+                                    ) : plan.tier === 'FREE' ? (
+                                        subscription.stripeSubscriptionId ? (
+                                            <button
+                                                className={styles.planButton}
+                                                onClick={() => createPortal.mutate()}
+                                                disabled={createPortal.isPending}
+                                            >
+                                                {createPortal.isPending ? 'Loading...' : 'Manage Subscription'}
+                                            </button>
+                                        ) : null
+                                    ) : (
+                                        <button
+                                            className={styles.planButton}
+                                            onClick={() => createCheckout.mutate()}
+                                            disabled={createCheckout.isPending}
+                                        >
+                                            {createCheckout.isPending ? 'Loading...' : 'Upgrade'}
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
+                        {subscription.stripeSubscriptionId && (
+                            <div className={styles.manageSubscription}>
+                                <button className={styles.portalButton} onClick={() => createPortal.mutate()} disabled={createPortal.isPending}>
+                                    {createPortal.isPending ? 'Loading...' : 'Manage Subscription'}
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
             </section>
         </div>
     );

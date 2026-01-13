@@ -11,6 +11,7 @@ import { generateTitle } from '../../utils/llm';
 import { In } from 'typeorm';
 import { CodeeProvider } from '../../providers/codee';
 import { generateBranchName } from '../../workflows/helpers/github';
+import { canSendMessage, incrementMessageCount } from '../../payment/usage';
 
 const providerConfig = z.object({
     name: z.string(),
@@ -78,6 +79,15 @@ export const workspaceRouter = router({
             })
         )
         .mutation(async ({ ctx, input }) => {
+            // Check message limits before creating workspace
+            const limitCheck = await canSendMessage(ctx.organization.id);
+            if (!limitCheck.allowed) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: limitCheck.reason || 'Message limit reached',
+                });
+            }
+
             const title = await generateTitle(input.message);
             const workspaceRepository = AppDataSource.getRepository(Workspace);
             const toolRepository = AppDataSource.getRepository(Tool);
@@ -125,6 +135,10 @@ export const workspaceRouter = router({
                     cloudProviders: input.cloud_providers,
                     images: input.images,
                 });
+
+                // Increment message count after successful workspace creation
+                await incrementMessageCount(ctx.organization.id);
+
                 return { agent_id: firstAgent.id };
             } else {
                 const orchestratorAgent = await new CodeeProvider().createAgent({
@@ -137,6 +151,10 @@ export const workspaceRouter = router({
                     isOrchestratorAgent: true,
                     images: input.images,
                 });
+
+                // Increment message count after successful workspace creation
+                await incrementMessageCount(ctx.organization.id);
+
                 return { agent_id: orchestratorAgent.id };
             }
         }),
@@ -158,6 +176,15 @@ export const workspaceRouter = router({
     sendMessage: authedProcedure
         .input(z.object({ agent_id: z.number(), message: z.string(), images: z.array(imageSchema).default([]) }))
         .mutation(async ({ ctx, input }) => {
+            // Check message limits before sending
+            const limitCheck = await canSendMessage(ctx.organization.id);
+            if (!limitCheck.allowed) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: limitCheck.reason || 'Message limit reached',
+                });
+            }
+
             const agent = await AppDataSource.getRepository(Agent).findOne({
                 where: { id: input.agent_id },
                 relations: ['workspace'],
@@ -174,6 +201,12 @@ export const workspaceRouter = router({
             }
             const provider = new ProviderClass();
             const success = await provider.sendMessage(agent, input.message, input.images);
+
+            // Increment message count after successful send
+            if (success) {
+                await incrementMessageCount(ctx.organization.id);
+            }
+
             return { ok: success };
         }),
 
