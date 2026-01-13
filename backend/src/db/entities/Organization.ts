@@ -25,7 +25,7 @@ export class Organization {
     @Column({ length: 200, default: 'Personal Workspace' })
     name!: string;
 
-    // Stripe & Subscription fields
+    // Stripe
     @Column({ nullable: true })
     stripeCustomerId?: string;
 
@@ -37,6 +37,9 @@ export class Organization {
 
     @Column({ type: 'varchar', length: 20, default: SubscriptionStatus.ACTIVE })
     subscriptionStatus!: SubscriptionStatus;
+
+    @Column({ type: 'boolean', default: false })
+    cancelAtPeriodEnd!: boolean;
 
     @Column({ type: 'int', default: 0 })
     messageCount!: number;

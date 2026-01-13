@@ -1,7 +1,3 @@
-/**
- * Stripe client initialization and core payment functions
- */
-
 import Stripe from 'stripe';
 import { Organization, SubscriptionTier, SubscriptionStatus } from '../db/entities/Organization';
 import { PLANS } from './plans';
@@ -18,20 +14,15 @@ export const stripe = stripeSecretKey
       })
     : null;
 
-/**
- * Create or retrieve a Stripe customer for an organization
- */
 export async function getOrCreateStripeCustomer(organization: Organization, email: string): Promise<string> {
     if (!stripe) {
         throw new Error('Stripe is not configured');
     }
 
-    // If organization already has a Stripe customer, return it
     if (organization.stripeCustomerId) {
         return organization.stripeCustomerId;
     }
 
-    // Create a new Stripe customer
     const customer = await stripe.customers.create({
         email,
         metadata: {
@@ -43,9 +34,6 @@ export async function getOrCreateStripeCustomer(organization: Organization, emai
     return customer.id;
 }
 
-/**
- * Create a Checkout Session for upgrading to paid plan
- */
 export async function createCheckoutSession(customerId: string, organizationId: number): Promise<string> {
     if (!stripe) {
         throw new Error('Stripe is not configured');
@@ -72,14 +60,16 @@ export async function createCheckoutSession(customerId: string, organizationId: 
         metadata: {
             organizationId: organizationId.toString(),
         },
+        subscription_data: {
+            metadata: {
+                organizationId: organizationId.toString(),
+            },
+        },
     });
 
     return session.url!;
 }
 
-/**
- * Create a Billing Portal Session for managing subscriptions
- */
 export async function createPortalSession(customerId: string): Promise<string> {
     if (!stripe) {
         throw new Error('Stripe is not configured');
@@ -93,9 +83,6 @@ export async function createPortalSession(customerId: string): Promise<string> {
     return session.url;
 }
 
-/**
- * Get subscription status from Stripe
- */
 export async function getSubscriptionStatus(subscriptionId: string): Promise<{
     status: string;
     currentPeriodStart: Date;
@@ -106,18 +93,17 @@ export async function getSubscriptionStatus(subscriptionId: string): Promise<{
     }
 
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    const subAny = subscription as any;
+
+    const firstItem = subscription.items.data[0];
+    if (!firstItem) throw new Error('Subscription item missing');
 
     return {
         status: subscription.status,
-        currentPeriodStart: new Date((subAny.current_period_start || subAny.currentPeriodStart) * 1000),
-        currentPeriodEnd: new Date((subAny.current_period_end || subAny.currentPeriodEnd) * 1000),
+        currentPeriodStart: new Date(firstItem.current_period_start * 1000),
+        currentPeriodEnd: new Date(firstItem.current_period_end * 1000),
     };
 }
 
-/**
- * Map Stripe subscription status to our internal status
- */
 export function mapStripeStatus(stripeStatus: string): SubscriptionStatus {
     switch (stripeStatus) {
         case 'active':

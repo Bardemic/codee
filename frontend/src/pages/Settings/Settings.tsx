@@ -94,10 +94,16 @@ export default function Settings() {
                             <p>
                                 <strong>Current Plan:</strong> {subscription.tier}
                             </p>
+                            {subscription.cancelAtPeriodEnd && (
+                                <p className={styles.warningText}>
+                                    Your subscription will be canceled at the end of the billing period on{' '}
+                                    {subscription.usage.billingPeriodEnd ? new Date(subscription.usage.billingPeriodEnd).toLocaleDateString() : 'the current period'}.
+                                </p>
+                            )}
                             <p>
                                 <strong>Messages Used:</strong> {subscription.usage.messageCount} / {subscription.usage.messageLimit}
                             </p>
-                            {subscription.usage.percentUsed >= 80 && (
+                            {subscription.usage.percentUsed >= 80 && !subscription.cancelAtPeriodEnd && (
                                 <p className={styles.warningText}>You've used {subscription.usage.percentUsed}% of your messages this billing period.</p>
                             )}
                         </div>
@@ -110,40 +116,28 @@ export default function Settings() {
                                     <p className={styles.planPrice}>{plan.priceMonthly === 0 ? 'Free' : `$${plan.priceMonthly / 100}/month`}</p>
                                     <p className={styles.planMessages}>{plan.messageLimit} messages/month</p>
 
-                                    {subscription.tier === plan.tier ? (
+                                    {subscription.tier === plan.tier && !subscription.cancelAtPeriodEnd ? (
                                         <button className={styles.planButton} disabled>
                                             Current Plan
                                         </button>
                                     ) : plan.tier === 'FREE' ? (
                                         subscription.stripeSubscriptionId ? (
-                                            <button
-                                                className={styles.planButton}
-                                                onClick={() => createPortal.mutate()}
-                                                disabled={createPortal.isPending}
-                                            >
+                                            <button className={styles.planButton} onClick={() => createPortal.mutate()} disabled={createPortal.isPending}>
                                                 {createPortal.isPending ? 'Loading...' : 'Manage Subscription'}
                                             </button>
                                         ) : null
+                                    ) : subscription.tier === plan.tier && subscription.cancelAtPeriodEnd ? (
+                                        <button className={styles.planButton} onClick={() => createPortal.mutate()} disabled={createPortal.isPending}>
+                                            {createPortal.isPending ? 'Loading...' : 'Reactivate'}
+                                        </button>
                                     ) : (
-                                        <button
-                                            className={styles.planButton}
-                                            onClick={() => createCheckout.mutate()}
-                                            disabled={createCheckout.isPending}
-                                        >
+                                        <button className={styles.planButton} onClick={() => createCheckout.mutate()} disabled={createCheckout.isPending}>
                                             {createCheckout.isPending ? 'Loading...' : 'Upgrade'}
                                         </button>
                                     )}
                                 </div>
                             ))}
                         </div>
-
-                        {subscription.stripeSubscriptionId && (
-                            <div className={styles.manageSubscription}>
-                                <button className={styles.portalButton} onClick={() => createPortal.mutate()} disabled={createPortal.isPending}>
-                                    {createPortal.isPending ? 'Loading...' : 'Manage Subscription'}
-                                </button>
-                            </div>
-                        )}
                     </>
                 )}
             </section>

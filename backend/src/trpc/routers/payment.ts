@@ -32,6 +32,7 @@ export const paymentRouter = router({
             status: organization.subscriptionStatus,
             stripeCustomerId: organization.stripeCustomerId,
             stripeSubscriptionId: organization.stripeSubscriptionId,
+            cancelAtPeriodEnd: organization.cancelAtPeriodEnd,
             usage,
             plans: Object.values(PLANS).map((plan) => ({
                 tier: plan.tier,
