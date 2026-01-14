@@ -1,0 +1,38 @@
+import styles from './Usage.module.css';
+
+interface UsageCardProps {
+    title: string;
+    usedValue: string | number;
+    limitValue: string | number;
+    percentUsed: number;
+}
+
+export default function UsageCard({ title, usedValue, limitValue, percentUsed }: UsageCardProps) {
+    const getStatusClass = (percent: number) => {
+        if (percent >= 90) return styles.danger;
+        if (percent >= 75) return styles.warning;
+        return '';
+    };
+
+    const statusClass = getStatusClass(percentUsed);
+
+    return (
+        <div className={styles.usageCard}>
+            <div className={styles.usageHeader}>
+                <span className={styles.usageTitle}>{title}</span>
+                <span className={styles.usageValues}>
+                    {usedValue} <span className={styles.limit}>/ {limitValue}</span>
+                </span>
+            </div>
+            <div className={styles.progressBarContainer}>
+                <div
+                    className={`${styles.progressBar} ${statusClass}`}
+                    style={{ '--progress-width': `${Math.min(percentUsed, 100)}%` } as React.CSSProperties}
+                />
+            </div>
+            <div className={styles.usageFooter}>
+                <span className={`${styles.percentUsed} ${statusClass}`}>{percentUsed}% used</span>
+            </div>
+        </div>
+    );
+}

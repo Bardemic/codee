@@ -1,0 +1,138 @@
+.page {
+    padding: 32px 48px;
+    width: 80%;
+    margin: 0 auto;
+}
+
+.page h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 32px;
+    color: var(--color-foreground);
+}
+
+.section {
+    margin-bottom: 48px;
+}
+
+.section p {
+    font-size: 14px;
+    color: var(--color-muted);
+    margin-bottom: 6px;
+}
+
+h3 {
+    justify-self: flex-end;
+}
+
+.section h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-foreground);
+}
+
+.usageCards {
+    display: flex;
+    width: 100%;
+    flex: 1;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.usageCard {
+    flex: 1;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #242830;
+    background-color: var(--color-sidebar-bg);
+}
+
+.usageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 20px;
+}
+
+.usageTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-muted);
+}
+
+.usageValues {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--color-foreground);
+    letter-spacing: -0.02em;
+}
+
+.usageValues .limit {
+    color: var(--color-muted);
+    font-weight: 400;
+    font-size: 15px;
+}
+
+.progressBarContainer {
+    height: 6px;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.progressBar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    width: var(--progress-width, 0%);
+    background: linear-gradient(
+        90deg,
+        var(--color-accent) 0%,
+        var(--color-accent-hover) 100%
+    );
+    box-shadow: 0 0 12px rgba(246, 213, 74, 0.25);
+}
+
+.progressBar.warning {
+    background: linear-gradient(
+        90deg,
+        #d97706 0%,
+        #f59e0b 100%
+    );
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+.progressBar.danger {
+    background: linear-gradient(
+        90deg,
+        #dc2626 0%,
+        #ef4444 100%
+    );
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+}
+
+.usageFooter {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--color-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.percentUsed {
+    font-weight: 500;
+    color: rgba(246, 213, 74, 0.7);
+}
+
+.percentUsed.warning {
+    color: rgba(245, 158, 11, 0.85);
+}
+
+.percentUsed.danger {
+    color: rgba(239, 68, 68, 0.85);
+}

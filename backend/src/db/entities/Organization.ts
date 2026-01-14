@@ -4,6 +4,7 @@ import type { OrganizationMember } from './OrganizationMember';
 export enum SubscriptionTier {
     FREE = 'FREE',
     PAID = 'PAID',
+    ENTERPRISE = 'ENTERPRISE',
 }
 
 export enum SubscriptionStatus {

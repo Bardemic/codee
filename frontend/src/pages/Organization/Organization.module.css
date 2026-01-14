@@ -1,9 +1,9 @@
-.settingsPage {
+.page {
     padding: 32px 48px;
     max-width: 1200px;
 }
 
-.settingsPage h1 {
+.page h1 {
     font-size: 28px;
     font-weight: 600;
     margin-bottom: 32px;
@@ -32,6 +32,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    height: 38px;
 }
 
 .orgName {
@@ -43,6 +44,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    height: 38px;
 }
 
 .nameInput {
@@ -53,6 +55,8 @@
     border-radius: 4px;
     color: var(--color-foreground);
     font-size: 16px;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .iconButton {
@@ -60,15 +64,17 @@
     border: none;
     color: var(--color-muted);
     cursor: pointer;
-    padding: 4px;
+    padding: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s;
+    border-radius: 4px;
+    transition: color 0.15s, background-color 0.15s;
 }
 
 .iconButton:hover {
     color: var(--color-foreground);
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
 .membersList {
@@ -98,34 +104,10 @@
 .memberRole {
     font-size: 12px;
     color: var(--color-muted);
-    text-transform: uppercase;
     letter-spacing: 0.05em;
 }
 
-/* Billing Section */
-.usageInfo {
-    background-color: var(--color-sidebar-bg);
-    border: 1px solid #242830;
-    border-radius: 4px;
-    padding: 16px;
-    margin-bottom: 24px;
-}
-
-.usageInfo p {
-    margin: 8px 0;
-    font-size: 14px;
-    color: var(--color-foreground);
-}
-
-.usageInfo p strong {
-    font-weight: 600;
-}
-
-.warningText {
-    color: #f59e0b;
-    font-weight: 500;
-}
-
+/* Billing Plans */
 .plansContainer {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -141,14 +123,36 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    position: relative;
 }
 
 .planCard.currentPlan {
-    border-color: #3b82f6;
+    border-color: var(--color-accent);
+}
+
+.activeBadge {
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-accent);
+    color: var(--color-accent);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+}
+
+.planHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .planCard h3 {
-    font-size: 18px;
+    font-size: 24px;
     font-weight: 600;
     color: var(--color-foreground);
     margin: 0;
@@ -167,17 +171,71 @@
     margin: 8px 0;
 }
 
+.planPricePerMonth {
+    font-size: 14px;
+    color: var(--color-muted);
+    margin: 0;
+}
+
 .planMessages {
     font-size: 14px;
     color: var(--color-muted);
     margin: 0;
 }
 
+.planLimit {
+    font-size: 14px;
+    color: var(--color-muted);
+    margin: 0;
+}
+
+.planDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.perksList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.perkItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.perkIcon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+.perkIncluded .perkIcon {
+    color: #4ade80;
+}
+
+.perkExcluded .perkIcon {
+    color: var(--color-muted);
+}
+
+.perkIncluded .perkName {
+    color: var(--color-foreground);
+}
+
+.perkExcluded .perkName {
+    color: var(--color-muted);
+}
+
 .planButton {
     margin-top: auto;
     padding: 10px 16px;
-    background-color: #3b82f6;
-    color: white;
+    background-color: var(--color-accent);
+    color: var(--color-background);
     border: none;
     border-radius: 4px;
     font-size: 14px;
@@ -187,7 +245,7 @@
 }
 
 .planButton:hover:not(:disabled) {
-    background-color: #2563eb;
+    background-color: var(--color-accent-hover);
 }
 
 .planButton:disabled {
@@ -196,28 +254,23 @@
     cursor: not-allowed;
 }
 
-.manageSubscription {
-    display: flex;
-    justify-content: flex-start;
-}
-
-.portalButton {
-    padding: 10px 20px;
-    background-color: var(--color-sidebar-bg);
-    color: var(--color-foreground);
-    border: 1px solid #242830;
-    border-radius: 4px;
+.emptyState {
+    color: var(--color-muted);
     font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: border-color 0.2s;
+    font-style: italic;
 }
 
-.portalButton:hover:not(:disabled) {
-    border-color: #3b82f6;
+.enterpriseCard {
+    border-color: var(--color-muted);
+    position: relative;
 }
 
-.portalButton:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.enterpriseButton {
+    background-color: var(--color-muted);
+    color: var(--color-foreground);
+}
+
+.enterpriseButton:hover:not(:disabled) {
+    background-color: var(--color-foreground);
+    color: var(--color-background);
 }

@@ -6,7 +6,8 @@ import Sidebar from './components/Sidebar/Sidebar';
 import Integrations from './pages/Integrations/Integrations';
 import Workspace from './pages/Workspace/Workspace';
 import Workers from './pages/Workers/Workers';
-import Settings from './pages/Settings/Settings';
+import Usage from './pages/Usage/Usage';
+import Organization from './pages/Organization/Organization';
 import './app.css';
 
 function SidebarLayout() {
@@ -26,7 +27,8 @@ function App() {
                         <Route index element={<Home />} />
                         <Route path="integrations" element={<Integrations />} />
                         <Route path="workers" element={<Workers />} />
-                        <Route path="settings" element={<Settings />} />
+                        <Route path="usage" element={<Usage />} />
+                        <Route path="organization" element={<Organization />} />
                         <Route path="agent/:agentId" element={<Workspace />} />
                     </Route>
                     <Route path="login" element={<Login />} />

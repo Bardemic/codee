@@ -40,6 +40,7 @@ export const paymentRouter = router({
                 tokenCostLimitMicrodollars: plan.tokenCostLimitMicrodollars,
                 sandboxTimeLimitSeconds: plan.sandboxTimeLimitSeconds,
                 priceMonthly: plan.priceMonthly,
+                perks: plan.perks,
             })),
         };
     }),
