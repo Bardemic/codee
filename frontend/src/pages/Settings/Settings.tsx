@@ -9,6 +9,20 @@ function microdollarsToDollars(microdollars: number): number {
     return microdollars / MICRODOLLARS_PER_DOLLAR;
 }
 
+function formatSeconds(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${secs}s`;
+    } else {
+        return `${secs}s`;
+    }
+}
+
 export default function Settings() {
     const utils = trpc.useUtils();
     const { data: organization } = trpc.organization.get.useQuery();
@@ -115,6 +129,14 @@ export default function Settings() {
                                     You've used {subscription.usage.costPercentUsed}% of your token cost limit this billing period.
                                 </p>
                             )}
+                            <p>
+                                <strong>Sandbox Time Used:</strong> {formatSeconds(subscription.usage.sandboxTimeUsedSeconds)} / {formatSeconds(subscription.usage.sandboxTimeLimitSeconds)}
+                            </p>
+                            {subscription.usage.sandboxTimePercentUsed >= 80 && !subscription.cancelAtPeriodEnd && (
+                                <p className={styles.warningText}>
+                                    You've used {subscription.usage.sandboxTimePercentUsed}% of your sandbox time limit this billing period.
+                                </p>
+                            )}
                         </div>
 
                         <div className={styles.plansContainer}>
@@ -124,6 +146,7 @@ export default function Settings() {
                                     <p className={styles.planDescription}>{plan.description}</p>
                                     <p className={styles.planPrice}>{plan.priceMonthly === 0 ? 'Free' : `$${plan.priceMonthly / 100}/month`}</p>
                                     <p className={styles.planMessages}>${microdollarsToDollars(plan.tokenCostLimitMicrodollars).toFixed(2)} token cost/month</p>
+                                    <p className={styles.planMessages}>{formatSeconds(plan.sandboxTimeLimitSeconds)} sandbox time/month</p>
 
                                     {subscription.tier === plan.tier && !subscription.cancelAtPeriodEnd ? (
                                         <button className={styles.planButton} disabled>

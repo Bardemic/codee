@@ -32,6 +32,7 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
 
     let sandbox: Sandbox | undefined;
     const usageAccumulator: TokenUsageAccumulator = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+    let sandboxStartTime = 0;
 
     try {
         const agent = await loadAgent(payload.agentId);
@@ -39,6 +40,8 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
 
         sandbox = await prepareSandbox(agent, token, repositoryFullName, payload.baseBranch);
         if (!sandbox) throw new Error('Failed to create sandbox');
+
+        sandboxStartTime = Date.now();
 
         const previousMessages = await loadPreviousMessages(payload.agentId);
 
@@ -49,7 +52,8 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
 
         const response = await runOrchestratorAgentLLM(agent, sandbox, payload.toolSlugs || [], previousMessages, usageAccumulator);
 
-        await saveAgentResponse(agent, response, usageAccumulator);
+        const sandboxDurationMs = Date.now() - sandboxStartTime;
+        await saveAgentResponse(agent, response, usageAccumulator, sandboxDurationMs);
 
         await cleanupSandbox(sandbox);
 
@@ -72,6 +76,7 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
 
     let sandbox: Sandbox | undefined;
     const usageAccumulator: TokenUsageAccumulator = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
+    let sandboxStartTime = 0;
 
     try {
         const agent = await loadAgent(payload.agentId);
@@ -79,6 +84,8 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
 
         sandbox = await prepareSandbox(agent, token, repositoryFullName, payload.baseBranch);
         if (!sandbox) throw new Error('Failed to create sandbox');
+
+        sandboxStartTime = Date.now();
 
         await createBranchIfNeeded(agent, sandbox, payload.isOrchestratorAgent);
 
@@ -88,7 +95,8 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
 
         const response = await runAgentLLM(agent.id, sandbox, payload.toolSlugs || [], previousMessages, usageAccumulator);
 
-        await saveAgentResponse(agent, response, usageAccumulator);
+        const sandboxDurationMs = Date.now() - sandboxStartTime;
+        await saveAgentResponse(agent, response, usageAccumulator, sandboxDurationMs);
 
         if (payload.isOrchestratorAgent) {
             await cleanupSandbox(sandbox);

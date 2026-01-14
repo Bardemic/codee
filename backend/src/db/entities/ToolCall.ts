@@ -28,7 +28,4 @@ export class ToolCall {
 
     @Column({ length: 20, default: 'success' })
     status!: string;
-
-    @Column({ type: 'int', nullable: true })
-    durationMs!: number | null;
 }

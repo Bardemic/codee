@@ -10,7 +10,7 @@ import { commitAndPush, generateBranchName, getGithubTokenForUser } from './help
 import { createSandbox } from './helpers/sandbox';
 import type { runAgentLLM, runOrchestratorAgentLLM, TokenUsageAccumulator } from './llm';
 import { calculateCostMicrodollars } from '../payment/model-pricing';
-import { incrementTokenCostMicrodollars } from '../payment/usage';
+import { incrementTokenCostMicrodollars, incrementSandboxTimeSeconds } from '../payment/usage';
 
 export async function loadAgent(agentId: number) {
     const agent = await getAgentById(agentId);
@@ -92,13 +92,18 @@ export async function createBranchIfNeeded(agent: Agent, sandbox: Sandbox, isOrc
 export async function saveAgentResponse(
     agent: Agent,
     response: Awaited<ReturnType<typeof runAgentLLM>> | Awaited<ReturnType<typeof runOrchestratorAgentLLM>>,
-    usage: TokenUsageAccumulator
+    usage: TokenUsageAccumulator,
+    sandboxDurationMs: number
 ) {
     const costMicrodollars = calculateCostMicrodollars(response.model, usage.promptTokens, usage.completionTokens);
-    const savedMessage = await saveMessage(agent, response.final, 'AGENT', usage, costMicrodollars, response.model);
+    const savedMessage = await saveMessage(agent, response.final, 'AGENT', usage, costMicrodollars, response.model, sandboxDurationMs);
 
     // Update organization cost usage
     await incrementTokenCostMicrodollars(agent.workspace.organizationId, costMicrodollars);
+
+    // Update organization sandbox time usage
+    const sandboxDurationSeconds = Math.floor(sandboxDurationMs / 1000);
+    await incrementSandboxTimeSeconds(agent.workspace.organizationId, sandboxDurationSeconds);
 
     await saveAgentActivity(agent, savedMessage, response.steps);
     return savedMessage;
@@ -134,6 +139,6 @@ export async function markAgentFailed(agentId: number, error: unknown, usage: To
     await emitError(agentId, 'agent_failure', message, 'execute');
     await updateAgent(agent, { status: AgentStatus.FAILED });
     const costMicrodollars = calculateCostMicrodollars(model, usage.promptTokens, usage.completionTokens);
-    await saveMessage(agent, `Agent failed: ${message}`, 'AGENT', usage, costMicrodollars, model, message);
+    await saveMessage(agent, `Agent failed: ${message}`, 'AGENT', usage, costMicrodollars, model, 0, message);
     // store cost of message, but don't increment organization cost usage
 }

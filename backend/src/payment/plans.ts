@@ -9,6 +9,7 @@ export interface PlanConfig {
     name: string;
     description: string;
     tokenCostLimitMicrodollars: number;
+    sandboxTimeLimitSeconds: number;
     priceMonthly: number; // in cents
     stripePriceId?: string;
 }
@@ -19,6 +20,7 @@ export const PLANS: Record<SubscriptionTier, PlanConfig> = {
         name: 'Free',
         description: 'Perfect for trying out Codee',
         tokenCostLimitMicrodollars: 5_000_000, // $5.00
+        sandboxTimeLimitSeconds: 7200, // 1 hour
         priceMonthly: 0,
     },
     [SubscriptionTier.PAID]: {
@@ -26,6 +28,7 @@ export const PLANS: Record<SubscriptionTier, PlanConfig> = {
         name: 'Paid',
         description: 'For regular Codee users',
         tokenCostLimitMicrodollars: 20_000_000, // $20.00
+        sandboxTimeLimitSeconds: 86400, // 24 hours
         priceMonthly: 2000, // $20.00
         stripePriceId: process.env.STRIPE_PRICE_ID_PAID,
     },
@@ -37,4 +40,8 @@ export function getPlanConfig(tier: SubscriptionTier): PlanConfig {
 
 export function getTokenCostLimitMicrodollars(tier: SubscriptionTier): number {
     return PLANS[tier].tokenCostLimitMicrodollars;
+}
+
+export function getSandboxTimeLimitSeconds(tier: SubscriptionTier): number {
+    return PLANS[tier].sandboxTimeLimitSeconds;
 }

@@ -21,6 +21,7 @@ export async function saveMessage(
     usage: TokenUsageAccumulator,
     costMicrodollars: number,
     model: string,
+    sandboxDurationMs: number,
     error?: string
 ) {
     const messageRepository = AppDataSource.getRepository(Message);
@@ -34,6 +35,7 @@ export async function saveMessage(
         error,
         model,
         costMicrodollars,
+        sandboxDurationMs,
     });
     return messageRepository.save(message);
 }

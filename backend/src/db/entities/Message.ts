@@ -47,6 +47,10 @@ export class Message {
     @Column({ type: 'int', default: 0 })
     costMicrodollars!: number;
 
+
+    @Column({ type: 'int', default: 0 })
+    sandboxDurationMs!: number;
+
     @OneToMany('ToolCall', 'message')
     toolCalls!: ToolCall[];
 }

@@ -47,6 +47,12 @@ export class Organization {
     @Column({ type: 'int', default: 5_000_000 })
     tokenCostLimitMicrodollars!: number;
 
+    @Column({ type: 'int', default: 0 })
+    sandboxTimeUsedSeconds!: number;
+
+    @Column({ type: 'int', default: 900 })
+    sandboxTimeLimitSeconds!: number;
+
     @Column({ type: 'timestamp' })
     billingPeriodStart!: Date;
 

@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { stripe, mapStripeStatus } from './stripe';
 import { AppDataSource } from '../db/data-source';
 import { Organization, SubscriptionTier } from '../db/entities/Organization';
-import { getTokenCostLimitMicrodollars } from './plans';
+import { getTokenCostLimitMicrodollars, getSandboxTimeLimitSeconds } from './plans';
 
 export async function handleStripeWebhook(body: string | Buffer, signature: string): Promise<{ received: boolean }> {
     if (!stripe) {
@@ -171,10 +171,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
             subscriptionStatus: status,
             subscriptionTier: newTier,
             tokenCostLimitMicrodollars: isActive ? getTokenCostLimitMicrodollars(SubscriptionTier.PAID) : getTokenCostLimitMicrodollars(SubscriptionTier.FREE),
+            sandboxTimeLimitSeconds: isActive ? getSandboxTimeLimitSeconds(SubscriptionTier.PAID) : getSandboxTimeLimitSeconds(SubscriptionTier.FREE),
             billingPeriodStart: newPeriodStart,
             billingPeriodEnd: newPeriodEnd,
             cancelAtPeriodEnd: cancelAtPeriodEnd,
-            ...(periodAdvanced && { tokenCostUsedMicrodollars: 0 }),
+            ...(periodAdvanced && { tokenCostUsedMicrodollars: 0, sandboxTimeUsedSeconds: 0 }),
         });
 
         await queryRunner.commitTransaction();
@@ -224,11 +225,13 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
                 subscriptionTier: SubscriptionTier.FREE,
                 subscriptionStatus: mapStripeStatus('canceled'),
                 tokenCostLimitMicrodollars: getTokenCostLimitMicrodollars(SubscriptionTier.FREE),
+                sandboxTimeLimitSeconds: getSandboxTimeLimitSeconds(SubscriptionTier.FREE),
                 stripeSubscriptionId: null,
                 cancelAtPeriodEnd: false,
                 billingPeriodStart: now,
                 billingPeriodEnd: periodEnd,
                 tokenCostUsedMicrodollars: 0,
+                sandboxTimeUsedSeconds: 0,
             })
             .where('id = :id', { id: organization.id })
             .execute();

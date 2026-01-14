@@ -38,6 +38,7 @@ export const paymentRouter = router({
                 name: plan.name,
                 description: plan.description,
                 tokenCostLimitMicrodollars: plan.tokenCostLimitMicrodollars,
+                sandboxTimeLimitSeconds: plan.sandboxTimeLimitSeconds,
                 priceMonthly: plan.priceMonthly,
             })),
         };
