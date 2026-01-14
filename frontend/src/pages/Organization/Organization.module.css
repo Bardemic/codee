@@ -1,0 +1,278 @@
+.page {
+    padding: 32px 48px;
+    max-width: 1200px;
+}
+
+.page h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 32px;
+    color: var(--color-foreground);
+}
+
+.section {
+    margin-bottom: 48px;
+}
+
+.section h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--color-foreground);
+}
+
+.nameContainer {
+    background-color: var(--color-sidebar-bg);
+    border: 1px solid #242830;
+    border-radius: 4px;
+    padding: 16px;
+}
+
+.nameDisplay {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 38px;
+}
+
+.orgName {
+    font-size: 16px;
+    color: var(--color-foreground);
+}
+
+.editContainer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+}
+
+.nameInput {
+    flex: 1;
+    padding: 8px 12px;
+    background-color: var(--color-background);
+    border: 1px solid #242830;
+    border-radius: 4px;
+    color: var(--color-foreground);
+    font-size: 16px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.iconButton {
+    background: transparent;
+    border: none;
+    color: var(--color-muted);
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition:
+        color 0.15s,
+        background-color 0.15s;
+}
+
+.iconButton:hover {
+    color: var(--color-foreground);
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.membersList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.memberCard {
+    background-color: var(--color-sidebar-bg);
+    border: 1px solid #242830;
+    border-radius: 4px;
+    padding: 12px 16px;
+}
+
+.memberInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.memberEmail {
+    font-size: 14px;
+    color: var(--color-foreground);
+}
+
+.memberRole {
+    font-size: 12px;
+    color: var(--color-muted);
+    letter-spacing: 0.05em;
+}
+
+/* Billing Plans */
+.plansContainer {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.planCard {
+    background-color: var(--color-sidebar-bg);
+    border: 1px solid #242830;
+    border-radius: 4px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+}
+
+.planCard.currentPlan {
+    border-color: var(--color-accent);
+}
+
+.activeBadge {
+    position: absolute;
+    top: -9px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-accent);
+    color: var(--color-accent);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+}
+
+.planHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.planCard h3 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--color-foreground);
+    margin: 0;
+}
+
+.planDescription {
+    font-size: 13px;
+    color: var(--color-muted);
+    margin: 0;
+}
+
+.planPrice {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-foreground);
+    margin: 8px 0;
+}
+
+.planPricePerMonth {
+    font-size: 14px;
+    color: var(--color-muted);
+    margin: 0;
+}
+
+.planMessages {
+    font-size: 14px;
+    color: var(--color-muted);
+    margin: 0;
+}
+
+.planLimit {
+    font-size: 14px;
+    color: var(--color-muted);
+    margin: 0;
+}
+
+.planDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.perksList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.perkItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.perkIcon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+.perkIncluded .perkIcon {
+    color: #4ade80;
+}
+
+.perkExcluded .perkIcon {
+    color: var(--color-muted);
+}
+
+.perkIncluded .perkName {
+    color: var(--color-foreground);
+}
+
+.perkExcluded .perkName {
+    color: var(--color-muted);
+}
+
+.planButton {
+    margin-top: auto;
+    padding: 10px 16px;
+    background-color: var(--color-accent);
+    color: var(--color-background);
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.planButton:hover:not(:disabled) {
+    background-color: var(--color-accent-hover);
+}
+
+.planButton:disabled {
+    background-color: #242830;
+    color: var(--color-muted);
+    cursor: not-allowed;
+}
+
+.emptyState {
+    color: var(--color-muted);
+    font-size: 14px;
+    font-style: italic;
+}
+
+.enterpriseCard {
+    border-color: var(--color-muted);
+    position: relative;
+}
+
+.enterpriseButton {
+    background-color: var(--color-muted);
+    color: var(--color-foreground);
+}
+
+.enterpriseButton:hover:not(:disabled) {
+    background-color: var(--color-foreground);
+    color: var(--color-background);
+}

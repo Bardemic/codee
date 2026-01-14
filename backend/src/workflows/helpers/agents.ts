@@ -5,6 +5,7 @@ import { IntegrationConnection } from '../../db/entities/IntegrationConnection';
 import { Message, type SenderType } from '../../db/entities/Message';
 import { ToolCall } from '../../db/entities/ToolCall';
 import { updateSlackWorkspaceStatus } from '../../slack/notifications';
+import type { TokenUsageAccumulator } from '../llm';
 
 export async function getAgentById(agentId: number) {
     return AppDataSource.getRepository(Agent).findOne({
@@ -13,9 +14,29 @@ export async function getAgentById(agentId: number) {
     });
 }
 
-export async function saveMessage(agent: Agent, content: string, sender: SenderType) {
+export async function saveMessage(
+    agent: Agent,
+    content: string,
+    sender: SenderType,
+    usage: TokenUsageAccumulator,
+    costMicrodollars: number,
+    model: string,
+    sandboxDurationMs: number,
+    error?: string
+) {
     const messageRepository = AppDataSource.getRepository(Message);
-    const message = messageRepository.create({ agent, content, sender });
+    const message = messageRepository.create({
+        agent,
+        content,
+        sender,
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+        totalTokens: usage.totalTokens,
+        error,
+        model,
+        costMicrodollars,
+        sandboxDurationMs,
+    });
     return messageRepository.save(message);
 }
 

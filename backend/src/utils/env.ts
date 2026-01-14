@@ -31,6 +31,17 @@ export function validateEnvironment() {
         console.warn('POSTHOG_API_KEY not set - analytics will be disabled');
     }
 
+    // Optional: Stripe (for payments)
+    if (!process.env.STRIPE_SECRET_KEY) {
+        console.warn('STRIPE_SECRET_KEY not set - payment features will be disabled');
+    }
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+        console.warn('STRIPE_WEBHOOK_SECRET not set - webhook verification will be disabled');
+    }
+    if (!process.env.STRIPE_PRICE_ID_PAID) {
+        console.warn('STRIPE_PRICE_ID_PAID not set - paid plan subscriptions will not work');
+    }
+
     if (errors.length > 0) {
         console.error('Missing required environment variables:');
         errors.forEach((error) => console.error(`  - ${error}`));

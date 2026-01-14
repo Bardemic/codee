@@ -37,7 +37,7 @@ async function bootstrap() {
     );
     app.use(cookieParser());
     app.use((req, res, next) => {
-        if (req.path.startsWith('/webhooks/github/events') || req.path.startsWith('/api/auth')) {
+        if (req.path.startsWith('/webhooks/github/events') || req.path.startsWith('/webhooks/stripe') || req.path.startsWith('/api/auth')) {
             return next();
         }
         if (req.path.startsWith('/webhooks/slack/events')) {

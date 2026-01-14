@@ -1,7 +1,8 @@
 import { workos } from '../auth/auth';
 import { AppDataSource } from '../db/data-source';
-import { Organization } from '../db/entities/Organization';
+import { Organization, SubscriptionTier } from '../db/entities/Organization';
 import { OrganizationMember, MemberRole } from '../db/entities/OrganizationMember';
+import { getSandboxTimeLimitSeconds } from '../payment/plans';
 
 export async function ensureUserHasOrganization(user: { id: string; email: string; firstName?: string | null; lastName?: string | null }) {
     const orgMemberRepo = AppDataSource.getRepository(OrganizationMember);
@@ -23,9 +24,16 @@ export async function ensureUserHasOrganization(user: { id: string; email: strin
 
     // Create organization in local database
     const orgRepo = AppDataSource.getRepository(Organization);
+    const now = new Date();
+    const periodEnd = new Date(now);
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+
     const organization = orgRepo.create({
         workosOrganizationId: workosOrg.id,
         name: 'Personal Workspace',
+        billingPeriodStart: now,
+        billingPeriodEnd: periodEnd,
+        sandboxTimeLimitSeconds: getSandboxTimeLimitSeconds(SubscriptionTier.FREE),
     });
     await orgRepo.save(organization);
 

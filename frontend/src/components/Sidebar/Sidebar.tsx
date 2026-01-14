@@ -4,7 +4,7 @@ import SidebarButton from './SidebarButton';
 import { useAuth } from '../../lib/useAuth';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { trpc } from '../../lib/trpc';
-import { FiHome, FiGrid, FiUsers, FiLogOut, FiSettings } from 'react-icons/fi';
+import { FiHome, FiGrid, FiUsers, FiLogOut, FiSettings, FiPieChart, FiBriefcase } from 'react-icons/fi';
 import codeeLogo from '../../assets/svgs/CodeeLogo.svg';
 
 type SidebarProps = {
@@ -31,6 +31,8 @@ export default function Sidebar({ children }: SidebarProps) {
                     <SidebarButton text="Home" to="/" icon={<FiHome size={16} />} />
                     <SidebarButton text="Integrations" to="/integrations" icon={<FiGrid size={16} />} />
                     <SidebarButton text="Workers" to="/workers" icon={<FiUsers size={16} />} />
+                    <SidebarButton text="Usage" to="/usage" icon={<FiPieChart size={16} />} />
+                    <SidebarButton text="Organization" to="/organization" icon={<FiBriefcase size={16} />} />
                 </div>
                 <h3 className={styles.sectionHeading}>Workspaces</h3>
                 <div className={styles.workspaces}>
@@ -48,7 +50,6 @@ export default function Sidebar({ children }: SidebarProps) {
                     )}
                 </div>
                 <div className={styles.profileSection}>
-                    <SidebarButton text="Settings" to="/settings" icon={<FiSettings size={16} />} />
                     <SidebarButton text="Logout" onClick={handleSignOut} icon={<FiLogOut size={16} />} />
                 </div>
             </nav>
