@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, ManyToOne, Index } from 'typeorm';
 import type { Agent } from './Agent';
+import type { Organization } from './Organization';
 
 @Entity()
 export class Workspace {
@@ -13,7 +14,12 @@ export class Workspace {
     name!: string;
 
     @Column()
-    userId!: string;
+    organizationId!: number;
+
+    @ManyToOne('Organization', {
+        onDelete: 'CASCADE',
+    })
+    organization!: Organization;
 
     @Column()
     githubRepositoryName!: string;

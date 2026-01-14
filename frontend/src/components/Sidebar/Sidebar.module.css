@@ -12,8 +12,6 @@ h3 {
     font-size: 13px;
     font-weight: 600;
     color: var(--color-muted);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
 }
 
 .sidebar {
@@ -131,7 +129,7 @@ h3 {
     font-weight: 700;
     color: var(--color-foreground);
     text-transform: lowercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.05em;
 }
 
 .workspaces {

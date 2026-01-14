@@ -7,7 +7,7 @@ import { emitStatus } from '../stream/events';
 
 interface OrchestratorAgentToolsParams {
     agentId: number;
-    userId: string;
+    organizationId: number;
     workspace: Workspace;
     repositoryFullName: string;
     baseBranch: string;
@@ -15,7 +15,15 @@ interface OrchestratorAgentToolsParams {
     images: MessageImage[];
 }
 
-export function buildOrchestratorAgentTools({ agentId, userId, workspace, repositoryFullName, baseBranch, toolSlugs, images }: OrchestratorAgentToolsParams) {
+export function buildOrchestratorAgentTools({
+    agentId,
+    organizationId,
+    workspace,
+    repositoryFullName,
+    baseBranch,
+    toolSlugs,
+    images,
+}: OrchestratorAgentToolsParams) {
     const spawnSubAgentInputSchema = z.object({
         prompt: z.string().describe('The prompt to spawn the agent with'),
     });
@@ -27,7 +35,7 @@ export function buildOrchestratorAgentTools({ agentId, userId, workspace, reposi
             execute: async (input) => {
                 const { prompt } = input;
                 const agent = await new CodeeProvider().createAgent({
-                    userId,
+                    organizationId,
                     workspace,
                     repositoryFullName,
                     message: prompt,

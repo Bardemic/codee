@@ -24,7 +24,7 @@ export type ProviderMessage = {
 export interface CloudProvider {
     slug: string;
     createAgent(params: {
-        userId: string;
+        organizationId: number;
         workspace: Workspace;
         repositoryFullName: string;
         message: string;

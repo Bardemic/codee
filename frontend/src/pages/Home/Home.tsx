@@ -2,7 +2,7 @@ import { RepositoriesPill, SelectionPill } from '../../features/repositories/Rep
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { trpc } from '../../lib/trpc';
-import { useSession } from '../../lib/auth';
+import { useAuth } from '../../lib/useAuth';
 import type { Repository, MessageImage } from '../../lib/types';
 import styles from './home.module.css';
 import { ChatBox } from './components/ChatBox';
@@ -38,7 +38,7 @@ function Home() {
             }
         },
     });
-    const { data: session, isPending } = useSession();
+    const { user, loading } = useAuth();
     const { data: integrations } = trpc.integrations.list.useQuery();
     const { data: workspaces } = trpc.workspace.list.useQuery();
 
@@ -89,10 +89,10 @@ function Home() {
     }
 
     useEffect(() => {
-        if (!isPending && !session?.user) {
+        if (!loading && !user) {
             navigate('/login');
         }
-    }, [isPending, session, navigate]);
+    }, [loading, user, navigate]);
 
     const recentWorkspaces = useMemo(
         () =>

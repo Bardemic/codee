@@ -1,5 +1,7 @@
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
+import { Organization } from './entities/Organization';
+import { OrganizationMember } from './entities/OrganizationMember';
 import { IntegrationProvider } from './entities/IntegrationProvider';
 import { IntegrationConnection } from './entities/IntegrationConnection';
 import { Tool } from './entities/Tool';
@@ -36,17 +38,19 @@ export const AppDataSource = new DataSource({
             : undefined,
     synchronize: NODE_ENV !== 'production',
     entities: [
-        IntegrationProvider,
-        IntegrationConnection,
-        Tool,
-        WorkerDefinition,
-        Workspace,
         Agent,
+        IntegrationConnection,
+        IntegrationProvider,
         Message,
-        ToolCall,
-        WorkspaceTool,
-        WorkerDefinitionTool,
+        Organization,
+        OrganizationMember,
         SlackUserMapping,
+        Tool,
+        ToolCall,
+        WorkerDefinition,
+        WorkerDefinitionTool,
+        Workspace,
+        WorkspaceTool,
     ],
 });
 

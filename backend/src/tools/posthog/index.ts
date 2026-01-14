@@ -17,7 +17,7 @@ async function getPosthogApiKey(agentId: number): Promise<string | null> {
 
     const connection = await AppDataSource.getRepository(IntegrationConnection).findOne({
         where: {
-            userId: agent.workspace.userId,
+            organizationId: agent.workspace.organizationId,
             provider: { slug: 'posthog' },
         },
         relations: ['provider'],

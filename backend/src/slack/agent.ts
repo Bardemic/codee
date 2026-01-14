@@ -5,6 +5,7 @@ import { AppDataSource } from '../db/data-source';
 import { IntegrationConnection } from '../db/entities/IntegrationConnection';
 import { Workspace } from '../db/entities/Workspace';
 import { createSlackTools } from './tools';
+import { getOrganizationIdByUserId } from '../services/organizationService';
 
 const openaiClient = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -18,9 +19,15 @@ interface ProcessMessageParams {
 }
 
 export async function processSlackMessage({ userId, channel, text, messageTs }: ProcessMessageParams) {
+    const organizationId = await getOrganizationIdByUserId(userId);
+    if (!organizationId) {
+        console.error('No organization found for user');
+        return;
+    }
+
     const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
     const connection = await connectionRepository.findOne({
-        where: { userId, provider: { slug: 'slack' } },
+        where: { organizationId, provider: { slug: 'slack' } },
         relations: ['provider'],
     });
 
@@ -48,7 +55,7 @@ export async function processSlackMessage({ userId, channel, text, messageTs }: 
             name: 'hourglass_flowing_sand',
         });
 
-        const tools = createSlackTools(userId, channel);
+        const tools = createSlackTools(organizationId, channel);
 
         const result = await generateText({
             model: openaiClient('gpt-5-nano'),

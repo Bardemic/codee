@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
 import styles from './Sidebar.module.css';
 import SidebarButton from './SidebarButton';
-import { signOut } from '../../lib/auth';
+import { useAuth } from '../../lib/useAuth';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { trpc } from '../../lib/trpc';
-import { FiHome, FiGrid, FiUsers, FiLogOut } from 'react-icons/fi';
+import { FiHome, FiGrid, FiUsers, FiLogOut, FiSettings, FiPieChart, FiBriefcase } from 'react-icons/fi';
 import codeeLogo from '../../assets/svgs/CodeeLogo.svg';
 
 type SidebarProps = {
@@ -13,11 +13,11 @@ type SidebarProps = {
 
 export default function Sidebar({ children }: SidebarProps) {
     const navigate = useNavigate();
+    const { refresh } = useAuth();
     const { data: workspaces } = trpc.workspace.list.useQuery();
 
-    async function handleSignOut() {
-        await signOut();
-        navigate('/login');
+    function handleSignOut() {
+        window.location.href = 'http://localhost:5001/api/auth/logout';
     }
 
     return (
@@ -31,6 +31,8 @@ export default function Sidebar({ children }: SidebarProps) {
                     <SidebarButton text="Home" to="/" icon={<FiHome size={16} />} />
                     <SidebarButton text="Integrations" to="/integrations" icon={<FiGrid size={16} />} />
                     <SidebarButton text="Workers" to="/workers" icon={<FiUsers size={16} />} />
+                    <SidebarButton text="Usage" to="/usage" icon={<FiPieChart size={16} />} />
+                    <SidebarButton text="Organization" to="/organization" icon={<FiBriefcase size={16} />} />
                 </div>
                 <h3 className={styles.sectionHeading}>Workspaces</h3>
                 <div className={styles.workspaces}>

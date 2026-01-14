@@ -2,10 +2,9 @@ import 'reflect-metadata';
 import cors from 'cors';
 import express from 'express';
 import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
-import { toNodeHandler } from 'better-auth/node';
 
-import { auth } from './auth/auth';
 import { initDataSource } from './db/data-source';
 import { createContext } from './trpc/context';
 import { appRouter } from './trpc/router';
@@ -15,6 +14,7 @@ import { flushPostHog } from './utils/posthog';
 import { validateEnvironment } from './utils/env';
 import { slackOAuthRouter } from './slack/oauth';
 import { slackEventsRouter } from './slack/events';
+import { authRouter } from './auth/routes';
 
 const PORT = Number(process.env.PORT || 5001);
 
@@ -35,8 +35,9 @@ async function bootstrap() {
             credentials: true,
         })
     );
+    app.use(cookieParser());
     app.use((req, res, next) => {
-        if (req.path.startsWith('/webhooks/github/events') || req.path.startsWith('/api/auth')) {
+        if (req.path.startsWith('/webhooks/github/events') || req.path.startsWith('/webhooks/stripe') || req.path.startsWith('/api/auth')) {
             return next();
         }
         if (req.path.startsWith('/webhooks/slack/events')) {
@@ -55,7 +56,7 @@ async function bootstrap() {
         res.json({ ok: true, service: 'backend' });
     });
 
-    app.all('/api/auth/{*splat}', toNodeHandler(auth));
+    app.use('/api/auth', authRouter);
 
     app.use(
         '/api/trpc',

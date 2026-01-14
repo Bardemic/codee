@@ -11,6 +11,7 @@ import { generateTitle } from '../../utils/llm';
 import { In } from 'typeorm';
 import { CodeeProvider } from '../../providers/codee';
 import { generateBranchName } from '../../workflows/helpers/github';
+import { canSendMessage } from '../../payment/usage';
 
 const providerConfig = z.object({
     name: z.string(),
@@ -25,7 +26,7 @@ const imageSchema = z.object({
 export const workspaceRouter = router({
     list: authedProcedure.query(async ({ ctx }) => {
         const workspaces = await AppDataSource.getRepository(Workspace).find({
-            where: { userId: ctx.user.id },
+            where: { organizationId: ctx.organization.id },
             relations: ['providerAgents'],
             order: { createdAt: 'DESC' },
         });
@@ -51,7 +52,7 @@ export const workspaceRouter = router({
 
     get: authedProcedure.input(z.object({ id: z.number() })).query(async ({ ctx, input }) => {
         const workspace = await AppDataSource.getRepository(Workspace).findOne({
-            where: { id: input.id, userId: ctx.user.id },
+            where: { id: input.id, organizationId: ctx.organization.id },
             relations: ['providerAgents'],
         });
         if (!workspace) throw new TRPCError({ code: 'NOT_FOUND' });
@@ -78,12 +79,21 @@ export const workspaceRouter = router({
             })
         )
         .mutation(async ({ ctx, input }) => {
+            // Check message limits before creating workspace
+            const limitCheck = await canSendMessage(ctx.organization.id);
+            if (!limitCheck.allowed) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: limitCheck.reason || 'Message limit reached',
+                });
+            }
+
             const title = await generateTitle(input.message);
             const workspaceRepository = AppDataSource.getRepository(Workspace);
             const toolRepository = AppDataSource.getRepository(Tool);
             const newWorkspace = workspaceRepository.create({
                 name: title,
-                userId: ctx.user.id,
+                organizationId: ctx.organization.id,
                 githubRepositoryName: input.repository_full_name,
                 currentBranch: input.branch_name,
             });
@@ -116,7 +126,7 @@ export const workspaceRouter = router({
 
             if (!input.sub_agents) {
                 const firstAgent = await createAgentsFromProviders({
-                    userId: ctx.user.id,
+                    organizationId: ctx.organization.id,
                     workspace: newWorkspace,
                     repositoryFullName: input.repository_full_name,
                     message: input.message,
@@ -125,10 +135,11 @@ export const workspaceRouter = router({
                     cloudProviders: input.cloud_providers,
                     images: input.images,
                 });
+
                 return { agent_id: firstAgent.id };
             } else {
                 const orchestratorAgent = await new CodeeProvider().createAgent({
-                    userId: ctx.user.id,
+                    organizationId: ctx.organization.id,
                     workspace: newWorkspace,
                     repositoryFullName: input.repository_full_name,
                     message: input.message,
@@ -137,6 +148,7 @@ export const workspaceRouter = router({
                     isOrchestratorAgent: true,
                     images: input.images,
                 });
+
                 return { agent_id: orchestratorAgent.id };
             }
         }),
@@ -146,7 +158,7 @@ export const workspaceRouter = router({
             where: { id: input.agent_id },
             relations: ['workspace'],
         });
-        if (!agent || agent.workspace.userId !== ctx.user.id) {
+        if (!agent || agent.workspace.organizationId !== ctx.organization.id) {
             throw new TRPCError({ code: 'NOT_FOUND' });
         }
         const ProviderClass = PROVIDERS[agent.providerType];
@@ -158,11 +170,20 @@ export const workspaceRouter = router({
     sendMessage: authedProcedure
         .input(z.object({ agent_id: z.number(), message: z.string(), images: z.array(imageSchema).default([]) }))
         .mutation(async ({ ctx, input }) => {
+            // Check message limits before sending
+            const limitCheck = await canSendMessage(ctx.organization.id);
+            if (!limitCheck.allowed) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: limitCheck.reason || 'Message limit reached',
+                });
+            }
+
             const agent = await AppDataSource.getRepository(Agent).findOne({
                 where: { id: input.agent_id },
                 relations: ['workspace'],
             });
-            if (!agent || agent.workspace.userId !== ctx.user.id) {
+            if (!agent || agent.workspace.organizationId !== ctx.organization.id) {
                 throw new TRPCError({ code: 'NOT_FOUND' });
             }
             const ProviderClass = PROVIDERS[agent.providerType];
@@ -174,6 +195,7 @@ export const workspaceRouter = router({
             }
             const provider = new ProviderClass();
             const success = await provider.sendMessage(agent, input.message, input.images);
+
             return { ok: success };
         }),
 
@@ -182,7 +204,7 @@ export const workspaceRouter = router({
             where: { id: input.agent_id },
             relations: ['workspace'],
         });
-        if (!agent || agent.workspace.userId !== ctx.user.id) {
+        if (!agent || agent.workspace.organizationId !== ctx.organization.id) {
             throw new TRPCError({ code: 'NOT_FOUND' });
         }
         return { status: agent.status, provider_type: agent.providerType };
@@ -194,7 +216,7 @@ export const workspaceRouter = router({
             where: { id: input.agent_id },
             relations: ['workspace'],
         });
-        if (!agent || agent.workspace.userId !== ctx.user.id) {
+        if (!agent || agent.workspace.organizationId !== ctx.organization.id) {
             throw new TRPCError({ code: 'NOT_FOUND' });
         }
         const branchName = agent.githubBranchName || generateBranchName({ title: agent.workspace.name, agentId: agent.id });

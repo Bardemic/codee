@@ -49,7 +49,7 @@ function formatWorkspaceMessage(workspace: Workspace, agents: Agent[]): string {
     return lines.join('\n');
 }
 
-export async function sendWorkspaceCreatedMessage(workspaceId: number, channel: string, userId: string): Promise<void> {
+export async function sendWorkspaceCreatedMessage(workspaceId: number, channel: string, organizationId: number): Promise<void> {
     const workspaceRepository = AppDataSource.getRepository(Workspace);
     const workspace = await workspaceRepository.findOne({
         where: { id: workspaceId },
@@ -63,7 +63,7 @@ export async function sendWorkspaceCreatedMessage(workspaceId: number, channel: 
 
     const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
     const connection = await connectionRepository.findOne({
-        where: { userId, provider: { slug: 'slack' } },
+        where: { organizationId, provider: { slug: 'slack' } },
         relations: ['provider'],
     });
 
@@ -128,7 +128,7 @@ export async function updateSlackWorkspaceStatus(agentId: number, retryCount = 0
     const workspace = agent.workspace;
     const connectionRepository = AppDataSource.getRepository(IntegrationConnection);
     const connection = await connectionRepository.findOne({
-        where: { userId: workspace.userId, provider: { slug: 'slack' } },
+        where: { organizationId: workspace.organizationId, provider: { slug: 'slack' } },
         relations: ['provider'],
     });
 

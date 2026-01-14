@@ -1,15 +1,21 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, Unique } from 'typeorm';
 import { IntegrationProvider } from './IntegrationProvider';
+import type { Organization } from './Organization';
 import { decryptData, encryptData } from '../../utils/encryption';
 
 @Entity()
-@Unique(['userId', 'provider', 'externalId'])
+@Unique(['organizationId', 'provider', 'externalId'])
 export class IntegrationConnection {
     @PrimaryGeneratedColumn()
     id!: number;
 
     @Column()
-    userId!: string;
+    organizationId!: number;
+
+    @ManyToOne('Organization', {
+        onDelete: 'CASCADE',
+    })
+    organization!: Organization;
 
     @ManyToOne(() => IntegrationProvider, {
         onDelete: 'CASCADE',

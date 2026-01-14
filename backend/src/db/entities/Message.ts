@@ -29,6 +29,28 @@ export class Message {
     @Column({ type: 'jsonb', default: [] })
     images!: MessageImage[];
 
+    @Column({ type: 'int', default: 0 })
+    promptTokens!: number;
+
+    @Column({ type: 'int', default: 0 })
+    completionTokens!: number;
+
+    @Column({ type: 'int', default: 0 })
+    totalTokens!: number;
+
+    @Column({ type: 'text', nullable: true })
+    error?: string;
+
+    @Column({ type: 'text', default: 'gpt-5-mini' })
+    model!: string;
+
+    @Column({ type: 'int', default: 0 })
+    costMicrodollars!: number;
+
+
+    @Column({ type: 'int', default: 0 })
+    sandboxDurationMs!: number;
+
     @OneToMany('ToolCall', 'message')
     toolCalls!: ToolCall[];
 }

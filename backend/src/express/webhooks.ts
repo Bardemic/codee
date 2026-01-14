@@ -11,6 +11,7 @@ import { generateTitle } from '../utils/llm';
 import { Agent, AgentStatus } from '../db/entities/Agent';
 import { In } from 'typeorm';
 import { WorkerDefinitionTool } from '../db/entities/WorkerDefinitionTool';
+import { handleStripeWebhook } from '../payment/webhook';
 
 const router = Router();
 
@@ -51,7 +52,7 @@ async function createWorkspaceFromWebhook(params: {
     const title = await generateTitle(params.message);
     const workspace = workspaceRepository.create({
         githubRepositoryName: params.repository,
-        userId: params.worker.userId,
+        organizationId: params.worker.organizationId,
         name: title,
         workerId: params.worker.id,
         currentBranch: params.currentBranch,
@@ -74,7 +75,7 @@ async function createWorkspaceFromWebhook(params: {
 
     const toolSlugs = tools.map((tool) => tool.slugName);
     await createAgentsFromProviders({
-        userId: params.worker.userId,
+        organizationId: params.worker.organizationId,
         workspace,
         repositoryFullName: params.repository,
         message: params.message,
@@ -160,6 +161,21 @@ router.post('/cursor/complete/:agentId', express.json(), async (req, res) => {
         await agentRepository.save(agent);
     }
     return res.status(204).end();
+});
+
+router.post('/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+    const signature = req.header('stripe-signature');
+    if (!signature) {
+        return res.status(400).send('Missing Stripe signature header');
+    }
+
+    try {
+        await handleStripeWebhook(req.body, signature);
+        return res.json({ received: true });
+    } catch (error) {
+        console.error('Stripe webhook error:', error);
+        return res.status(400).send(`Webhook Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 });
 
 export function registerWebhooks(app: Express) {
