@@ -37,7 +37,6 @@ export const paymentRouter = router({
                 tier: plan.tier,
                 name: plan.name,
                 description: plan.description,
-                messageLimit: plan.messageLimit,
                 tokenCostLimitMicrodollars: plan.tokenCostLimitMicrodollars,
                 priceMonthly: plan.priceMonthly,
             })),

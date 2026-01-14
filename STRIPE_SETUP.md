@@ -6,8 +6,8 @@ This guide explains how to set up and configure Stripe payments for Codee.
 
 Codee now includes a subscription-based payment system with two tiers:
 
-- **Free**: 10 messages per month
-- **Paid**: 100 messages per month at $20/month
+- **Free**: $5.00 token cost limit per month
+- **Paid**: $20.00 token cost limit per month at $20/month
 
 ## Architecture
 
@@ -17,7 +17,7 @@ Codee now includes a subscription-based payment system with two tiers:
 backend/src/payment/
 ├── plans.ts          # Plan definitions and pricing
 ├── stripe.ts         # Stripe client and core functions
-├── usage.ts          # Message usage tracking
+├── usage.ts          # Cost usage tracking
 ├── webhook.ts        # Webhook event handlers
 └── router.ts         # tRPC payment endpoints (in trpc/routers/)
 ```
@@ -29,18 +29,16 @@ The `Organization` entity has been extended with subscription fields:
 - `stripeSubscriptionId` - Active subscription ID
 - `subscriptionTier` - FREE or PAID
 - `subscriptionStatus` - ACTIVE, CANCELED, PAST_DUE, INCOMPLETE
-- `messageCount` - Current period usage
-- `messageLimit` - Maximum messages for tier
+- `tokenCostUsedMicrodollars` - Current period cost usage
+- `tokenCostLimitMicrodollars` - Maximum cost for tier
 - `billingPeriodStart` - Current billing period start
 - `billingPeriodEnd` - Current billing period end
 
-### Message Limit Enforcement
+### Cost Limit Enforcement
 
-Message limits are enforced at two points:
-1. **Workspace creation** (`workspace.create`) - Checks limits before creating new workspace
-2. **Message sending** (`workspace.sendMessage`) - Checks limits before sending messages
-
-After successful operations, the message count is automatically incremented.
+Cost limits are enforced at two points:
+1. **Workspace creation** (`workspace.create`) - Checks cost limits before creating new workspace
+2. **Message sending** (`workspace.sendMessage`) - Checks cost limits before sending messages
 
 ## Stripe Dashboard Setup
 
@@ -55,7 +53,7 @@ After successful operations, the message count is automatically incremented.
 2. Click **Add Product**
 3. Configure:
    - Name: "Codee Paid Plan" (or your preferred name)
-   - Description: "100 messages per month"
+   - Description: "Paid plan"
    - Pricing:
      - Type: Recurring
      - Price: $20.00
@@ -150,14 +148,13 @@ stripe listen --forward-to localhost:5001/webhooks/stripe
 **`POST /webhooks/stripe`**
 - Handles Stripe webhook events
 - Automatically updates subscription status and billing periods
-- Resets message counts on successful payments
 
 ## Frontend Integration
 
 The Settings page (`/frontend/src/pages/Settings/Settings.tsx`) displays:
 
 1. **Current Plan** - Shows user's tier (Free/Paid)
-2. **Usage Stats** - Messages used vs. limit
+2. **Usage Stats** - Cost used vs. limit
 3. **Plan Cards** - Two cards showing Free and Paid tiers with features
 4. **Upgrade Button** - For free users to upgrade
 5. **Manage Subscription** - For paid users to access billing portal
@@ -174,15 +171,15 @@ The Settings page (`/frontend/src/pages/Settings/Settings.tsx`) displays:
    - Stripe fires `checkout.session.completed` webhook
    - Backend updates organization with customer and subscription IDs
    - Stripe fires `customer.subscription.created` webhook
-   - Backend updates subscription tier to PAID and sets limits to 100 messages
+   - Backend updates subscription tier to PAID
 6. User is redirected back to Settings page
 
-### Message Limit Checks
+### Cost Limit Checks
 
 1. User tries to create workspace or send message
-2. Backend checks: `canSendMessage(organizationId)`
-3. If limit reached, returns FORBIDDEN error with message
-4. If allowed, operation proceeds and count increments
+2. Backend checks: `canSendMessage(organizationId)` (checks cost)
+3. If limit reached, returns FORBIDDEN error
+4. If allowed, operation proceeds
 
 ### Subscription Management
 
@@ -195,7 +192,7 @@ The Settings page (`/frontend/src/pages/Settings/Settings.tsx`) displays:
    - View invoices
 5. On cancellation:
    - Stripe fires `customer.subscription.deleted` webhook
-   - Backend downgrades to Free tier with 10 message limit
+   - Backend downgrades to Free tier
 
 ## Production Deployment
 
@@ -224,11 +221,11 @@ Edit `/backend/src/payment/plans.ts`:
 ```typescript
 export const PLANS: Record<SubscriptionTier, PlanConfig> = {
     [SubscriptionTier.FREE]: {
-        messageLimit: 10,  // Change here
+        tokenCostLimitMicrodollars: 5_000_000, // $5.00
         priceMonthly: 0,
     },
     [SubscriptionTier.PAID]: {
-        messageLimit: 100, // Change here
+        tokenCostLimitMicrodollars: 20_000_000, // $20.00
         priceMonthly: 2000, // Price in cents
     },
 };
@@ -255,7 +252,6 @@ export const PLANS: Record<SubscriptionTier, PlanConfig> = {
 
 - Check database for correct subscription status
 - Verify billing periods are set correctly
-- Check if message count needs manual reset
 - Review webhook event logs
 
 ### Checkout not completing

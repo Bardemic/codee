@@ -42,12 +42,6 @@ export class Organization {
     cancelAtPeriodEnd!: boolean;
 
     @Column({ type: 'int', default: 0 })
-    messageCount!: number;
-
-    @Column({ type: 'int', default: 10 })
-    messageLimit!: number;
-
-    @Column({ type: 'int', default: 0 })
     tokenCostUsedMicrodollars!: number;
 
     @Column({ type: 'int', default: 5_000_000 })

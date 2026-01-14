@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { stripe, mapStripeStatus } from './stripe';
 import { AppDataSource } from '../db/data-source';
 import { Organization, SubscriptionTier } from '../db/entities/Organization';
-import { getMessageLimit, getTokenCostLimitMicrodollars } from './plans';
+import { getTokenCostLimitMicrodollars } from './plans';
 
 export async function handleStripeWebhook(body: string | Buffer, signature: string): Promise<{ received: boolean }> {
     if (!stripe) {
@@ -170,12 +170,11 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
             stripeCustomerId: customerId,
             subscriptionStatus: status,
             subscriptionTier: newTier,
-            messageLimit: isActive ? getMessageLimit(SubscriptionTier.PAID) : getMessageLimit(SubscriptionTier.FREE),
             tokenCostLimitMicrodollars: isActive ? getTokenCostLimitMicrodollars(SubscriptionTier.PAID) : getTokenCostLimitMicrodollars(SubscriptionTier.FREE),
             billingPeriodStart: newPeriodStart,
             billingPeriodEnd: newPeriodEnd,
             cancelAtPeriodEnd: cancelAtPeriodEnd,
-            ...(periodAdvanced && { messageCount: 0, tokenCostUsedMicrodollars: 0 }),
+            ...(periodAdvanced && { tokenCostUsedMicrodollars: 0 }),
         });
 
         await queryRunner.commitTransaction();
@@ -224,13 +223,11 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
             .set({
                 subscriptionTier: SubscriptionTier.FREE,
                 subscriptionStatus: mapStripeStatus('canceled'),
-                messageLimit: getMessageLimit(SubscriptionTier.FREE),
                 tokenCostLimitMicrodollars: getTokenCostLimitMicrodollars(SubscriptionTier.FREE),
                 stripeSubscriptionId: null,
                 cancelAtPeriodEnd: false,
                 billingPeriodStart: now,
                 billingPeriodEnd: periodEnd,
-                messageCount: 0,
                 tokenCostUsedMicrodollars: 0,
             })
             .where('id = :id', { id: organization.id })

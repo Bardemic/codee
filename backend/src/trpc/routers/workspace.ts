@@ -11,7 +11,7 @@ import { generateTitle } from '../../utils/llm';
 import { In } from 'typeorm';
 import { CodeeProvider } from '../../providers/codee';
 import { generateBranchName } from '../../workflows/helpers/github';
-import { canSendMessage, incrementMessageCount } from '../../payment/usage';
+import { canSendMessage } from '../../payment/usage';
 
 const providerConfig = z.object({
     name: z.string(),
@@ -136,9 +136,6 @@ export const workspaceRouter = router({
                     images: input.images,
                 });
 
-                // Increment message count after successful workspace creation
-                await incrementMessageCount(ctx.organization.id);
-
                 return { agent_id: firstAgent.id };
             } else {
                 const orchestratorAgent = await new CodeeProvider().createAgent({
@@ -151,9 +148,6 @@ export const workspaceRouter = router({
                     isOrchestratorAgent: true,
                     images: input.images,
                 });
-
-                // Increment message count after successful workspace creation
-                await incrementMessageCount(ctx.organization.id);
 
                 return { agent_id: orchestratorAgent.id };
             }
@@ -201,11 +195,6 @@ export const workspaceRouter = router({
             }
             const provider = new ProviderClass();
             const success = await provider.sendMessage(agent, input.message, input.images);
-
-            // Increment message count after successful send
-            if (success) {
-                await incrementMessageCount(ctx.organization.id);
-            }
 
             return { ok: success };
         }),

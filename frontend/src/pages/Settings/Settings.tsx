@@ -107,15 +107,9 @@ export default function Settings() {
                                 </p>
                             )}
                             <p>
-                                <strong>Messages Used:</strong> {subscription.usage.messageCount} / {subscription.usage.messageLimit}
-                            </p>
-                            <p>
                                 <strong>Cost Used:</strong> ${microdollarsToDollars(subscription.usage.tokenCostUsedMicrodollars).toFixed(2)} / $
                                 {microdollarsToDollars(subscription.usage.tokenCostLimitMicrodollars).toFixed(2)}
                             </p>
-                            {subscription.usage.messagePercentUsed >= 80 && !subscription.cancelAtPeriodEnd && (
-                                <p className={styles.warningText}>You've used {subscription.usage.messagePercentUsed}% of your messages this billing period.</p>
-                            )}
                             {subscription.usage.costPercentUsed >= 80 && !subscription.cancelAtPeriodEnd && (
                                 <p className={styles.warningText}>You've used {subscription.usage.costPercentUsed}% of your token cost limit this billing period.</p>
                             )}
@@ -127,7 +121,6 @@ export default function Settings() {
                                     <h3>{plan.name}</h3>
                                     <p className={styles.planDescription}>{plan.description}</p>
                                     <p className={styles.planPrice}>{plan.priceMonthly === 0 ? 'Free' : `$${plan.priceMonthly / 100}/month`}</p>
-                                    <p className={styles.planMessages}>{plan.messageLimit} messages/month</p>
                                     <p className={styles.planMessages}>${microdollarsToDollars(plan.tokenCostLimitMicrodollars).toFixed(2)} token cost/month</p>
 
                                     {subscription.tier === plan.tier && !subscription.cancelAtPeriodEnd ? (
