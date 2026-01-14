@@ -26,7 +26,8 @@ export default function IntegrationCard(props: IntegrationCardProps) {
     const normalizedSlug = (props.integration.slug ?? props.integration.name).toLowerCase().replace(/\s+/g, '-').replace(/_/g, '-');
     const isGithub = normalizedSlug.includes('github');
     const isSlack = normalizedSlug === 'slack';
-    const isAPIkey = !isGithub && !isSlack;
+    const isBrowser = normalizedSlug === 'browser-automation';
+    const isAPIkey = !isGithub && !isSlack && !isBrowser;
 
     function handleConnectClick() {
         if (isAPIkey) {

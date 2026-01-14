@@ -57,6 +57,23 @@ const PROVIDER_SEEDS: ProviderSeed[] = [
         hasCloudAgent: false,
         tools: [],
     },
+    {
+        slug: 'browser',
+        displayName: 'Browser Automation',
+        hasCloudAgent: false,
+        tools: [
+            { displayName: 'Navigate', slugName: 'browser/navigate' },
+            { displayName: 'Snapshot', slugName: 'browser/snapshot' },
+            { displayName: 'Click', slugName: 'browser/click' },
+            { displayName: 'Type', slugName: 'browser/type' },
+            { displayName: 'Screenshot', slugName: 'browser/screenshot' },
+            { displayName: 'Get Text', slugName: 'browser/get_text' },
+            { displayName: 'Go Back', slugName: 'browser/go_back' },
+            { displayName: 'Wait For', slugName: 'browser/wait_for' },
+            { displayName: 'Close', slugName: 'browser/close' },
+            { displayName: 'Fill Form', slugName: 'browser/fill_form' },
+        ],
+    },
 ];
 
 export async function seedDefaults(ds: DataSource) {
