@@ -3,9 +3,11 @@
  */
 
 import { TRPCError } from '@trpc/server';
+import { z } from 'zod';
 import { authedProcedure, router } from '../trpc';
 import { AppDataSource } from '../../db/data-source';
 import { Organization } from '../../db/entities/Organization';
+import { Message } from '../../db/entities/Message';
 import { getOrCreateStripeCustomer, createCheckoutSession, createPortalSession } from '../../payment/stripe';
 import { getUsageStats } from '../../payment/usage';
 import { PLANS } from '../../payment/plans';
@@ -107,4 +109,41 @@ export const paymentRouter = router({
             });
         }
     }),
+
+    /**
+     * Get paginated messages for the organization
+     */
+    getRecentMessages: authedProcedure
+        .input(z.object({ page: z.number().min(1).default(1), pageSize: z.number().min(1).max(100).default(10) }))
+        .query(async ({ ctx, input }) => {
+            const { page, pageSize } = input;
+            const skip = (page - 1) * pageSize;
+
+            const [messages, total] = await AppDataSource.getRepository(Message).findAndCount({
+                where: {
+                    agent: {
+                        workspace: {
+                            organizationId: ctx.organization.id,
+                        },
+                    },
+                },
+                order: { createdAt: 'DESC' },
+                skip,
+                take: pageSize,
+            });
+
+            return {
+                messages: messages.map((message) => ({
+                    id: message.id,
+                    createdAt: message.createdAt,
+                    model: message.model,
+                    sandboxDurationMs: message.sandboxDurationMs,
+                    costMicrodollars: message.costMicrodollars,
+                })),
+                total,
+                page,
+                pageSize,
+                totalPages: Math.ceil(total / pageSize),
+            };
+        }),
 });

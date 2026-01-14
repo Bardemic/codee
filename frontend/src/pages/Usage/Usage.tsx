@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { keepPreviousData } from '@tanstack/react-query';
 import { trpc } from '../../lib/trpc';
 import styles from './Usage.module.css';
 import UsageCard from './UsageCard';
@@ -23,8 +26,15 @@ function formatSeconds(seconds: number): string {
     }
 }
 
+function formatMilliseconds(ms: number): string {
+    const seconds = Math.floor(ms / 1000);
+    return formatSeconds(seconds);
+}
+
 export default function Usage() {
+    const [page, setPage] = useState(1);
     const { data: subscription } = trpc.payment.getSubscriptionStatus.useQuery();
+    const { data: messagesData } = trpc.payment.getRecentMessages.useQuery({ page, pageSize: 10 }, { placeholderData: keepPreviousData });
 
     if (!subscription) return null;
 
@@ -54,11 +64,47 @@ export default function Usage() {
                         percentUsed={usage.sandboxTimePercentUsed}
                     />
                 </div>
-
                 <h3>
                     Want higher limits?
                     <Link to="/organization"> Upgrade your plan</Link>
                 </h3>
+
+                {messagesData && messagesData.messages.length > 0 && (
+                    <div className={styles.messagesSection}>
+                        <h2>Recent Messages</h2>
+                        <table className={styles.messagesTable}>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Model</th>
+                                    <th>Runtime</th>
+                                    <th>LLM Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {messagesData.messages.map((message) => (
+                                    <tr key={message.id}>
+                                        <td>{new Date(message.createdAt).toLocaleString()}</td>
+                                        <td>{message.model}</td>
+                                        <td>{formatMilliseconds(message.sandboxDurationMs)}</td>
+                                        <td>${microdollarsToDollars(message.costMicrodollars).toFixed(4)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {messagesData.totalPages > 1 && (
+                            <div className={styles.pagination}>
+                                <button type="button" onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
+                                    <FiChevronLeft />
+                                </button>
+                                <span>{page}</span>
+                                <button type="button" onClick={() => setPage((p) => p + 1)} disabled={page === messagesData.totalPages}>
+                                    <FiChevronRight />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </section>
         </div>
     );

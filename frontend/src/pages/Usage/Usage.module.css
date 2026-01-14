@@ -18,7 +18,7 @@
 .section p {
     font-size: 14px;
     color: var(--color-muted);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
 }
 
 h3 {
@@ -53,8 +53,7 @@ h3 {
 .usageHeader {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 20px;
+    align-items: flex-end;
 }
 
 .usageTitle {
@@ -90,29 +89,17 @@ h3 {
     border-radius: 3px;
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     width: var(--progress-width, 0%);
-    background: linear-gradient(
-        90deg,
-        var(--color-accent) 0%,
-        var(--color-accent-hover) 100%
-    );
+    background: linear-gradient(90deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
     box-shadow: 0 0 12px rgba(246, 213, 74, 0.25);
 }
 
 .progressBar.warning {
-    background: linear-gradient(
-        90deg,
-        #d97706 0%,
-        #f59e0b 100%
-    );
+    background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%);
     box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
 }
 
 .progressBar.danger {
-    background: linear-gradient(
-        90deg,
-        #dc2626 0%,
-        #ef4444 100%
-    );
+    background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%);
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
 }
 
@@ -135,4 +122,68 @@ h3 {
 
 .percentUsed.danger {
     color: rgba(239, 68, 68, 0.85);
+}
+
+.messagesSection {
+    margin-top: 32px;
+}
+
+.messagesSection h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--color-foreground);
+    margin-bottom: 16px;
+}
+
+.messagesTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.messagesTable th,
+.messagesTable td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid #242830;
+}
+
+.messagesTable th {
+    font-weight: 600;
+    color: var(--color-muted);
+    background-color: var(--color-sidebar-bg);
+}
+
+.messagesTable td {
+    color: var(--color-foreground);
+}
+
+.messagesTable tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--color-foreground);
+}
+
+.pagination button {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    color: var(--color-foreground);
+    cursor: pointer;
+    padding: 6px;
+    font-size: 18px;
+}
+
+.pagination button:disabled {
+    color: var(--color-muted);
+    cursor: not-allowed;
 }
