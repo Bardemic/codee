@@ -111,7 +111,9 @@ export default function Settings() {
                                 {microdollarsToDollars(subscription.usage.tokenCostLimitMicrodollars).toFixed(2)}
                             </p>
                             {subscription.usage.costPercentUsed >= 80 && !subscription.cancelAtPeriodEnd && (
-                                <p className={styles.warningText}>You've used {subscription.usage.costPercentUsed}% of your token cost limit this billing period.</p>
+                                <p className={styles.warningText}>
+                                    You've used {subscription.usage.costPercentUsed}% of your token cost limit this billing period.
+                                </p>
                             )}
                         </div>
 
