@@ -89,18 +89,7 @@ h3 {
     border-radius: 3px;
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     width: var(--progress-width, 0%);
-    background: linear-gradient(90deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
-    box-shadow: 0 0 12px rgba(246, 213, 74, 0.25);
-}
-
-.progressBar.warning {
-    background: linear-gradient(90deg, #d97706 0%, #f59e0b 100%);
-    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
-}
-
-.progressBar.danger {
-    background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%);
-    box-shadow: 0 0 12px rgba(239, 68, 68, 0.3);
+    background: var(--color-accent);
 }
 
 .usageFooter {
@@ -114,14 +103,6 @@ h3 {
 .percentUsed {
     font-weight: 500;
     color: rgba(246, 213, 74, 0.7);
-}
-
-.percentUsed.warning {
-    color: rgba(245, 158, 11, 0.85);
-}
-
-.percentUsed.danger {
-    color: rgba(239, 68, 68, 0.85);
 }
 
 .messagesSection {
