@@ -8,7 +8,9 @@ import { emitDone, emitError, emitStatus } from '../stream/events';
 import { getAgentById, saveMessage, saveAgentActivity, updateAgent } from './helpers/agents';
 import { commitAndPush, generateBranchName, getGithubTokenForUser } from './helpers/github';
 import { createSandbox } from './helpers/sandbox';
-import type { runAgentLLM, runOrchestratorAgentLLM } from './llm';
+import type { runAgentLLM, runOrchestratorAgentLLM, TokenUsageAccumulator } from './llm';
+import { calculateCostMicrodollars } from '../payment/model-pricing';
+import { incrementTokenCostMicrodollars } from '../payment/usage';
 
 export async function loadAgent(agentId: number) {
     const agent = await getAgentById(agentId);
@@ -87,8 +89,17 @@ export async function createBranchIfNeeded(agent: Agent, sandbox: Sandbox, isOrc
     return agent.githubBranchName;
 }
 
-export async function saveAgentResponse(agent: Agent, response: Awaited<ReturnType<typeof runAgentLLM>> | Awaited<ReturnType<typeof runOrchestratorAgentLLM>>) {
-    const savedMessage = await saveMessage(agent, response.final, 'AGENT');
+export async function saveAgentResponse(
+    agent: Agent,
+    response: Awaited<ReturnType<typeof runAgentLLM>> | Awaited<ReturnType<typeof runOrchestratorAgentLLM>>,
+    usage: TokenUsageAccumulator
+) {
+    const costMicrodollars = calculateCostMicrodollars(response.model, usage.promptTokens, usage.completionTokens);
+    const savedMessage = await saveMessage(agent, response.final, 'AGENT', usage, costMicrodollars, response.model);
+
+    // Update organization cost usage
+    await incrementTokenCostMicrodollars(agent.workspace.organizationId, costMicrodollars);
+
     await saveAgentActivity(agent, savedMessage, response.steps);
     return savedMessage;
 }
@@ -116,10 +127,13 @@ export async function markAgentComplete(agentId: number) {
     await Promise.all([updateAgent(agent, { status: AgentStatus.COMPLETED }), emitDone(agentId, 'success')]);
 }
 
-export async function markAgentFailed(agentId: number, error: unknown) {
+export async function markAgentFailed(agentId: number, error: unknown, usage: TokenUsageAccumulator, model: string) {
     const agent = await getAgentById(agentId);
     if (!agent) return;
     const message = error instanceof Error ? error.message : 'unknown error';
     await emitError(agentId, 'agent_failure', message, 'execute');
     await updateAgent(agent, { status: AgentStatus.FAILED });
+    const costMicrodollars = calculateCostMicrodollars(model, usage.promptTokens, usage.completionTokens);
+    await saveMessage(agent, `Agent failed: ${message}`, 'AGENT', usage, costMicrodollars, model, message);
+    // store cost of message, but don't increment organization cost usage
 }

@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { stripe, mapStripeStatus } from './stripe';
 import { AppDataSource } from '../db/data-source';
 import { Organization, SubscriptionTier } from '../db/entities/Organization';
-import { getMessageLimit } from './plans';
+import { getMessageLimit, getTokenCostLimitMicrodollars } from './plans';
 
 export async function handleStripeWebhook(body: string | Buffer, signature: string): Promise<{ received: boolean }> {
     if (!stripe) {
@@ -38,10 +38,6 @@ export async function handleStripeWebhook(body: string | Buffer, signature: stri
 
             case 'customer.subscription.deleted':
                 await handleSubscriptionDeleted(event.data.object);
-                break;
-
-            case 'invoice.payment_succeeded':
-                await handlePaymentSucceeded(event.data.object);
                 break;
 
             case 'invoice.payment_failed':
@@ -163,15 +159,23 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
             throw new Error('Customer ID mismatch - potential security issue');
         }
 
+        const newPeriodStart = new Date(firstItem.current_period_start * 1000);
+        const newPeriodEnd = new Date(firstItem.current_period_end * 1000);
+
+        // Reset usage counters when billing period advances
+        const periodAdvanced = newPeriodStart.getTime() > organization.billingPeriodStart.getTime();
+
         await organizationRepo.update(organization.id, {
             stripeSubscriptionId: subscription.id,
             stripeCustomerId: customerId,
             subscriptionStatus: status,
             subscriptionTier: newTier,
             messageLimit: isActive ? getMessageLimit(SubscriptionTier.PAID) : getMessageLimit(SubscriptionTier.FREE),
-            billingPeriodStart: new Date(firstItem.current_period_start * 1000),
-            billingPeriodEnd: new Date(firstItem.current_period_end * 1000),
+            tokenCostLimitMicrodollars: isActive ? getTokenCostLimitMicrodollars(SubscriptionTier.PAID) : getTokenCostLimitMicrodollars(SubscriptionTier.FREE),
+            billingPeriodStart: newPeriodStart,
+            billingPeriodEnd: newPeriodEnd,
             cancelAtPeriodEnd: cancelAtPeriodEnd,
+            ...(periodAdvanced && { messageCount: 0, tokenCostUsedMicrodollars: 0 }),
         });
 
         await queryRunner.commitTransaction();
@@ -209,6 +213,11 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
             throw new Error('Subscription ID mismatch during deletion');
         }
 
+        // Reset billing period to start fresh on free tier
+        const now = new Date();
+        const periodEnd = new Date(now);
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
+
         await queryRunner.manager
             .createQueryBuilder()
             .update(Organization)
@@ -216,8 +225,13 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
                 subscriptionTier: SubscriptionTier.FREE,
                 subscriptionStatus: mapStripeStatus('canceled'),
                 messageLimit: getMessageLimit(SubscriptionTier.FREE),
+                tokenCostLimitMicrodollars: getTokenCostLimitMicrodollars(SubscriptionTier.FREE),
                 stripeSubscriptionId: null,
                 cancelAtPeriodEnd: false,
+                billingPeriodStart: now,
+                billingPeriodEnd: periodEnd,
+                messageCount: 0,
+                tokenCostUsedMicrodollars: 0,
             })
             .where('id = :id', { id: organization.id })
             .execute();
@@ -227,59 +241,6 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
     } catch (error) {
         await queryRunner.rollbackTransaction();
         console.error('Error in handleSubscriptionDeleted:', error);
-        throw error;
-    } finally {
-        await queryRunner.release();
-    }
-}
-
-async function handlePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
-    const invoiceData = invoice as Stripe.Invoice & {
-        subscription?: string | Stripe.Subscription | null;
-    };
-
-    let subscriptionId: string | null = null;
-
-    if (typeof invoiceData.subscription === 'string') {
-        subscriptionId = invoiceData.subscription;
-    } else if (invoiceData.subscription && typeof invoiceData.subscription === 'object') {
-        subscriptionId = invoiceData.subscription.id;
-    }
-
-    if (!subscriptionId) {
-        console.warn('Payment succeeded but no subscription ID found in invoice');
-        return;
-    }
-
-    const queryRunner = AppDataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-        const organizationRepo = queryRunner.manager.getRepository(Organization);
-        const organization = await organizationRepo.findOne({
-            where: { stripeSubscriptionId: subscriptionId },
-        });
-
-        if (!organization) {
-            console.error('Organization not found for subscription:', subscriptionId);
-            throw new Error(`Organization not found for subscription: ${subscriptionId}`);
-        }
-
-        if (organization.stripeSubscriptionId !== subscriptionId) {
-            console.error(`Subscription ID mismatch for organization ${organization.id} during payment success`);
-            throw new Error('Subscription ID mismatch during payment processing');
-        }
-
-        await organizationRepo.update(organization.id, {
-            messageCount: 0,
-        });
-
-        await queryRunner.commitTransaction();
-        console.log(`Payment succeeded for organization ${organization.id}, message count reset`);
-    } catch (error) {
-        await queryRunner.rollbackTransaction();
-        console.error('Error in handlePaymentSucceeded:', error);
         throw error;
     } finally {
         await queryRunner.release();

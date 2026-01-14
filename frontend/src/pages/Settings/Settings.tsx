@@ -3,6 +3,12 @@ import { trpc } from '../../lib/trpc';
 import styles from './Settings.module.css';
 import { FiEdit2, FiCheck, FiX } from 'react-icons/fi';
 
+const MICRODOLLARS_PER_DOLLAR = 1_000_000;
+
+function microdollarsToDollars(microdollars: number): number {
+    return microdollars / MICRODOLLARS_PER_DOLLAR;
+}
+
 export default function Settings() {
     const utils = trpc.useUtils();
     const { data: organization } = trpc.organization.get.useQuery();
@@ -97,14 +103,21 @@ export default function Settings() {
                             {subscription.cancelAtPeriodEnd && (
                                 <p className={styles.warningText}>
                                     Your subscription will be canceled at the end of the billing period on{' '}
-                                    {subscription.usage.billingPeriodEnd ? new Date(subscription.usage.billingPeriodEnd).toLocaleDateString() : 'the current period'}.
+                                    {new Date(subscription.usage.billingPeriodEnd).toLocaleDateString()}.
                                 </p>
                             )}
                             <p>
                                 <strong>Messages Used:</strong> {subscription.usage.messageCount} / {subscription.usage.messageLimit}
                             </p>
-                            {subscription.usage.percentUsed >= 80 && !subscription.cancelAtPeriodEnd && (
-                                <p className={styles.warningText}>You've used {subscription.usage.percentUsed}% of your messages this billing period.</p>
+                            <p>
+                                <strong>Cost Used:</strong> ${microdollarsToDollars(subscription.usage.tokenCostUsedMicrodollars).toFixed(2)} / $
+                                {microdollarsToDollars(subscription.usage.tokenCostLimitMicrodollars).toFixed(2)}
+                            </p>
+                            {subscription.usage.messagePercentUsed >= 80 && !subscription.cancelAtPeriodEnd && (
+                                <p className={styles.warningText}>You've used {subscription.usage.messagePercentUsed}% of your messages this billing period.</p>
+                            )}
+                            {subscription.usage.costPercentUsed >= 80 && !subscription.cancelAtPeriodEnd && (
+                                <p className={styles.warningText}>You've used {subscription.usage.costPercentUsed}% of your token cost limit this billing period.</p>
                             )}
                         </div>
 
@@ -115,6 +128,7 @@ export default function Settings() {
                                     <p className={styles.planDescription}>{plan.description}</p>
                                     <p className={styles.planPrice}>{plan.priceMonthly === 0 ? 'Free' : `$${plan.priceMonthly / 100}/month`}</p>
                                     <p className={styles.planMessages}>{plan.messageLimit} messages/month</p>
+                                    <p className={styles.planMessages}>${microdollarsToDollars(plan.tokenCostLimitMicrodollars).toFixed(2)} token cost/month</p>
 
                                     {subscription.tier === plan.tier && !subscription.cancelAtPeriodEnd ? (
                                         <button className={styles.planButton} disabled>

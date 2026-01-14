@@ -47,11 +47,17 @@ export class Organization {
     @Column({ type: 'int', default: 10 })
     messageLimit!: number;
 
-    @Column({ type: 'timestamp', nullable: true })
-    billingPeriodStart?: Date;
+    @Column({ type: 'int', default: 0 })
+    tokenCostUsedMicrodollars!: number;
 
-    @Column({ type: 'timestamp', nullable: true })
-    billingPeriodEnd?: Date;
+    @Column({ type: 'int', default: 5_000_000 })
+    tokenCostLimitMicrodollars!: number;
+
+    @Column({ type: 'timestamp' })
+    billingPeriodStart!: Date;
+
+    @Column({ type: 'timestamp' })
+    billingPeriodEnd!: Date;
 
     @CreateDateColumn()
     createdAt!: Date;

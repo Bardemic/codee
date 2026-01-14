@@ -1,6 +1,6 @@
 'use step';
 
-import { generateText, stepCountIs, type StepResult, type ToolSet } from 'ai';
+import { generateText, stepCountIs } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { withTracing } from '@posthog/ai';
 import { Sandbox } from '@vercel/sandbox';
@@ -18,12 +18,27 @@ if (!process.env.POSTHOG_API_KEY) {
     throw new Error('POSTHOG_API_KEY is not set');
 }
 
-export async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: string[], previousMessages: Message[]) {
+export type TokenUsageAccumulator = {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+};
+
+export const AGENT_MODEL = 'gpt-5-mini';
+export const ORCHESTRATOR_MODEL = 'gpt-5-mini';
+
+export async function runAgentLLM(
+    agentId: number,
+    sandbox: Sandbox,
+    toolSlugs: string[],
+    previousMessages: Message[],
+    usageAccumulator: TokenUsageAccumulator
+) {
     const phClient = new PostHog(process.env.POSTHOG_API_KEY!, { host: 'https://us.i.posthog.com' });
     const openaiClient = createOpenAI({
         apiKey: process.env.OPENAI_API_KEY,
     });
-    const model = withTracing(openaiClient('gpt-5-mini'), phClient, { posthogTraceId: `agent_${agentId}_${previousMessages.length}` });
+    const model = withTracing(openaiClient(AGENT_MODEL), phClient, { posthogTraceId: `agent_${agentId}_${previousMessages.length}` });
 
     const tools = sandboxTools(agentId, sandbox);
     const dynamicTools = await buildDynamicTools(agentId, toolSlugs, sandbox);
@@ -42,7 +57,12 @@ export async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: 
         messages,
         tools: { ...tools, ...dynamicTools },
         stopWhen: stepCountIs(32),
-        onStepFinish: streamReasoning,
+        onStepFinish: (step) => {
+            streamReasoning(step);
+            usageAccumulator.promptTokens += step.usage.inputTokens || 0;
+            usageAccumulator.completionTokens += step.usage.outputTokens || 0;
+            usageAccumulator.totalTokens += step.usage.totalTokens || 0;
+        },
     });
 
     await phClient.shutdown();
@@ -50,15 +70,22 @@ export async function runAgentLLM(agentId: number, sandbox: Sandbox, toolSlugs: 
     return {
         final: result.text,
         steps: result.steps,
+        model: AGENT_MODEL,
     };
 }
 
-export async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, toolSlugs: string[], previousMessages: Message[]) {
+export async function runOrchestratorAgentLLM(
+    agent: Agent,
+    sandbox: Sandbox,
+    toolSlugs: string[],
+    previousMessages: Message[],
+    usageAccumulator: TokenUsageAccumulator
+) {
     const phClient = new PostHog(process.env.POSTHOG_API_KEY!, { host: 'https://us.i.posthog.com' });
     const openaiClient = createOpenAI({
         apiKey: process.env.OPENAI_API_KEY,
     });
-    const model = withTracing(openaiClient('gpt-5-mini'), phClient, { posthogTraceId: `agent_${agent.id}_${previousMessages.length}` });
+    const model = withTracing(openaiClient(ORCHESTRATOR_MODEL), phClient, { posthogTraceId: `agent_${agent.id}_${previousMessages.length}` });
 
     const tools = sandboxTools(agent.id, sandbox);
     const userImages = previousMessages.filter((message) => message.sender === 'USER').flatMap((message) => message.images);
@@ -87,7 +114,12 @@ export async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, to
         messages,
         tools: { ...orchestratorAgentTools, ...dynamicTools, ...tools },
         stopWhen: stepCountIs(32),
-        onStepFinish: streamReasoning,
+        onStepFinish: (step) => {
+            streamReasoning(step);
+            usageAccumulator.promptTokens += step.usage.inputTokens || 0;
+            usageAccumulator.completionTokens += step.usage.outputTokens || 0;
+            usageAccumulator.totalTokens += step.usage.totalTokens || 0;
+        },
     });
 
     await phClient.shutdown();
@@ -95,5 +127,6 @@ export async function runOrchestratorAgentLLM(agent: Agent, sandbox: Sandbox, to
     return {
         final: result.text,
         steps: result.steps,
+        model: ORCHESTRATOR_MODEL,
     };
 }

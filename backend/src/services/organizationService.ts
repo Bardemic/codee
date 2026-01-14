@@ -23,9 +23,15 @@ export async function ensureUserHasOrganization(user: { id: string; email: strin
 
     // Create organization in local database
     const orgRepo = AppDataSource.getRepository(Organization);
+    const now = new Date();
+    const periodEnd = new Date(now);
+    periodEnd.setMonth(periodEnd.getMonth() + 1);
+
     const organization = orgRepo.create({
         workosOrganizationId: workosOrg.id,
         name: 'Personal Workspace',
+        billingPeriodStart: now,
+        billingPeriodEnd: periodEnd,
     });
     await orgRepo.save(organization);
 

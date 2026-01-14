@@ -3,7 +3,7 @@
 import { Sandbox } from '@vercel/sandbox';
 import { AgentStatus } from '../db/entities/Agent';
 import { emitStatus } from '../stream/events';
-import { runAgentLLM, runOrchestratorAgentLLM } from './llm';
+import { runAgentLLM, runOrchestratorAgentLLM, type TokenUsageAccumulator, AGENT_MODEL, ORCHESTRATOR_MODEL } from './llm';
 import {
     loadAgent,
     validateAndGetToken,
@@ -31,6 +31,7 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
     'use workflow';
 
     let sandbox: Sandbox | undefined;
+    const usageAccumulator: TokenUsageAccumulator = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
     try {
         const agent = await loadAgent(payload.agentId);
@@ -46,9 +47,9 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
             updateAgent(agent, { status: AgentStatus.RUNNING }),
         ]);
 
-        const response = await runOrchestratorAgentLLM(agent, sandbox, payload.toolSlugs || [], previousMessages);
+        const response = await runOrchestratorAgentLLM(agent, sandbox, payload.toolSlugs || [], previousMessages, usageAccumulator);
 
-        await saveAgentResponse(agent, response);
+        await saveAgentResponse(agent, response, usageAccumulator);
 
         await cleanupSandbox(sandbox);
 
@@ -61,7 +62,7 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
                 // Ignore cleanup errors
             }
         }
-        await markAgentFailed(payload.agentId, error);
+        await markAgentFailed(payload.agentId, error, usageAccumulator, ORCHESTRATOR_MODEL);
         throw error;
     }
 }
@@ -70,6 +71,7 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
     'use workflow';
 
     let sandbox: Sandbox | undefined;
+    const usageAccumulator: TokenUsageAccumulator = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
     try {
         const agent = await loadAgent(payload.agentId);
@@ -84,9 +86,9 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
 
         await Promise.all([emitStatus(agent.id, 'running', 'sandboxagent_starting', 'running AI'), updateAgent(agent, { status: AgentStatus.RUNNING })]);
 
-        const response = await runAgentLLM(agent.id, sandbox, payload.toolSlugs || [], previousMessages);
+        const response = await runAgentLLM(agent.id, sandbox, payload.toolSlugs || [], previousMessages, usageAccumulator);
 
-        await saveAgentResponse(agent, response);
+        await saveAgentResponse(agent, response, usageAccumulator);
 
         if (payload.isOrchestratorAgent) {
             await cleanupSandbox(sandbox);
@@ -107,7 +109,7 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
                 // Ignore cleanup errors
             }
         }
-        await markAgentFailed(payload.agentId, error);
+        await markAgentFailed(payload.agentId, error, usageAccumulator, AGENT_MODEL);
         throw error;
     }
 }

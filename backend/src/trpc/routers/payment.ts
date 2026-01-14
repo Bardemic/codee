@@ -3,7 +3,6 @@
  */
 
 import { TRPCError } from '@trpc/server';
-import { z } from 'zod';
 import { authedProcedure, router } from '../trpc';
 import { AppDataSource } from '../../db/data-source';
 import { Organization } from '../../db/entities/Organization';
@@ -39,14 +38,11 @@ export const paymentRouter = router({
                 name: plan.name,
                 description: plan.description,
                 messageLimit: plan.messageLimit,
+                tokenCostLimitMicrodollars: plan.tokenCostLimitMicrodollars,
                 priceMonthly: plan.priceMonthly,
             })),
         };
     }),
-
-    /**
-     * Create a Stripe Checkout session for upgrading to paid
-     */
     createCheckoutSession: authedProcedure.mutation(async ({ ctx }) => {
         const organizationRepo = AppDataSource.getRepository(Organization);
         const organization = await organizationRepo.findOne({
@@ -58,10 +54,8 @@ export const paymentRouter = router({
         }
 
         try {
-            // Get or create Stripe customer
             const customerId = await getOrCreateStripeCustomer(organization, ctx.user.email);
 
-            // Update organization with customer ID if it was just created
             if (customerId !== organization.stripeCustomerId) {
                 await organizationRepo.update(organization.id, {
                     stripeCustomerId: customerId,
