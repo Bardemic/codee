@@ -1,6 +1,33 @@
 import type { ToolCall } from '../../lib/types';
 import style from './ToolsContainer.module.css';
 import { BsChevronDown, BsX } from 'react-icons/bs';
+import { useState } from 'react';
+
+function ScreenshotImage({ data, mimeType }: { data: string; mimeType: string }) {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    return (
+        <>
+            <img
+                src={`data:${mimeType};base64,${data}`}
+                alt="Screenshot"
+                className={style.screenshotImage}
+                onClick={() => setIsExpanded(true)}
+            />
+            {isExpanded && (
+                <div className={style.imageOverlay} onClick={() => setIsExpanded(false)}>
+                    <div className={style.imageOverlayContent}>
+                        <img
+                            src={`data:${mimeType};base64,${data}`}
+                            alt="Screenshot (full size)"
+                            className={style.screenshotImageFull}
+                        />
+                    </div>
+                </div>
+            )}
+        </>
+    );
+}
 
 export default function ToolsContainer({
     toolCalls,
@@ -59,6 +86,13 @@ export default function ToolsContainer({
                     {toolCall.result && (
                         <div className={style.toolCallResult}>
                             {typeof toolCall.result === 'object' ? JSON.stringify(toolCall.result, null, 2) : toolCall.result}
+                        </div>
+                    )}
+                    {toolCall.images && toolCall.images.length > 0 && (
+                        <div className={style.screenshotContainer}>
+                            {toolCall.images.map((image, index) => (
+                                <ScreenshotImage key={index} data={image.data} mimeType={image.mimeType} />
+                            ))}
                         </div>
                     )}
                 </div>
