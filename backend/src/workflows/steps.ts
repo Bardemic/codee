@@ -35,13 +35,7 @@ export async function validateAndGetToken(agent: Agent, repositoryFullName: stri
     return { repositoryFullName: repoName, token };
 }
 
-export async function prepareSandbox(
-    agent: Agent,
-    token: string,
-    repositoryFullName: string,
-    baseBranch: string,
-    toolSlugs?: string[]
-) {
+export async function prepareSandbox(agent: Agent, token: string, repositoryFullName: string, baseBranch: string, toolSlugs?: string[]) {
     await emitStatus(agent.id, 'starting', 'agent_init', 'preparing sandbox');
 
     // Expose ports if browser tools are enabled

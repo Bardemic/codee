@@ -6,13 +6,7 @@ import { updateAgent } from './agents';
 // Common ports for dev servers (Vercel Sandbox allows up to 4 ports)
 export const DEFAULT_BROWSER_PORTS = [3000, 3001, 5173];
 
-export async function createSandbox(
-    agent: Agent,
-    token: string,
-    repositoryFullName: string,
-    baseBranch: string,
-    ports?: number[]
-): Promise<Sandbox> {
+export async function createSandbox(agent: Agent, token: string, repositoryFullName: string, baseBranch: string, ports?: number[]): Promise<Sandbox> {
     const sandbox = await Sandbox.create({
         token: process.env.VERCEL_TOKEN,
         teamId: process.env.VERCEL_TEAM_ID,
