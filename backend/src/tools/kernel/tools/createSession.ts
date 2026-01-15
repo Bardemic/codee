@@ -2,17 +2,31 @@ import { z } from 'zod';
 import { tool, zodSchema } from 'ai';
 import { emitStatus } from '../../../stream/events';
 import { browserSessions, consoleLogs, networkLogs, getKernelClient, type BrowserToolResult } from '../session';
+import type { SandboxUrl } from '../index';
 
 const createSessionSchema = z.object({
     url: z.string().describe('Initial URL to navigate to after creating the browser'),
 });
 
-export function buildCreateSessionTool(params: { agentId: number }) {
-    const { agentId } = params;
+function buildDescription(sandboxUrls?: SandboxUrl[]): string {
+    let description =
+        'Create a new browser session using Kernel.sh. This starts a remote browser that can be controlled via other browser tools. If you need to access an app running in the sandbox, first start the dev server using runCommand (e.g., "npm run dev &> devserver.log & sleep 2; tail devserver.log") before creating the session.';
+
+    if (sandboxUrls && sandboxUrls.length > 0) {
+        description += '\n\nIMPORTANT: The browser runs on an external service and CANNOT access localhost/127.0.0.1. Use these sandbox public URLs instead:';
+        for (const { port, url } of sandboxUrls) {
+            description += `\n- Port ${port}: ${url}`;
+        }
+    }
+
+    return description;
+}
+
+export function buildCreateSessionTool(params: { agentId: number; sandboxUrls?: SandboxUrl[] }) {
+    const { agentId, sandboxUrls } = params;
 
     return tool({
-        description:
-            'Create a new browser session using Kernel.sh. This starts a remote browser that can be controlled via other browser tools. Call browser_start_dev_server first if you need to access an app running in the sandbox.',
+        description: buildDescription(sandboxUrls),
         inputSchema: zodSchema(createSessionSchema),
         execute: async (input): Promise<BrowserToolResult> => {
             const { url } = input;

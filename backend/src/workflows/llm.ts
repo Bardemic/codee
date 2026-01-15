@@ -49,8 +49,8 @@ export async function runAgentLLM(
         model,
         providerOptions: {
             openai: {
-                reasoningEffort: 'medium',
-                reasoningSummary: 'concise',
+                reasoningEffort: 'high',
+                reasoningSummary: 'detailed',
             },
         },
         system: AGENT_SYSTEM_PROMPT,
