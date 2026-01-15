@@ -72,7 +72,7 @@ export function buildCreateSessionTool(params: { agentId: number }) {
 
             if (url) {
                 await client.browsers.playwright.execute(sessionId, {
-                    code: `await page.goto('${url}', { waitUntil: 'domcontentloaded', timeout: 30000 });`,
+                    code: `await page.goto(${JSON.stringify(url)}, { waitUntil: 'domcontentloaded', timeout: 30000 });`,
                     timeout_sec: 35,
                 });
                 await client.browsers.playwright.execute(sessionId, {

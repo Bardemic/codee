@@ -25,7 +25,7 @@ export function buildClickTool(params: { agentId: number }) {
             const { sessionId, client } = session;
 
             await client.browsers.playwright.execute(sessionId, {
-                code: `await page.click('${selector.replace(/'/g, "\\'")}');`,
+                code: `await page.click(${JSON.stringify(selector)});`,
                 timeout_sec: 30,
             });
 

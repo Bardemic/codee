@@ -26,7 +26,7 @@ export function buildTypeTool(params: { agentId: number }) {
             const { sessionId, client } = session;
 
             await client.browsers.playwright.execute(sessionId, {
-                code: `await page.fill('${selector.replace(/'/g, "\\'")}', '${text.replace(/'/g, "\\'")}');`,
+                code: `await page.fill(${JSON.stringify(selector)}, ${JSON.stringify(text)});`,
                 timeout_sec: 30,
             });
 

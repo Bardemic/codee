@@ -26,7 +26,7 @@ export function buildNavigateTool(params: { agentId: number }) {
 
             await client.browsers.playwright.execute(sessionId, {
                 code: `
-                    await page.goto('${url}', { waitUntil: 'domcontentloaded', timeout: 30000 });
+                    await page.goto(${JSON.stringify(url)}, { waitUntil: 'domcontentloaded', timeout: 30000 });
                     // Wait for any pending JS to execute
                     await page.waitForTimeout(2000);
                     // Try to wait for network idle, but don't fail if it times out

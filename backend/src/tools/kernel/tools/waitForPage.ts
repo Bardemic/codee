@@ -31,7 +31,7 @@ export function buildWaitForPageTool(params: { agentId: number }) {
             try {
                 if (selector) {
                     await client.browsers.playwright.execute(sessionId, {
-                        code: `await page.waitForSelector('${selector.replace(/'/g, "\\'")}', { timeout: ${(timeout_sec || 30) * 1000} });`,
+                        code: `await page.waitForSelector(${JSON.stringify(selector)}, { timeout: ${(timeout_sec || 30) * 1000} });`,
                         timeout_sec: (timeout_sec || 30) + 5,
                     });
                     return { text: `Element "${selector}" found and visible.` };
