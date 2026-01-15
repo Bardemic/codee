@@ -4,7 +4,7 @@ import { emitStatus } from '../../../stream/events';
 import { browserSessions, consoleLogs, networkLogs, getKernelClient, type BrowserToolResult } from '../session';
 
 const createSessionSchema = z.object({
-    url: z.string().optional().describe('Optional initial URL to navigate to after creating the browser'),
+    url: z.string().describe('Initial URL to navigate to after creating the browser'),
 });
 
 export function buildCreateSessionTool(params: { agentId: number }) {

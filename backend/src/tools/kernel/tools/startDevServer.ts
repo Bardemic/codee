@@ -14,7 +14,7 @@ export function buildStartDevServerTool(params: { agentId: number; sandbox: Sand
 
     return tool({
         description:
-            'Start a development server in the sandbox and expose it via a public URL. Use this before browser_create_session to make your app accessible to the browser.',
+            'Start a development server in the sandbox and expose it via a public URL. Use this before browser_create_session to make your app accessible to the browser. Ensure you also install dependencies, as this is a fresh sandbox and is missing them.',
         inputSchema: zodSchema(startDevServerSchema),
         execute: async (input): Promise<BrowserToolResult> => {
             const { command, port } = input;
