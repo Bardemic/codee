@@ -38,7 +38,7 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
         const agent = await loadAgent(payload.agentId);
         const { repositoryFullName, token } = await validateAndGetToken(agent, payload.repositoryFullName);
 
-        sandbox = await prepareSandbox(agent, token, repositoryFullName, payload.baseBranch);
+        sandbox = await prepareSandbox(agent, token, repositoryFullName, payload.baseBranch, payload.toolSlugs);
         if (!sandbox) throw new Error('Failed to create sandbox');
 
         sandboxStartTime = Date.now();
@@ -55,13 +55,13 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
         const sandboxDurationMs = Date.now() - sandboxStartTime;
         await saveAgentResponse(agent, response, usageAccumulator, sandboxDurationMs);
 
-        await cleanupSandbox(sandbox);
+        await cleanupSandbox(sandbox, agent.id);
 
         await markAgentComplete(agent.id);
     } catch (error: unknown) {
         if (sandbox) {
             try {
-                await cleanupSandbox(sandbox);
+                await cleanupSandbox(sandbox, payload.agentId);
             } catch {
                 // Ignore cleanup errors
             }
@@ -82,7 +82,7 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
         const agent = await loadAgent(payload.agentId);
         const { repositoryFullName, token } = await validateAndGetToken(agent, payload.repositoryFullName);
 
-        sandbox = await prepareSandbox(agent, token, repositoryFullName, payload.baseBranch);
+        sandbox = await prepareSandbox(agent, token, repositoryFullName, payload.baseBranch, payload.toolSlugs);
         if (!sandbox) throw new Error('Failed to create sandbox');
 
         sandboxStartTime = Date.now();
@@ -99,20 +99,20 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
         await saveAgentResponse(agent, response, usageAccumulator, sandboxDurationMs);
 
         if (payload.isOrchestratorAgent) {
-            await cleanupSandbox(sandbox);
+            await cleanupSandbox(sandbox, agent.id);
             await markAgentComplete(agent.id);
             return;
         }
 
         await commitChangesIfNeeded(sandbox, agent.id, payload.prompt);
 
-        await cleanupSandbox(sandbox);
+        await cleanupSandbox(sandbox, agent.id);
 
         await markAgentComplete(agent.id);
     } catch (error: unknown) {
         if (sandbox) {
             try {
-                await cleanupSandbox(sandbox);
+                await cleanupSandbox(sandbox, payload.agentId);
             } catch {
                 // Ignore cleanup errors
             }

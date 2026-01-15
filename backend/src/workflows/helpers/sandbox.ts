@@ -3,7 +3,16 @@ import { Sandbox } from '@vercel/sandbox';
 import { Agent } from '../../db/entities/Agent';
 import { updateAgent } from './agents';
 
-export async function createSandbox(agent: Agent, token: string, repositoryFullName: string, baseBranch: string): Promise<Sandbox> {
+// Common ports for dev servers (Vercel Sandbox allows up to 4 ports)
+export const DEFAULT_BROWSER_PORTS = [3000, 3001, 5173];
+
+export async function createSandbox(
+    agent: Agent,
+    token: string,
+    repositoryFullName: string,
+    baseBranch: string,
+    ports?: number[]
+): Promise<Sandbox> {
     const sandbox = await Sandbox.create({
         token: process.env.VERCEL_TOKEN,
         teamId: process.env.VERCEL_TEAM_ID,
@@ -17,6 +26,7 @@ export async function createSandbox(agent: Agent, token: string, repositoryFullN
         runtime: process.env.VERCEL_RUNTIME || 'node22',
         timeout: 5 * 60 * 1000,
         resources: { vcpus: 2 },
+        ports: ports || [],
     });
 
     await updateAgent(agent, { sandboxId: sandbox.sandboxId });

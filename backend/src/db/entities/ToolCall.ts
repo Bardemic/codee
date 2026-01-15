@@ -2,6 +2,11 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, In
 import type { Agent } from './Agent';
 import type { Message } from './Message';
 
+export type ToolCallImage = {
+    data: string;
+    mimeType: string;
+};
+
 @Entity()
 export class ToolCall {
     @PrimaryGeneratedColumn()
@@ -25,6 +30,9 @@ export class ToolCall {
 
     @Column({ type: 'text', default: '' })
     result!: string;
+
+    @Column({ type: 'jsonb', default: [] })
+    images!: ToolCallImage[];
 
     @Column({ length: 20, default: 'success' })
     status!: string;

@@ -6,6 +6,8 @@
       "name": "backend",
       "dependencies": {
         "@ai-sdk/openai": "^3.0.0",
+        "@onkernel/ai-sdk": "^0.0.3",
+        "@onkernel/sdk": "^0.25.0",
         "@posthog/agent-toolkit": "^0.2.4",
         "@posthog/ai": "^7.3.0",
         "@trpc/server": "^11.0.0-rc.553",
@@ -327,6 +329,10 @@
     "@oclif/core": ["@oclif/core@4.0.0", "", { "dependencies": { "ansi-escapes": "^4.3.2", "ansis": "^3.1.1", "clean-stack": "^3.0.1", "cli-spinners": "^2.9.2", "cosmiconfig": "^9.0.0", "debug": "^4.3.5", "ejs": "^3.1.10", "get-package-type": "^0.1.0", "globby": "^11.1.0", "indent-string": "^4.0.0", "is-wsl": "^2.2.0", "minimatch": "^9.0.4", "string-width": "^4.2.3", "supports-color": "^8", "widest-line": "^3.1.0", "wordwrap": "^1.0.0", "wrap-ansi": "^7.0.0" } }, "sha512-BMWGvJrzn5PnG60gTNFEvaBT0jvGNiJCKN4aJBYP6E7Bq/Y5XPnxPrkj7ZZs/Jsd1oVn6K/JRmF6gWpv72DOew=="],
 
     "@oclif/plugin-help": ["@oclif/plugin-help@6.2.31", "", { "dependencies": { "@oclif/core": "^4" } }, "sha512-o4xR98DEFf+VqY+M9B3ZooTm2T/mlGvyBHwHcnsPJCEnvzHqEA9xUlCUK4jm7FBXHhkppziMgCC2snsueLoIpQ=="],
+
+    "@onkernel/ai-sdk": ["@onkernel/ai-sdk@0.0.3", "", { "dependencies": { "zod": "^4.1.12" }, "peerDependencies": { "@onkernel/sdk": "*", "ai": "^5" } }, "sha512-844KPxvyM6t5LJCZ5hX9FNrQfJRyLgVtEY2twtqTuL8/vPs7yqhu6gx+SbOV1R3sUYnNuI2gPL0FtiimqbRaNA=="],
+
+    "@onkernel/sdk": ["@onkernel/sdk@0.25.0", "", {}, "sha512-kMZ/499V9KCksvI/IxYx8juBKViWaCBLsoCOaZdfvLuXBy15310V+yoNUqu+J5q4Yfh+rHBcpFxn9H+GHfHfOQ=="],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.0", "", {}, "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="],
 
@@ -1847,6 +1853,8 @@
     "@oclif/core/minimatch": ["minimatch@9.0.5", "", { "dependencies": { "brace-expansion": "^2.0.1" } }, "sha512-G6T0ZX48xgozx7587koeX9Ys2NYy6Gmv//P89sEte9V9whIapMNF4idKxnW2QtCcLiTWlb/wfCabAtAFWhhBow=="],
 
     "@oclif/core/supports-color": ["supports-color@8.1.1", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-MpUEN2OodtUzxvKQl72cUF7RQ5EiHsGvSsVG0ia9c5RbWGL2CI4C7EpPS8UTBIplnlzZiNuV56w+FuNxy3ty2Q=="],
+
+    "@onkernel/ai-sdk/zod": ["zod@4.2.1", "", {}, "sha512-0wZ1IRqGGhMP76gLqz8EyfBXKk0J2qo2+H3fi4mcUP/KtTocoX08nmIAHl1Z2kJIZbZee8KOpBCSNPRgauucjw=="],
 
     "@posthog/agent-toolkit/ai": ["ai@5.0.116", "", { "dependencies": { "@ai-sdk/gateway": "2.0.23", "@ai-sdk/provider": "2.0.0", "@ai-sdk/provider-utils": "3.0.19", "@opentelemetry/api": "1.9.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-+2hYJ80/NcDWuv9K2/MLP3cTCFgwWHmHlS1tOpFUKKcmLbErAAlE/S2knsKboc3PNAu8pQkDr2N3K/Vle7ENgQ=="],
 

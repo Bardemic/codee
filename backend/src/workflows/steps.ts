@@ -7,10 +7,11 @@ import { AppDataSource } from '../db/data-source';
 import { emitDone, emitError, emitStatus } from '../stream/events';
 import { getAgentById, saveMessage, saveAgentActivity, updateAgent } from './helpers/agents';
 import { commitAndPush, generateBranchName, getGithubTokenForUser } from './helpers/github';
-import { createSandbox } from './helpers/sandbox';
+import { createSandbox, DEFAULT_BROWSER_PORTS } from './helpers/sandbox';
 import type { runAgentLLM, runOrchestratorAgentLLM, TokenUsageAccumulator } from './llm';
 import { calculateCostMicrodollars } from '../payment/model-pricing';
 import { incrementTokenCostMicrodollars, incrementSandboxTimeSeconds } from '../payment/usage';
+import { cleanupBrowserSession } from '../tools/kernel/index';
 
 export async function loadAgent(agentId: number) {
     const agent = await getAgentById(agentId);
@@ -34,11 +35,20 @@ export async function validateAndGetToken(agent: Agent, repositoryFullName: stri
     return { repositoryFullName: repoName, token };
 }
 
-export async function prepareSandbox(agent: Agent, token: string, repositoryFullName: string, baseBranch: string) {
+export async function prepareSandbox(
+    agent: Agent,
+    token: string,
+    repositoryFullName: string,
+    baseBranch: string,
+    toolSlugs?: string[]
+) {
     await emitStatus(agent.id, 'starting', 'agent_init', 'preparing sandbox');
 
+    // Expose ports if browser tools are enabled
+    const ports = toolSlugs?.includes('kernel/browser') ? DEFAULT_BROWSER_PORTS : undefined;
+
     try {
-        const sandbox = await createSandbox(agent, token, repositoryFullName, baseBranch);
+        const sandbox = await createSandbox(agent, token, repositoryFullName, baseBranch, ports);
         return sandbox;
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Failed to create sandbox';
@@ -122,7 +132,11 @@ export async function commitChangesIfNeeded(sandbox: Sandbox, agentId: number, p
     }
 }
 
-export async function cleanupSandbox(sandbox: Sandbox) {
+export async function cleanupSandbox(sandbox: Sandbox, agentId?: number) {
+    // Cleanup browser session if one exists
+    if (agentId !== undefined) {
+        await cleanupBrowserSession(agentId);
+    }
     await sandbox.stop();
 }
 

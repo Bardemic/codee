@@ -103,7 +103,7 @@ export class CodeeProvider implements CloudProvider {
                 arguments: toolCall.arguments,
                 result: toolCall.result,
                 status: toolCall.status,
-                duration_ms: toolCall.durationMs,
+                images: toolCall.images,
             });
             toolCallsByMessage.set(toolCall.message.id, list);
         }

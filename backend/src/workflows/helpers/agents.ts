@@ -3,9 +3,10 @@ import { AppDataSource } from '../../db/data-source';
 import { Agent } from '../../db/entities/Agent';
 import { IntegrationConnection } from '../../db/entities/IntegrationConnection';
 import { Message, type SenderType } from '../../db/entities/Message';
-import { ToolCall } from '../../db/entities/ToolCall';
+import { ToolCall, type ToolCallImage } from '../../db/entities/ToolCall';
 import { updateSlackWorkspaceStatus } from '../../slack/notifications';
 import type { TokenUsageAccumulator } from '../llm';
+import type { BrowserToolResult } from '../../tools/kernel/index';
 
 export async function getAgentById(agentId: number) {
     return AppDataSource.getRepository(Agent).findOne({
@@ -59,19 +60,34 @@ export async function saveAgentActivity(
                     toolName: 'reasoning',
                     arguments: {},
                     result: reasoningText,
+                    images: [],
                     status: 'success',
                 })
             );
         }
         for (const toolResult of step.toolResults) {
             const toolArguments = (toolResult.input ?? {}) as Record<string, unknown>;
+
+            // Extract images if present in output (for browser tools)
+            const output = toolResult.output as BrowserToolResult | string | undefined;
+            let resultText: string;
+            let images: ToolCallImage[] = [];
+
+            if (typeof output === 'object' && output !== null && 'text' in output) {
+                resultText = output.text || '';
+                images = output.images || [];
+            } else {
+                resultText = (output as string) || '';
+            }
+
             savedToolCalls.push(
                 toolCallRepository.create({
                     agent,
                     message,
                     toolName: toolResult.toolName,
                     arguments: toolArguments,
-                    result: (toolResult.output as string) || '',
+                    result: resultText,
+                    images,
                     status: 'success',
                 })
             );

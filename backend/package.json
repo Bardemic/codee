@@ -27,6 +27,8 @@
     },
     "dependencies": {
         "@ai-sdk/openai": "^3.0.0",
+        "@onkernel/ai-sdk": "^0.0.3",
+        "@onkernel/sdk": "^0.25.0",
         "@posthog/agent-toolkit": "^0.2.4",
         "@posthog/ai": "^7.3.0",
         "@trpc/server": "^11.0.0-rc.553",
