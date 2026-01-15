@@ -55,6 +55,7 @@ export async function loadPreviousMessages(agentId: number) {
     return await AppDataSource.getRepository(Message).find({
         where: { agent: { id: agentId } },
         order: { createdAt: 'ASC' },
+        relations: ['toolCalls'],
     });
 }
 

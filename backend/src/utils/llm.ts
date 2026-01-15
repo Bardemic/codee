@@ -1,7 +1,8 @@
-import { generateObject, type ModelMessage } from 'ai';
+import { generateObject, type ModelMessage, type ToolCallPart, type ToolResultPart } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { z } from 'zod';
 import type { Message } from '../db/entities/Message';
+import type { ToolCall } from '../db/entities/ToolCall';
 // import { getPostHog } from './posthog';
 
 const openaiClient = createOpenAI({
@@ -43,26 +44,66 @@ export async function generateTitle(prompt: string): Promise<string> {
 }
 
 export function transformMessagesToModelMessages(previousMessages: Message[]): ModelMessage[] {
-    return previousMessages.map<ModelMessage>((message) => {
-        if (message.sender === 'USER' && message.images.length > 0) {
-            const content: Array<{ type: 'text'; text: string } | { type: 'image'; image: string; mimeType?: string }> = [
-                { type: 'text', text: message.content },
-            ];
-            for (const image of message.images) {
-                content.push({
-                    type: 'image',
-                    image: image.data,
-                    mimeType: image.mimeType,
-                });
+    const result: ModelMessage[] = [];
+
+    for (const message of previousMessages) {
+        if (message.sender === 'USER') {
+            // User messages with images
+            if (message.images && message.images.length > 0) {
+                const content: Array<{ type: 'text'; text: string } | { type: 'image'; image: string; mimeType?: string }> = [
+                    { type: 'text', text: message.content },
+                ];
+                for (const image of message.images) {
+                    content.push({
+                        type: 'image',
+                        image: image.data,
+                        mimeType: image.mimeType,
+                    });
+                }
+                result.push({ role: 'user', content });
+            } else {
+                result.push({ role: 'user', content: message.content });
             }
-            return {
-                role: 'user',
-                content,
-            };
+        } else {
+            // Agent messages - include tool calls if present
+            const toolCalls = message.toolCalls || [];
+
+            if (toolCalls.length > 0) {
+                // Build assistant message with tool calls
+                const assistantContent: Array<{ type: 'text'; text: string } | ToolCallPart> = [];
+
+                // Add tool calls to assistant content
+                for (const toolCall of toolCalls) {
+                    assistantContent.push({
+                        type: 'tool-call',
+                        toolCallId: `tool_${toolCall.id}`,
+                        toolName: toolCall.toolName,
+                        input: toolCall.arguments,
+                    });
+                }
+
+                // Add the final text response if present
+                if (message.content) {
+                    assistantContent.push({ type: 'text', text: message.content });
+                }
+
+                result.push({ role: 'assistant', content: assistantContent });
+
+                // Add tool results as a separate tool message
+                const toolResults: ToolResultPart[] = toolCalls.map((toolCall: ToolCall) => ({
+                    type: 'tool-result' as const,
+                    toolCallId: `tool_${toolCall.id}`,
+                    toolName: toolCall.toolName,
+                    output: { type: 'text' as const, value: toolCall.result || '' },
+                }));
+
+                result.push({ role: 'tool', content: toolResults });
+            } else {
+                // No tool calls, just add the text content
+                result.push({ role: 'assistant', content: message.content });
+            }
         }
-        return {
-            role: message.sender === 'USER' ? 'user' : 'assistant',
-            content: message.content,
-        };
-    });
+    }
+
+    return result;
 }

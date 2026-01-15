@@ -8,37 +8,73 @@ interface MessageProps {
     isLastInGroup: boolean;
 }
 
+type ParsedPart = { type: 'text'; content: string } | { type: 'image'; image: MessageImage; key: string };
+
 function parseMessageContent(content: string, toolCallImages: MessageImage[]): ReactNode[] {
     const pattern = /\[codee_image_(\d+)\]/g;
-    const parts: ReactNode[] = [];
+    const parts: ParsedPart[] = [];
     let lastIndex = 0;
     let match;
 
     while ((match = pattern.exec(content)) !== null) {
         if (match.index > lastIndex) {
-            parts.push(content.slice(lastIndex, match.index));
+            const textContent = content.slice(lastIndex, match.index);
+            if (textContent.trim() || textContent.includes('\n')) {
+                parts.push({ type: 'text', content: textContent });
+            }
         }
 
         const imageIndex = parseInt(match[1], 10) - 1;
         if (imageIndex >= 0 && imageIndex < toolCallImages.length) {
-            const image = toolCallImages[imageIndex];
-            parts.push(
-                <div key={`image-${match.index}`} className={style.inlineImageWrapper}>
-                    <ScreenshotImage data={image.data} mimeType={image.mimeType} />
-                </div>
-            );
+            parts.push({ type: 'image', image: toolCallImages[imageIndex], key: `image-${match.index}` });
         } else {
-            parts.push(match[0]);
+            parts.push({ type: 'text', content: match[0] });
         }
 
         lastIndex = pattern.lastIndex;
     }
 
     if (lastIndex < content.length) {
-        parts.push(content.slice(lastIndex));
+        parts.push({ type: 'text', content: content.slice(lastIndex) });
     }
 
-    return parts;
+    const result: ReactNode[] = [];
+    let i = 0;
+    while (i < parts.length) {
+        const part = parts[i];
+        if (part.type === 'text') {
+            result.push(part.content);
+            i++;
+        } else {
+            const imageGroup: ParsedPart[] = [part];
+            let j = i + 1;
+            while (j < parts.length && parts[j].type === 'image') {
+                imageGroup.push(parts[j]);
+                j++;
+            }
+
+            if (imageGroup.length === 1) {
+                const img = imageGroup[0] as { type: 'image'; image: MessageImage; key: string };
+                result.push(
+                    <div key={img.key} className={style.inlineImageWrapper}>
+                        <ScreenshotImage data={img.image.data} mimeType={img.image.mimeType} />
+                    </div>
+                );
+            } else {
+                result.push(
+                    <div key={`row-${i}`} className={style.inlineImageRow}>
+                        {imageGroup.map((img) => {
+                            const imgPart = img as { type: 'image'; image: MessageImage; key: string };
+                            return <ScreenshotImage key={imgPart.key} data={imgPart.image.data} mimeType={imgPart.image.mimeType} />;
+                        })}
+                    </div>
+                );
+            }
+            i = j;
+        }
+    }
+
+    return result;
 }
 
 export default function Message({ message, isLastInGroup }: MessageProps) {

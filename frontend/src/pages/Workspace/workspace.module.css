@@ -432,12 +432,23 @@
 
 .inlineImageWrapper {
     display: block;
-    margin: 6px 0;
 }
 
 .inlineImageWrapper > img {
+    display: block;
     max-width: 40%;
-    max-height: 300px;
+    max-height: 200px;
+}
+
+.inlineImageRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.inlineImageRow > img {
+    max-width: 200px;
+    max-height: 150px;
 }
 
 .failedToolCallItem {

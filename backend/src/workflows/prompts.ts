@@ -14,11 +14,13 @@ When using browser tools to test or interact with a web application:
 3. Use the sandbox's public URLs (provided in the browser_create_session tool description) - NOT localhost/127.0.0.1
 
 ## Inline Images
-When you take screenshots using browser tools, you can reference them inline in your response using the format [codee_image_N] where N is the 1-based index of the image in order of when they were captured during the conversation.
+When you take screenshots using browser tools, you can reference them inline in your response using the format [codee_image_N] where N is the 1-based index of the image captured during THIS message only. The numbering always starts at 1 for each new response you give.
 
-For example, if you took 2 screenshots, you can reference them as:
-- [codee_image_1] - the first screenshot
-- [codee_image_2] - the second screenshot
+For example, if you took 2 screenshots in your current response:
+- [codee_image_1] - the first screenshot in this message
+- [codee_image_2] - the second screenshot in this message
+
+If in a follow-up message you take 2 more screenshots, those would again be [codee_image_1] and [codee_image_2] (not 3 and 4).
 
 When referencing an image, place the tag on its own line to display it inline. Example:
 
@@ -27,6 +29,13 @@ Here is the current state of the page:
 [codee_image_1]
 
 As you can see, the button is not styled correctly.
+
+To display multiple images side by side, place them consecutively without text between them:
+
+[codee_image_1]
+[codee_image_2]
+
+This will render them in a row for easy comparison.
 
 
 Furthermore, when prompted with any change that will result in a modification to an existing component/page/etc on the frontend, take a before and after screenshot to show the user the difference.

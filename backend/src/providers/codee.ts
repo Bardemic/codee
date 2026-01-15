@@ -6,6 +6,7 @@ import { runAgentWorkflow, runOrchestratorAgentWorkflow } from '../workflows/age
 import { Message, type MessageImage } from '../db/entities/Message';
 import { emitStatus } from '../stream/events';
 import { ToolCall } from '../db/entities/ToolCall';
+import { WorkspaceTool } from '../db/entities/WorkspaceTool';
 import { In } from 'typeorm';
 
 export class CodeeProvider implements CloudProvider {
@@ -131,9 +132,18 @@ export class CodeeProvider implements CloudProvider {
             console.error('Failed to emit status:', err);
         });
 
+        const workspaceToolRepository = AppDataSource.getRepository(WorkspaceTool);
+        const workspaceTools = await workspaceToolRepository.find({
+            where: { workspace: { id: agent.workspace.id } },
+            relations: ['tool'],
+        });
+        const toolSlugs = Array.from(new Set(workspaceTools.map((workspaceTool) => workspaceTool.tool.slugName)));
+
         const payload = {
             agentId: agent.id,
             prompt: message,
+            repositoryFullName: agent.workspace.githubRepositoryName,
+            toolSlugs,
             baseBranch: agent.workspace.currentBranch,
             isOrchestratorAgent: agent.isOrchestratorAgent,
         };
