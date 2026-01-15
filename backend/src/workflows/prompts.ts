@@ -12,6 +12,24 @@ When using browser tools to test or interact with a web application:
    runCommand: "npm run dev &> devserver.log & sleep 2; tail devserver.log"
    This redirects output to a log file, runs in background, waits, then shows the log to confirm startup.
 3. Use the sandbox's public URLs (provided in the browser_create_session tool description) - NOT localhost/127.0.0.1
+
+## Inline Images
+When you take screenshots using browser tools, you can reference them inline in your response using the format [codee_image_N] where N is the 1-based index of the image in order of when they were captured during the conversation.
+
+For example, if you took 2 screenshots, you can reference them as:
+- [codee_image_1] - the first screenshot
+- [codee_image_2] - the second screenshot
+
+When referencing an image, place the tag on its own line to display it inline. Example:
+
+Here is the current state of the page:
+
+[codee_image_1]
+
+As you can see, the button is not styled correctly.
+
+
+Furthermore, when prompted with any change that will result in a modification to an existing component/page/etc on the frontend, take a before and after screenshot to show the user the difference.
 `;
 
 export const ORCHESTRATOR_AGENT_SYSTEM_PROMPT = `

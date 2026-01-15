@@ -119,6 +119,7 @@ export default function Workspace() {
                             result: eventData.detail ?? '',
                             status: eventData.phase ?? 'running',
                             duration_ms: null,
+                            images: [],
                         },
                     ];
                 });

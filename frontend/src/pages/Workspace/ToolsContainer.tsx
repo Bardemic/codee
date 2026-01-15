@@ -3,7 +3,7 @@ import style from './ToolsContainer.module.css';
 import { BsChevronDown, BsX } from 'react-icons/bs';
 import { useState } from 'react';
 
-function ScreenshotImage({ data, mimeType }: { data: string; mimeType: string }) {
+export function ScreenshotImage({ data, mimeType }: { data: string; mimeType: string }) {
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
