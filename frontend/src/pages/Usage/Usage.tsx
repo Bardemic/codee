@@ -19,11 +19,11 @@ function formatSeconds(seconds: number): string {
 
     if (hours > 0) {
         return `${hours}h ${minutes}m`;
-    } else if (minutes > 0) {
-        return `${minutes}m ${secs}s`;
-    } else {
-        return `${secs}s`;
     }
+    if (minutes > 0) {
+        return `${minutes}m ${secs}s`;
+    }
+    return `${secs}s`;
 }
 
 function formatMilliseconds(ms: number): string {
@@ -64,48 +64,55 @@ export default function Usage() {
                         percentUsed={usage.sandboxTimePercentUsed}
                     />
                 </div>
-                <h3>
-                    Want higher limits?
-                    <Link to="/organization"> Upgrade your plan</Link>
-                </h3>
-
-                {messagesData && messagesData.messages.length > 0 && (
-                    <div className={styles.messagesSection}>
-                        <h2>Recent Messages</h2>
-                        <table className={styles.messagesTable}>
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Model</th>
-                                    <th>Runtime</th>
-                                    <th>LLM Cost</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {messagesData.messages.map((message) => (
-                                    <tr key={message.id}>
-                                        <td>{new Date(message.createdAt).toLocaleString()}</td>
-                                        <td>{message.model}</td>
-                                        <td>{formatMilliseconds(message.sandboxDurationMs)}</td>
-                                        <td>${microdollarsToDollars(message.costMicrodollars).toFixed(4)}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {messagesData.totalPages > 1 && (
-                            <div className={styles.pagination}>
-                                <button type="button" onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
-                                    <FiChevronLeft />
-                                </button>
-                                <span>{page}</span>
-                                <button type="button" onClick={() => setPage((p) => p + 1)} disabled={page === messagesData.totalPages}>
-                                    <FiChevronRight />
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
+                <Link to="/organization" className={styles.upgradeLink}>
+                    Want higher limits? Upgrade your plan
+                </Link>
             </section>
+
+            {messagesData && messagesData.messages.length > 0 && (
+                <section className={styles.messagesSection}>
+                    <h2>Recent Messages</h2>
+                    <table className={styles.messagesTable}>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Model</th>
+                                <th>Runtime</th>
+                                <th>LLM Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {messagesData.messages.map((message) => (
+                                <tr key={message.id}>
+                                    <td>{new Date(message.createdAt).toLocaleString()}</td>
+                                    <td>{message.model}</td>
+                                    <td>{formatMilliseconds(message.sandboxDurationMs)}</td>
+                                    <td>${microdollarsToDollars(message.costMicrodollars).toFixed(4)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {messagesData.totalPages > 1 && (
+                        <div className={styles.pagination}>
+                            <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                                <FiChevronLeft />
+                                Previous
+                            </button>
+                            <span>
+                                Page {page} of {messagesData.totalPages}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setPage((p) => Math.min(messagesData.totalPages, p + 1))}
+                                disabled={page === messagesData.totalPages}
+                            >
+                                Next
+                                <FiChevronRight />
+                            </button>
+                        </div>
+                    )}
+                </section>
+            )}
         </div>
     );
 }

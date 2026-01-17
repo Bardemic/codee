@@ -10,11 +10,11 @@ interface UsageCardProps {
 export default function UsageCard({ title, usedValue, limitValue, percentUsed }: UsageCardProps) {
     return (
         <div className={styles.usageCard}>
-            <div className={styles.usageHeader}>
+            <div>
                 <span className={styles.usageTitle}>{title}</span>
-                <span className={styles.usageValues}>
+                <div className={styles.usageValues}>
                     {usedValue} <span className={styles.limit}>/ {limitValue}</span>
-                </span>
+                </div>
             </div>
             <div className={styles.progressBarContainer}>
                 <div
@@ -23,7 +23,7 @@ export default function UsageCard({ title, usedValue, limitValue, percentUsed }:
                 />
             </div>
             <div className={styles.usageFooter}>
-                <span className={styles.percentUsed}>{percentUsed}% used</span>
+                <span className={styles.percentUsed}>{percentUsed.toFixed(2)}% used</span>
             </div>
         </div>
     );
