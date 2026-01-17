@@ -3,6 +3,23 @@ import style from './ToolsContainer.module.css';
 import { BsChevronDown, BsX } from 'react-icons/bs';
 import { useState } from 'react';
 
+function formatToolCommand(toolName: string, args: Record<string, unknown> | undefined): string {
+    if (!args || Object.keys(args).length === 0) {
+        return toolName;
+    }
+    
+    const formattedArgs = Object.entries(args)
+        .map(([key, value]) => {
+            const strValue = typeof value === 'string' ? value : JSON.stringify(value);
+            // Truncate long values for display
+            const displayValue = strValue.length > 50 ? strValue.slice(0, 47) + '...' : strValue;
+            return `--${key} ${displayValue}`;
+        })
+        .join(' ');
+    
+    return `${toolName} ${formattedArgs}`;
+}
+
 export function ScreenshotImage({ data, mimeType }: { data: string; mimeType: string }) {
     const [isExpanded, setIsExpanded] = useState(false);
 
@@ -57,7 +74,7 @@ export default function ToolsContainer({
                         <p>
                             {lastToolCall
                                 ? lastToolCall.tool_name !== 'reasoning'
-                                    ? `${lastToolCall.tool_name}(${JSON.stringify(lastToolCall.arguments, null, 2)})`
+                                    ? formatToolCommand(lastToolCall.tool_name, lastToolCall.arguments)
                                     : `${lastToolCall.result}`
                                 : 'Setting up sandbox...'}
                         </p>
@@ -77,11 +94,27 @@ export default function ToolsContainer({
             {toolCalls.map((toolCall) => (
                 <div key={toolCall.id} className={style.toolCallItem}>
                     <div className={style.toolCallHeader}>
-                        <span>
-                            {toolCall.tool_name !== 'reasoning' && <strong>Codee-Sandbox % </strong>}
-                            {toolCall.tool_name !== 'reasoning' &&
-                                `${toolCall.tool_name}(${toolCall.arguments && Object.keys(toolCall.arguments).length > 0 && JSON.stringify(toolCall.arguments)})`}
-                        </span>
+                        {toolCall.tool_name !== 'reasoning' && (
+                            <span>
+                                <span className={style.prompt}>$</span>{' '}
+                                <span className={style.toolName}>{toolCall.tool_name}</span>
+                                {toolCall.arguments && Object.keys(toolCall.arguments).length > 0 && (
+                                    <span className={style.toolArgs}>
+                                        {Object.entries(toolCall.arguments).map(([key, value], i) => {
+                                            const strValue = typeof value === 'string' ? value : JSON.stringify(value);
+                                            const displayValue = strValue.length > 60 ? strValue.slice(0, 57) + '...' : strValue;
+                                            return (
+                                                <span key={key}>
+                                                    {' '}
+                                                    <span className={style.argKey}>--{key}</span>{' '}
+                                                    <span className={style.argValue}>{displayValue}</span>
+                                                </span>
+                                            );
+                                        })}
+                                    </span>
+                                )}
+                            </span>
+                        )}
                     </div>
                     {toolCall.result && (
                         <div className={style.toolCallResult}>

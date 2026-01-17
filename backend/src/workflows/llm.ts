@@ -28,7 +28,7 @@ export type TokenUsageAccumulator = {
     totalTokens: number;
 };
 
-export const AGENT_MODEL = 'gpt-5-mini';
+export const AGENT_MODEL = 'gpt-5.1-codex';
 export const ORCHESTRATOR_MODEL = 'gpt-5-mini';
 
 export async function runAgentLLM(
@@ -43,7 +43,10 @@ export async function runAgentLLM(
     const openaiClient = createOpenAI({
         apiKey: process.env.OPENAI_API_KEY,
     });
+
+    const geminiClient = createGeminiProvider({ authType: 'oauth-personal' });
     const model = withTracing(openaiClient(AGENT_MODEL), phClient, { posthogTraceId: `agent_${agentId}_${previousMessages.length}` });
+    const modelGemini = withTracing(geminiClient('gemini-3-pro-preview'), phClient, { posthogTraceId: `agent_${agentId}_${previousMessages.length}` });
 
     const tools = sandboxTools(agentId, sandbox);
     const dynamicTools = await buildDynamicTools(agentId, toolSlugs, sandbox);
@@ -61,7 +64,7 @@ export async function runAgentLLM(
     const streamReasoning = createReasoningStreamer(agentId);
 
     const result = await generateText({
-        model,
+        model: model,
         providerOptions: {
             openai: {
                 reasoningEffort: 'high',

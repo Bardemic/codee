@@ -3,6 +3,7 @@
 import { Sandbox } from '@vercel/sandbox';
 import { Agent, AgentStatus } from '../db/entities/Agent';
 import { Message } from '../db/entities/Message';
+import { SubscriptionTier } from '../db/entities/Organization';
 import { AppDataSource } from '../db/data-source';
 import { emitDone, emitError, emitStatus } from '../stream/events';
 import { getAgentById, saveMessage, saveAgentActivity, updateAgent } from './helpers/agents';
@@ -35,11 +36,12 @@ export async function validateAndGetToken(agent: Agent, repositoryFullName: stri
     return { repositoryFullName: repoName, token };
 }
 
-export async function prepareSandbox(agent: Agent, token: string, repositoryFullName: string, baseBranch: string, toolSlugs?: string[]) {
+export async function prepareSandbox(agent: Agent, token: string, repositoryFullName: string, baseBranch: string) {
     await emitStatus(agent.id, 'starting', 'agent_init', 'preparing sandbox');
 
-    // Expose ports if browser tools are enabled
-    const ports = toolSlugs?.includes('kernel/browser') ? DEFAULT_BROWSER_PORTS : undefined;
+    // Expose browser ports for non-free users (browser tools are a paid feature)
+    const hasBrowserAccess = agent.workspace.organization?.subscriptionTier !== SubscriptionTier.FREE;
+    const ports = hasBrowserAccess ? DEFAULT_BROWSER_PORTS : undefined;
 
     try {
         const sandbox = await createSandbox(agent, token, repositoryFullName, baseBranch, ports);

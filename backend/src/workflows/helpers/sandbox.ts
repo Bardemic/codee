@@ -18,7 +18,7 @@ export async function createSandbox(agent: Agent, token: string, repositoryFullN
             revision: baseBranch,
         },
         runtime: process.env.VERCEL_RUNTIME || 'node22',
-        timeout: 5 * 60 * 1000,
+        timeout: 30 * 60 * 1000,
         resources: { vcpus: 2 },
         ports: ports || [],
     });
