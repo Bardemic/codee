@@ -36,6 +36,7 @@
         "@vercel/sandbox": "^1.1.1",
         "@workos-inc/node": "^7.82.0",
         "ai": "^6.0.0",
+        "ai-sdk-provider-gemini-cli": "^2.0.1",
         "axios": "^1.7.9",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.5",

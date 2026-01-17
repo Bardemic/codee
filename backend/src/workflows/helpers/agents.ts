@@ -11,7 +11,7 @@ import type { BrowserToolResult } from '../../tools/kernel/index';
 export async function getAgentById(agentId: number) {
     return AppDataSource.getRepository(Agent).findOne({
         where: { id: agentId },
-        relations: ['workspace'],
+        relations: ['workspace', 'workspace.organization'],
     });
 }
 

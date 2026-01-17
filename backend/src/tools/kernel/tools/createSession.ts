@@ -10,7 +10,7 @@ const createSessionSchema = z.object({
 
 function buildDescription(sandboxUrls?: SandboxUrl[]): string {
     let description =
-        'Create a new browser session using Kernel.sh. This starts a remote browser that can be controlled via other browser tools. If you need to access an app running in the sandbox, first start the dev server using runCommand (e.g., "npm run dev &> devserver.log & sleep 2; tail devserver.log") before creating the session.';
+        'Create a new browser session using a browser provider. This starts a remote browser that can be controlled via other browser tools. If you need to access an app running in the sandbox, first start the dev server using runCommand (e.g., "npm run dev &> devserver.log & sleep 2; tail devserver.log") before creating the session.';
 
     if (sandboxUrls && sandboxUrls.length > 0) {
         description += '\n\nIMPORTANT: The browser runs on an external service and CANNOT access localhost/127.0.0.1. Use these sandbox public URLs instead:';

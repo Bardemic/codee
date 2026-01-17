@@ -1,8 +1,6 @@
 import type { Sandbox } from '@vercel/sandbox';
 import { buildQueryRunnerTools, buildInsightTools, buildErrorTools, buildDocumentationTools, type ToolCollection } from './posthog/index';
 import { buildCommitTools } from './github/commits';
-import { buildBrowserTools, type SandboxUrl } from './kernel/index';
-import { DEFAULT_BROWSER_PORTS } from '../workflows/helpers/sandbox';
 
 export async function buildDynamicTools(agentId: number, toolSlugs: string[], sandbox: Sandbox): Promise<ToolCollection> {
     const tools: ToolCollection = {};
@@ -32,15 +30,6 @@ export async function buildDynamicTools(agentId: number, toolSlugs: string[], sa
 
     if (toolSlugs.includes('github/commits')) {
         Object.assign(tools, buildCommitTools(sandbox));
-    }
-
-    if (toolSlugs.includes('kernel/browser')) {
-        const sandboxUrls: SandboxUrl[] = DEFAULT_BROWSER_PORTS.map((port) => ({
-            port,
-            url: sandbox.domain(port),
-        }));
-        const browserTools = buildBrowserTools({ agentId, sandboxUrls });
-        Object.assign(tools, browserTools);
     }
 
     return tools;

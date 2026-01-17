@@ -40,12 +40,6 @@ const PROVIDER_SEEDS: ProviderSeed[] = [
         ],
     },
     {
-        slug: 'kernel',
-        displayName: 'Kernel.sh',
-        hasCloudAgent: false,
-        tools: [{ displayName: 'Browser Automation', slugName: 'kernel/browser' }],
-    },
-    {
         slug: 'cursor',
         displayName: 'Cursor',
         hasCloudAgent: true,

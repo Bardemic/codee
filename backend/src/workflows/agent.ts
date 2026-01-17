@@ -2,6 +2,7 @@
 
 import { Sandbox } from '@vercel/sandbox';
 import { AgentStatus } from '../db/entities/Agent';
+import { SubscriptionTier } from '../db/entities/Organization';
 import { emitStatus } from '../stream/events';
 import { runAgentLLM, runOrchestratorAgentLLM, type TokenUsageAccumulator, AGENT_MODEL, ORCHESTRATOR_MODEL } from './llm';
 import {
@@ -38,7 +39,7 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
         const agent = await loadAgent(payload.agentId);
         const { repositoryFullName, token } = await validateAndGetToken(agent, payload.repositoryFullName);
 
-        sandbox = await prepareSandbox(agent, token, repositoryFullName, payload.baseBranch, payload.toolSlugs);
+        sandbox = await prepareSandbox(agent, token, repositoryFullName, payload.baseBranch);
         if (!sandbox) throw new Error('Failed to create sandbox');
 
         sandboxStartTime = Date.now();
@@ -82,7 +83,7 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
         const agent = await loadAgent(payload.agentId);
         const { repositoryFullName, token } = await validateAndGetToken(agent, payload.repositoryFullName);
 
-        sandbox = await prepareSandbox(agent, token, repositoryFullName, payload.baseBranch, payload.toolSlugs);
+        sandbox = await prepareSandbox(agent, token, repositoryFullName, payload.baseBranch);
         if (!sandbox) throw new Error('Failed to create sandbox');
 
         sandboxStartTime = Date.now();
@@ -93,7 +94,8 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
 
         await Promise.all([emitStatus(agent.id, 'running', 'sandboxagent_starting', 'running AI'), updateAgent(agent, { status: AgentStatus.RUNNING })]);
 
-        const response = await runAgentLLM(agent.id, sandbox, payload.toolSlugs || [], previousMessages, usageAccumulator);
+        const subscriptionTier = agent.workspace.organization?.subscriptionTier ?? SubscriptionTier.FREE;
+        const response = await runAgentLLM(agent.id, sandbox, payload.toolSlugs || [], previousMessages, usageAccumulator, subscriptionTier);
 
         const sandboxDurationMs = Date.now() - sandboxStartTime;
         await saveAgentResponse(agent, response, usageAccumulator, sandboxDurationMs);

@@ -7,12 +7,16 @@ import { Sandbox } from '@vercel/sandbox';
 import { PostHog } from 'posthog-node';
 import { Agent } from '../db/entities/Agent';
 import { Message } from '../db/entities/Message';
+import { SubscriptionTier } from '../db/entities/Organization';
 import { sandboxTools } from '../tools/sandboxTools';
 import { buildDynamicTools } from '../tools/dynamic';
 import { buildOrchestratorAgentTools } from '../tools/primaryAgent';
+import { buildBrowserTools, type SandboxUrl } from '../tools/kernel/index';
+import { DEFAULT_BROWSER_PORTS } from './helpers/sandbox';
 import { createReasoningStreamer } from '../stream/events';
 import { transformMessagesToModelMessages } from '../utils/llm';
 import { AGENT_SYSTEM_PROMPT, ORCHESTRATOR_AGENT_SYSTEM_PROMPT } from './prompts';
+import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli';
 
 if (!process.env.POSTHOG_API_KEY) {
     throw new Error('POSTHOG_API_KEY is not set');
@@ -32,7 +36,8 @@ export async function runAgentLLM(
     sandbox: Sandbox,
     toolSlugs: string[],
     previousMessages: Message[],
-    usageAccumulator: TokenUsageAccumulator
+    usageAccumulator: TokenUsageAccumulator,
+    subscriptionTier: SubscriptionTier
 ) {
     const phClient = new PostHog(process.env.POSTHOG_API_KEY!, { host: 'https://us.i.posthog.com' });
     const openaiClient = createOpenAI({
@@ -42,6 +47,16 @@ export async function runAgentLLM(
 
     const tools = sandboxTools(agentId, sandbox);
     const dynamicTools = await buildDynamicTools(agentId, toolSlugs, sandbox);
+
+    // Browser tools are included as base tools for non-free users
+    const hasBrowserAccess = subscriptionTier !== SubscriptionTier.FREE;
+    const browserTools = hasBrowserAccess
+        ? buildBrowserTools({
+              agentId,
+              sandboxUrls: DEFAULT_BROWSER_PORTS.map((port): SandboxUrl => ({ port, url: sandbox.domain(port) })),
+          })
+        : {};
+
     const messages = transformMessagesToModelMessages(previousMessages);
     const streamReasoning = createReasoningStreamer(agentId);
 
@@ -55,7 +70,7 @@ export async function runAgentLLM(
         },
         system: AGENT_SYSTEM_PROMPT,
         messages,
-        tools: { ...tools, ...dynamicTools },
+        tools: { ...tools, ...dynamicTools, ...browserTools },
         stopWhen: stepCountIs(32),
         onStepFinish: (step) => {
             streamReasoning(step);
@@ -99,6 +114,17 @@ export async function runOrchestratorAgentLLM(
         images: userImages,
     });
     const dynamicTools = await buildDynamicTools(agent.id, toolSlugs, sandbox);
+
+    // Browser tools are included as base tools for non-free users
+    const subscriptionTier = agent.workspace.organization?.subscriptionTier ?? SubscriptionTier.FREE;
+    const hasBrowserAccess = subscriptionTier !== SubscriptionTier.FREE;
+    const browserTools = hasBrowserAccess
+        ? buildBrowserTools({
+              agentId: agent.id,
+              sandboxUrls: DEFAULT_BROWSER_PORTS.map((port): SandboxUrl => ({ port, url: sandbox.domain(port) })),
+          })
+        : {};
+
     const messages = transformMessagesToModelMessages(previousMessages);
     const streamReasoning = createReasoningStreamer(agent.id);
 
@@ -112,7 +138,7 @@ export async function runOrchestratorAgentLLM(
         },
         system: ORCHESTRATOR_AGENT_SYSTEM_PROMPT,
         messages,
-        tools: { ...orchestratorAgentTools, ...dynamicTools, ...tools },
+        tools: { ...orchestratorAgentTools, ...dynamicTools, ...tools, ...browserTools },
         stopWhen: stepCountIs(32),
         onStepFinish: (step) => {
             streamReasoning(step);
