@@ -3,6 +3,7 @@ import { Workspace } from '../db/entities/Workspace';
 import { Agent, AgentStatus, ProviderType } from '../db/entities/Agent';
 import { AppDataSource } from '../db/data-source';
 import { runAgentWorkflow, runOrchestratorAgentWorkflow } from '../workflows/agent';
+import { runAgentWorkflowAcp } from '../workflows/agentAcp';
 import { Message, type MessageImage } from '../db/entities/Message';
 import { emitStatus } from '../stream/events';
 import { ToolCall } from '../db/entities/ToolCall';
@@ -73,9 +74,16 @@ export class CodeeProvider implements CloudProvider {
                 console.error('Failed to run orchestrator agent workflow:', err);
             });
         } else {
-            runAgentWorkflow(payload).catch((err) => {
-                console.error('Failed to run agent workflow:', err);
-            });
+            // Check if this agent should use ACP
+            if (agent.useAcp) {
+                runAgentWorkflowAcp(payload).catch((err) => {
+                    console.error('Failed to run ACP agent workflow:', err);
+                });
+            } else {
+                runAgentWorkflow(payload).catch((err) => {
+                    console.error('Failed to run agent workflow:', err);
+                });
+            }
         }
 
         return agent;
@@ -154,9 +162,16 @@ export class CodeeProvider implements CloudProvider {
                 console.error('Failed to run orchestrator agent workflow:', err);
             });
         } else {
-            runAgentWorkflow(payload).catch((err) => {
-                console.error('Failed to run agent workflow:', err);
-            });
+            // Check if this agent should use ACP
+            if (agent.useAcp) {
+                runAgentWorkflowAcp(payload).catch((err) => {
+                    console.error('Failed to run ACP agent workflow:', err);
+                });
+            } else {
+                runAgentWorkflow(payload).catch((err) => {
+                    console.error('Failed to run agent workflow:', err);
+                });
+            }
         }
 
         return true;

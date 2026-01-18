@@ -53,6 +53,9 @@ export class Agent {
     @Column({ type: 'boolean', default: false })
     isOrchestratorAgent!: boolean;
 
+    @Column({ type: 'boolean', default: false })
+    useAcp!: boolean;
+
     @CreateDateColumn({ default: 'now()' })
     createdAt!: Date;
 
