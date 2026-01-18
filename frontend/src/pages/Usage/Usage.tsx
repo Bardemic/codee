@@ -42,13 +42,16 @@ export default function Usage() {
 
     return (
         <div className={styles.page}>
-            <h1>Usage</h1>
+            <h1>Usage & Billing</h1>
 
             <section className={styles.section}>
                 <div className={styles.usageHeader}>
-                    <h2>Current Billing Period</h2>
-                    <p>Resets on {usage.billingPeriodEnd.toLocaleDateString()}</p>
+                    <div>
+                        <h2>Current Billing Period</h2>
+                        <p>Resets on {usage.billingPeriodEnd.toLocaleDateString(undefined, {  month: 'long', day: 'numeric' })}</p>
+                    </div>
                 </div>
+                
                 <div className={styles.usageCards}>
                     <UsageCard
                         title="Token Cost"
@@ -64,14 +67,17 @@ export default function Usage() {
                         percentUsed={usage.sandboxTimePercentUsed}
                     />
                 </div>
-                <h3>
-                    Want higher limits?
-                    <Link to="/organization"> Upgrade your plan</Link>
-                </h3>
+                
+                <div className={styles.upgradeLink}>
+                    <span>Want higher limits?</span>
+                    <Link to="/organization">Upgrade your plan →</Link>
+                </div>
+            </section>
 
-                {messagesData && messagesData.messages.length > 0 && (
-                    <div className={styles.messagesSection}>
-                        <h2>Recent Messages</h2>
+            {messagesData && messagesData.messages.length > 0 && (
+                <section className={styles.messagesSection}>
+                    <h2>Recent Activity</h2>
+                    <div className={styles.tableContainer}>
                         <table className={styles.messagesTable}>
                             <thead>
                                 <tr>
@@ -84,7 +90,7 @@ export default function Usage() {
                             <tbody>
                                 {messagesData.messages.map((message) => (
                                     <tr key={message.id}>
-                                        <td>{new Date(message.createdAt).toLocaleString()}</td>
+                                        <td>{new Date(message.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</td>
                                         <td>{message.model}</td>
                                         <td>{formatMilliseconds(message.sandboxDurationMs)}</td>
                                         <td>${microdollarsToDollars(message.costMicrodollars).toFixed(4)}</td>
@@ -92,20 +98,20 @@ export default function Usage() {
                                 ))}
                             </tbody>
                         </table>
-                        {messagesData.totalPages > 1 && (
-                            <div className={styles.pagination}>
-                                <button type="button" onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
-                                    <FiChevronLeft />
-                                </button>
-                                <span>{page}</span>
-                                <button type="button" onClick={() => setPage((p) => p + 1)} disabled={page === messagesData.totalPages}>
-                                    <FiChevronRight />
-                                </button>
-                            </div>
-                        )}
                     </div>
-                )}
-            </section>
+                    {messagesData.totalPages > 1 && (
+                        <div className={styles.pagination}>
+                            <button type="button" onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
+                                <FiChevronLeft /> Previous
+                            </button>
+                            <span>Page {page} of {messagesData.totalPages}</span>
+                            <button type="button" onClick={() => setPage((p) => p + 1)} disabled={page === messagesData.totalPages}>
+                                Next <FiChevronRight />
+                            </button>
+                        </div>
+                    )}
+                </section>
+            )}
         </div>
     );
 }
