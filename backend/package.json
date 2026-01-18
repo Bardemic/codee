@@ -26,6 +26,7 @@
         "typescript-eslint": "^8.50.1"
     },
     "dependencies": {
+        "@agentclientprotocol/sdk": "^0.13.0",
         "@ai-sdk/openai": "^3.0.0",
         "@onkernel/ai-sdk": "^0.0.3",
         "@onkernel/sdk": "^0.25.0",
@@ -35,6 +36,7 @@
         "@types/bcryptjs": "^3.0.0",
         "@vercel/sandbox": "^1.1.1",
         "@workos-inc/node": "^7.82.0",
+        "@zed-industries/claude-code-acp": "^0.13.1",
         "ai": "^6.0.0",
         "ai-sdk-provider-gemini-cli": "^2.0.1",
         "axios": "^1.7.9",

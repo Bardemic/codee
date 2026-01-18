@@ -14,6 +14,9 @@ export function validateEnvironment() {
     if (!PGUSER) errors.push('PGUSER environment variable is required');
     if (!PGDATABASE) errors.push('PGDATABASE environment variable is required');
 
+    // Anthropic (for Claude Code via ACP)
+    if (!process.env.ANTHROPIC_API_KEY) errors.push('ANTHROPIC_API_KEY environment variable is required');
+
     // GitHub
     if (!process.env.GITHUB_APP_ID) errors.push('GITHUB_APP_ID environment variable is required');
     if (!process.env.GITHUB_PRIVATE_KEY) errors.push('GITHUB_PRIVATE_KEY environment variable is required');

@@ -1,25 +1,19 @@
 'use step';
 
-import { generateText, stepCountIs } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
-import { withTracing } from '@posthog/ai';
 import { Sandbox } from '@vercel/sandbox';
 import { PostHog } from 'posthog-node';
 import { Agent } from '../db/entities/Agent';
 import { Message } from '../db/entities/Message';
 import { SubscriptionTier } from '../db/entities/Organization';
-import { sandboxTools } from '../tools/sandboxTools';
-import { buildDynamicTools } from '../tools/dynamic';
-import { buildOrchestratorAgentTools } from '../tools/primaryAgent';
-import { buildBrowserTools, type SandboxUrl } from '../tools/kernel/index';
-import { DEFAULT_BROWSER_PORTS } from './helpers/sandbox';
-import { createReasoningStreamer } from '../stream/events';
-import { transformMessagesToModelMessages } from '../utils/llm';
+import { getACPClient } from '../utils/acp';
 import { AGENT_SYSTEM_PROMPT, ORCHESTRATOR_AGENT_SYSTEM_PROMPT } from './prompts';
-import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli';
 
 if (!process.env.POSTHOG_API_KEY) {
     throw new Error('POSTHOG_API_KEY is not set');
+}
+
+if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY is not set');
 }
 
 export type TokenUsageAccumulator = {
@@ -28,8 +22,8 @@ export type TokenUsageAccumulator = {
     totalTokens: number;
 };
 
-export const AGENT_MODEL = 'gpt-5.1-codex';
-export const ORCHESTRATOR_MODEL = 'gpt-5-mini';
+export const AGENT_MODEL = 'claude-sonnet-4.5';
+export const ORCHESTRATOR_MODEL = 'claude-sonnet-4.5';
 
 export async function runAgentLLM(
     agentId: number,
@@ -40,54 +34,49 @@ export async function runAgentLLM(
     subscriptionTier: SubscriptionTier
 ) {
     const phClient = new PostHog(process.env.POSTHOG_API_KEY!, { host: 'https://us.i.posthog.com' });
-    const openaiClient = createOpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-    });
 
-    const geminiClient = createGeminiProvider({ authType: 'oauth-personal' });
-    const model = withTracing(openaiClient(AGENT_MODEL), phClient, { posthogTraceId: `agent_${agentId}_${previousMessages.length}` });
-    const modelGemini = withTracing(geminiClient('gemini-3-pro-preview'), phClient, { posthogTraceId: `agent_${agentId}_${previousMessages.length}` });
+    // Get the ACP client for Claude Code
+    const acpClient = getACPClient();
+    await acpClient.initialize();
 
-    const tools = sandboxTools(agentId, sandbox);
-    const dynamicTools = await buildDynamicTools(agentId, toolSlugs, sandbox);
+    // Create a new session for this agent run
+    const sessionId = await acpClient.createSession(process.cwd());
 
-    // Browser tools are included as base tools for non-free users
-    const hasBrowserAccess = subscriptionTier !== SubscriptionTier.FREE;
-    const browserTools = hasBrowserAccess
-        ? buildBrowserTools({
-              agentId,
-              sandboxUrls: DEFAULT_BROWSER_PORTS.map((port): SandboxUrl => ({ port, url: sandbox.domain(port) })),
-          })
-        : {};
+    // Get the last user message
+    const lastUserMessage = previousMessages.filter((m) => m.sender === 'USER').pop();
+    const userImages = lastUserMessage?.images || [];
 
-    const messages = transformMessagesToModelMessages(previousMessages);
-    const streamReasoning = createReasoningStreamer(agentId);
+    // Send the message with history and system prompt
+    const result = await acpClient.sendMessageWithHistory(
+        lastUserMessage?.content || '',
+        userImages,
+        previousMessages.slice(0, -1), // All messages except the last one
+        AGENT_SYSTEM_PROMPT,
+        (update) => {
+            // Stream updates via PostHog
+            phClient.capture({
+                event: 'agent_update',
+                distinctId: `agent_${agentId}`,
+                properties: {
+                    updateType: update.update.sessionUpdate,
+                    sessionId,
+                },
+            });
 
-    const result = await generateText({
-        model: model,
-        providerOptions: {
-            openai: {
-                reasoningEffort: 'high',
-                reasoningSummary: 'detailed',
-            },
-        },
-        system: AGENT_SYSTEM_PROMPT,
-        messages,
-        tools: { ...tools, ...dynamicTools, ...browserTools },
-        stopWhen: stepCountIs(32),
-        onStepFinish: (step) => {
-            streamReasoning(step);
-            usageAccumulator.promptTokens += step.usage.inputTokens || 0;
-            usageAccumulator.completionTokens += step.usage.outputTokens || 0;
-            usageAccumulator.totalTokens += step.usage.totalTokens || 0;
-        },
-    });
+            // Track token usage if available
+            // Note: ACP doesn't provide token usage in the same way, so we'll estimate
+            if (update.update.sessionUpdate === 'agent_message_chunk') {
+                usageAccumulator.completionTokens += 10; // Rough estimate
+                usageAccumulator.totalTokens += 10;
+            }
+        }
+    );
 
     await phClient.shutdown();
 
     return {
         final: result.text,
-        steps: result.steps,
+        steps: [], // ACP doesn't provide steps in the same format
         model: AGENT_MODEL,
     };
 }
@@ -100,62 +89,48 @@ export async function runOrchestratorAgentLLM(
     usageAccumulator: TokenUsageAccumulator
 ) {
     const phClient = new PostHog(process.env.POSTHOG_API_KEY!, { host: 'https://us.i.posthog.com' });
-    const openaiClient = createOpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-    });
-    const model = withTracing(openaiClient(ORCHESTRATOR_MODEL), phClient, { posthogTraceId: `agent_${agent.id}_${previousMessages.length}` });
 
-    const tools = sandboxTools(agent.id, sandbox);
-    const userImages = previousMessages.filter((message) => message.sender === 'USER').flatMap((message) => message.images);
-    const orchestratorAgentTools = buildOrchestratorAgentTools({
-        agentId: agent.id,
-        organizationId: agent.workspace.organizationId,
-        workspace: agent.workspace,
-        repositoryFullName: agent.workspace.githubRepositoryName,
-        baseBranch: agent.workspace.currentBranch,
-        toolSlugs,
-        images: userImages,
-    });
-    const dynamicTools = await buildDynamicTools(agent.id, toolSlugs, sandbox);
+    // Get the ACP client for Claude Code
+    const acpClient = getACPClient();
+    await acpClient.initialize();
 
-    // Browser tools are included as base tools for non-free users
-    const subscriptionTier = agent.workspace.organization?.subscriptionTier ?? SubscriptionTier.FREE;
-    const hasBrowserAccess = subscriptionTier !== SubscriptionTier.FREE;
-    const browserTools = hasBrowserAccess
-        ? buildBrowserTools({
-              agentId: agent.id,
-              sandboxUrls: DEFAULT_BROWSER_PORTS.map((port): SandboxUrl => ({ port, url: sandbox.domain(port) })),
-          })
-        : {};
+    // Create a new session for this orchestrator run
+    const sessionId = await acpClient.createSession(process.cwd());
 
-    const messages = transformMessagesToModelMessages(previousMessages);
-    const streamReasoning = createReasoningStreamer(agent.id);
+    // Get the last user message
+    const lastUserMessage = previousMessages.filter((m) => m.sender === 'USER').pop();
+    const userImages = lastUserMessage?.images || [];
 
-    const result = await generateText({
-        model,
-        providerOptions: {
-            openai: {
-                reasoningEffort: 'high',
-                reasoningSummary: 'concise',
-            },
-        },
-        system: ORCHESTRATOR_AGENT_SYSTEM_PROMPT,
-        messages,
-        tools: { ...orchestratorAgentTools, ...dynamicTools, ...tools, ...browserTools },
-        stopWhen: stepCountIs(32),
-        onStepFinish: (step) => {
-            streamReasoning(step);
-            usageAccumulator.promptTokens += step.usage.inputTokens || 0;
-            usageAccumulator.completionTokens += step.usage.outputTokens || 0;
-            usageAccumulator.totalTokens += step.usage.totalTokens || 0;
-        },
-    });
+    // Send the message with history and system prompt
+    const result = await acpClient.sendMessageWithHistory(
+        lastUserMessage?.content || '',
+        userImages,
+        previousMessages.slice(0, -1), // All messages except the last one
+        ORCHESTRATOR_AGENT_SYSTEM_PROMPT,
+        (update) => {
+            // Stream updates via PostHog
+            phClient.capture({
+                event: 'orchestrator_update',
+                distinctId: `agent_${agent.id}`,
+                properties: {
+                    updateType: update.update.sessionUpdate,
+                    sessionId,
+                },
+            });
+
+            // Track token usage if available
+            if (update.update.sessionUpdate === 'agent_message_chunk') {
+                usageAccumulator.completionTokens += 10; // Rough estimate
+                usageAccumulator.totalTokens += 10;
+            }
+        }
+    );
 
     await phClient.shutdown();
 
     return {
         final: result.text,
-        steps: result.steps,
+        steps: [], // ACP doesn't provide steps in the same format
         model: ORCHESTRATOR_MODEL,
     };
 }
