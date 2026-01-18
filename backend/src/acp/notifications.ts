@@ -4,7 +4,7 @@
  */
 
 import type { SessionNotification } from "@agentclientprotocol/sdk";
-import { sendSSE, emitStatus } from "../stream/events";
+import { publishAgentEvent, emitStatus } from "../stream/events";
 import { AppDataSource } from "../db/data-source";
 import { Message } from "../db/entities/Message";
 import { ToolCall } from "../db/entities/ToolCall";
@@ -87,8 +87,8 @@ async function handleToolCall(agentId: number, update: any): Promise<void> {
   await AppDataSource.getRepository(ToolCall).save(toolCallEntity);
 
   // Send SSE event to frontend
-  sendSSE(agentId, {
-    type: "tool_call",
+  await publishAgentEvent(agentId, {
+    event: "tool_call",
     toolCall: {
       id: toolCallEntity.id,
       name: toolCall.title,
@@ -138,8 +138,8 @@ async function handleToolUpdate(agentId: number, update: any): Promise<void> {
   await AppDataSource.getRepository(ToolCall).save(toolCall);
 
   // Send SSE event to frontend
-  sendSSE(agentId, {
-    type: "tool_result",
+  await publishAgentEvent(agentId, {
+    event: "tool_result",
     toolCallId: toolCall.id,
     result: resultText,
     images,
@@ -181,8 +181,8 @@ async function handleMessage(agentId: number, update: any): Promise<void> {
   await AppDataSource.getRepository(Message).save(message);
 
   // Send SSE event to frontend
-  sendSSE(agentId, {
-    type: "message",
+  await publishAgentEvent(agentId, {
+    event: "message",
     message: {
       id: message.id,
       role: "AGENT",
@@ -200,8 +200,8 @@ async function handleReasoning(agentId: number, update: any): Promise<void> {
   const reasoningText = extractTextContent(content);
 
   // Send SSE event to frontend
-  sendSSE(agentId, {
-    type: "reasoning",
+  await publishAgentEvent(agentId, {
+    event: "reasoning",
     content: reasoningText,
   });
 
@@ -216,8 +216,8 @@ async function handleStatus(agentId: number, update: any): Promise<void> {
   const { status, message } = update;
 
   // Send SSE event to frontend
-  sendSSE(agentId, {
-    type: "status",
+  await publishAgentEvent(agentId, {
+    event: "status",
     status,
     message,
   });
