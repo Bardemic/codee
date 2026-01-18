@@ -60,3 +60,17 @@ cd backend && python -m venv venv && source venv/bin/activate && pip install -r 
 ```
 cd worker && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && celery -A celery_app worker --loglevel=info
 ```
+
+### Claude Code via OpenRouter
+
+Follow the Anthropic Agent SDK guide for OpenRouter ([Claude Code integration](https://openrouter.ai/docs/guides/guides/claude-code-integration); same env block as in the linked screenshot) and set these variables before starting the backend or agent runtime:
+
+```
+export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
+export ANTHROPIC_AUTH_TOKEN="$OPENROUTER_API_KEY"
+export ANTHROPIC_API_KEY=""  # intentionally empty when using OpenRouter
+
+export ANTHROPIC_DEFAULT_SONNET_MODEL="google/gemini-3-flash-preview" # or google/gemini-3-pro-preview
+export ANTHROPIC_DEFAULT_OPUS_MODEL="google/gemini-3-flash-preview"   # or google/gemini-3-pro-preview
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="google/gemini-3-flash-preview"
+```

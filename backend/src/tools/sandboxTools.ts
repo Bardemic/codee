@@ -25,8 +25,12 @@ export function sandboxTools(agentId: number, sandbox: Sandbox) {
         content: z.string().describe('New file contents'),
     });
 
-    const grepInputSchema = z.object({
-        command: z.string().describe('Shell command to run (e.g., `grep -R foo .`)'),
+    const runCommandInputSchema = z.object({
+        command: z
+            .string()
+            .describe(
+                'Shell command to run. For dev servers, use: "npm run dev &> devserver.log & sleep 2; tail devserver.log" to run in background and verify startup.'
+            ),
     });
 
     const listFiles = tool({
@@ -66,19 +70,19 @@ export function sandboxTools(agentId: number, sandbox: Sandbox) {
         },
     });
 
-    const grep = tool({
-        description: 'Run grep in the repository',
-        inputSchema: zodSchema(grepInputSchema),
+    const runCommand = tool({
+        description: 'Run a shell command in the sandbox',
+        inputSchema: zodSchema(runCommandInputSchema),
         execute: async (input) => {
             const { command } = input;
             const result = await sandbox.runCommand({
                 cmd: 'bash',
                 args: ['-c', command],
             });
-            await emitStatus(agentId, 'running', 'tool_grep', await result.stdout(), { arguments: input });
+            await emitStatus(agentId, 'running', 'tool_run_command', await result.stdout(), { arguments: input });
             return result.stdout();
         },
     });
 
-    return { listFiles, readFile, updateFile, grep };
+    return { listFiles, readFile, updateFile, runCommand };
 }

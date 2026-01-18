@@ -14,6 +14,16 @@ export function validateEnvironment() {
     if (!PGUSER) errors.push('PGUSER environment variable is required');
     if (!PGDATABASE) errors.push('PGDATABASE environment variable is required');
 
+    // Anthropic (for Claude Code via ACP)
+    const anthropicAuthToken = process.env.ANTHROPIC_AUTH_TOKEN || process.env.OPENROUTER_API_KEY;
+    const hasAnthropicApiKey = Boolean(process.env.ANTHROPIC_API_KEY);
+    if (!hasAnthropicApiKey && !anthropicAuthToken) {
+        errors.push('Set ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN/OPENROUTER_API_KEY for Claude Code');
+    }
+    if (anthropicAuthToken && !process.env.ANTHROPIC_BASE_URL) {
+        errors.push('ANTHROPIC_BASE_URL environment variable is required when using ANTHROPIC_AUTH_TOKEN or OPENROUTER_API_KEY');
+    }
+
     // GitHub
     if (!process.env.GITHUB_APP_ID) errors.push('GITHUB_APP_ID environment variable is required');
     if (!process.env.GITHUB_PRIVATE_KEY) errors.push('GITHUB_PRIVATE_KEY environment variable is required');

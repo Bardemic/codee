@@ -3,14 +3,16 @@
 import { Sandbox } from '@vercel/sandbox';
 import { Agent, AgentStatus } from '../db/entities/Agent';
 import { Message } from '../db/entities/Message';
+import { SubscriptionTier } from '../db/entities/Organization';
 import { AppDataSource } from '../db/data-source';
 import { emitDone, emitError, emitStatus } from '../stream/events';
 import { getAgentById, saveMessage, saveAgentActivity, updateAgent } from './helpers/agents';
 import { commitAndPush, generateBranchName, getGithubTokenForUser } from './helpers/github';
-import { createSandbox } from './helpers/sandbox';
+import { createSandbox, DEFAULT_BROWSER_PORTS } from './helpers/sandbox';
 import type { runAgentLLM, runOrchestratorAgentLLM, TokenUsageAccumulator } from './llm';
 import { calculateCostMicrodollars } from '../payment/model-pricing';
 import { incrementTokenCostMicrodollars, incrementSandboxTimeSeconds } from '../payment/usage';
+import { cleanupBrowserSession } from '../tools/kernel/index';
 
 export async function loadAgent(agentId: number) {
     const agent = await getAgentById(agentId);
@@ -37,8 +39,12 @@ export async function validateAndGetToken(agent: Agent, repositoryFullName: stri
 export async function prepareSandbox(agent: Agent, token: string, repositoryFullName: string, baseBranch: string) {
     await emitStatus(agent.id, 'starting', 'agent_init', 'preparing sandbox');
 
+    // Expose browser ports for non-free users (browser tools are a paid feature)
+    const hasBrowserAccess = agent.workspace.organization?.subscriptionTier !== SubscriptionTier.FREE;
+    const ports = hasBrowserAccess ? DEFAULT_BROWSER_PORTS : undefined;
+
     try {
-        const sandbox = await createSandbox(agent, token, repositoryFullName, baseBranch);
+        const sandbox = await createSandbox(agent, token, repositoryFullName, baseBranch, ports);
         return sandbox;
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Failed to create sandbox';
@@ -51,6 +57,7 @@ export async function loadPreviousMessages(agentId: number) {
     return await AppDataSource.getRepository(Message).find({
         where: { agent: { id: agentId } },
         order: { createdAt: 'ASC' },
+        relations: ['toolCalls'],
     });
 }
 
@@ -122,7 +129,11 @@ export async function commitChangesIfNeeded(sandbox: Sandbox, agentId: number, p
     }
 }
 
-export async function cleanupSandbox(sandbox: Sandbox) {
+export async function cleanupSandbox(sandbox: Sandbox, agentId?: number) {
+    // Cleanup browser session if one exists
+    if (agentId !== undefined) {
+        await cleanupBrowserSession(agentId);
+    }
     await sandbox.stop();
 }
 

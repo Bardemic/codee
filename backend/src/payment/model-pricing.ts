@@ -17,6 +17,10 @@ export function getModelPricing(modelName: string): ModelPricing {
     const pricing = MODEL_PRICING[modelName];
 
     if (!pricing) {
+        return {
+            inputMicrodollarsPer1MTokens: 2_000_000, // $2.00
+            outputMicrodollarsPer1MTokens: 6_000_000, // $6.00
+        };
         throw new Error(`Unknown model pricing for "${modelName}"`);
     }
 

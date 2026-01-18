@@ -430,6 +430,27 @@
     padding-top: 4px;
 }
 
+.inlineImageWrapper {
+    display: block;
+}
+
+.inlineImageWrapper > img {
+    display: block;
+    max-width: 40%;
+    max-height: 200px;
+}
+
+.inlineImageRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.inlineImageRow > img {
+    max-width: 200px;
+    max-height: 150px;
+}
+
 .failedToolCallItem {
     composes: toolCallItem from './ToolsContainer.module.css';
     border: 1px solid rgba(239, 68, 68, 0.5);
