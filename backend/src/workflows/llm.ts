@@ -12,8 +12,15 @@ if (!process.env.POSTHOG_API_KEY) {
     throw new Error('POSTHOG_API_KEY is not set');
 }
 
-if (!process.env.ANTHROPIC_API_KEY) {
-    throw new Error('ANTHROPIC_API_KEY is not set');
+const anthropicAuthToken = process.env.ANTHROPIC_AUTH_TOKEN || process.env.OPENROUTER_API_KEY;
+const hasAnthropicApiKey = Boolean(process.env.ANTHROPIC_API_KEY);
+
+if (!hasAnthropicApiKey && !anthropicAuthToken) {
+    throw new Error('ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN/OPENROUTER_API_KEY is not set');
+}
+
+if (anthropicAuthToken && !process.env.ANTHROPIC_BASE_URL) {
+    throw new Error('ANTHROPIC_BASE_URL is required when using ANTHROPIC_AUTH_TOKEN or OPENROUTER_API_KEY');
 }
 
 export type TokenUsageAccumulator = {
@@ -22,8 +29,12 @@ export type TokenUsageAccumulator = {
     totalTokens: number;
 };
 
-export const AGENT_MODEL = 'claude-sonnet-4.5';
-export const ORCHESTRATOR_MODEL = 'claude-sonnet-4.5';
+const DEFAULT_SONNET_MODEL = process.env.ANTHROPIC_DEFAULT_SONNET_MODEL || 'claude-sonnet-4.5';
+const DEFAULT_OPUS_MODEL = process.env.ANTHROPIC_DEFAULT_OPUS_MODEL || 'claude-opus-4.1';
+const DEFAULT_HAIKU_MODEL = process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL || 'claude-3-5-haiku-20241022';
+
+export const AGENT_MODEL = DEFAULT_SONNET_MODEL;
+export const ORCHESTRATOR_MODEL = DEFAULT_SONNET_MODEL;
 
 export async function runAgentLLM(
     agentId: number,

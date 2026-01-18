@@ -21,9 +21,9 @@ export class ACPClient {
     private sessionId: string | null = null;
     private sessionUpdateHandlers: Map<string, (notification: SessionNotification) => void> = new Map();
 
-    constructor(private apiKey: string) {
-        if (!apiKey) {
-            throw new Error('ANTHROPIC_API_KEY is required for ACP client');
+    constructor(private apiKey?: string, private authToken?: string, private baseUrl?: string) {
+        if (!apiKey && !authToken) {
+            throw new Error('Anthropic credentials are required for ACP client');
         }
     }
 
@@ -38,7 +38,9 @@ export class ACPClient {
         // Spawn the Claude Code ACP process
         const env = {
             ...process.env,
-            ANTHROPIC_API_KEY: this.apiKey,
+            ...(this.baseUrl ? { ANTHROPIC_BASE_URL: this.baseUrl } : {}),
+            ...(this.authToken ? { ANTHROPIC_AUTH_TOKEN: this.authToken } : {}),
+            ANTHROPIC_API_KEY: this.apiKey ?? '',
         };
 
         this.process = spawn('claude-code-acp', [], {
@@ -393,10 +395,12 @@ let globalACPClient: ACPClient | null = null;
 export function getACPClient(): ACPClient {
     if (!globalACPClient) {
         const apiKey = process.env.ANTHROPIC_API_KEY;
-        if (!apiKey) {
-            throw new Error('ANTHROPIC_API_KEY environment variable is required');
+        const authToken = process.env.ANTHROPIC_AUTH_TOKEN || process.env.OPENROUTER_API_KEY;
+        const baseUrl = process.env.ANTHROPIC_BASE_URL;
+        if (!apiKey && !authToken) {
+            throw new Error('ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN/OPENROUTER_API_KEY environment variable is required');
         }
-        globalACPClient = new ACPClient(apiKey);
+        globalACPClient = new ACPClient(apiKey, authToken, baseUrl);
     }
     return globalACPClient;
 }
