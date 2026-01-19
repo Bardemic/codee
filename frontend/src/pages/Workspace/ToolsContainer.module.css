@@ -194,7 +194,9 @@
     border-radius: 6px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     cursor: pointer;
-    transition: transform 0.15s ease, border-color 0.15s ease;
+    transition:
+        transform 0.15s ease,
+        border-color 0.15s ease;
     object-fit: contain;
     background: rgba(0, 0, 0, 0.3);
 }

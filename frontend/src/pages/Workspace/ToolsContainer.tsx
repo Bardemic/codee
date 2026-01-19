@@ -7,7 +7,7 @@ function formatToolCommand(toolName: string, args: Record<string, unknown> | und
     if (!args || Object.keys(args).length === 0) {
         return toolName;
     }
-    
+
     const formattedArgs = Object.entries(args)
         .map(([key, value]) => {
             const strValue = typeof value === 'string' ? value : JSON.stringify(value);
@@ -16,7 +16,7 @@ function formatToolCommand(toolName: string, args: Record<string, unknown> | und
             return `--${key} ${displayValue}`;
         })
         .join(' ');
-    
+
     return `${toolName} ${formattedArgs}`;
 }
 
@@ -25,20 +25,11 @@ export function ScreenshotImage({ data, mimeType }: { data: string; mimeType: st
 
     return (
         <>
-            <img
-                src={`data:${mimeType};base64,${data}`}
-                alt="Screenshot"
-                className={style.screenshotImage}
-                onClick={() => setIsExpanded(true)}
-            />
+            <img src={`data:${mimeType};base64,${data}`} alt="Screenshot" className={style.screenshotImage} onClick={() => setIsExpanded(true)} />
             {isExpanded && (
                 <div className={style.imageOverlay} onClick={() => setIsExpanded(false)}>
                     <div className={style.imageOverlayContent}>
-                        <img
-                            src={`data:${mimeType};base64,${data}`}
-                            alt="Screenshot (full size)"
-                            className={style.screenshotImageFull}
-                        />
+                        <img src={`data:${mimeType};base64,${data}`} alt="Screenshot (full size)" className={style.screenshotImageFull} />
                     </div>
                 </div>
             )}
@@ -57,8 +48,10 @@ export default function ToolsContainer({
     setShowFullContent: (showFullContent: boolean) => void;
     isThinking: boolean;
 }) {
+    const visibleToolCalls = toolCalls.filter((toolCall) => !(toolCall.tool_name === 'reasoning' && toolCall.result === '[REDACTED]'));
+
     if (!showFullContent) {
-        const lastToolCall = toolCalls[toolCalls.length - 1];
+        const lastToolCall = visibleToolCalls[visibleToolCalls.length - 1];
 
         return (
             <div className={style.previewContainer} onClick={() => setShowFullContent(true)}>
@@ -91,45 +84,45 @@ export default function ToolsContainer({
                     <BsX size={16} />
                 </div>
             </div>
-            {toolCalls.map((toolCall) => (
-                <div key={toolCall.id} className={style.toolCallItem}>
-                    <div className={style.toolCallHeader}>
-                        {toolCall.tool_name !== 'reasoning' && (
-                            <span>
-                                <span className={style.prompt}>$</span>{' '}
-                                <span className={style.toolName}>{toolCall.tool_name}</span>
-                                {toolCall.arguments && Object.keys(toolCall.arguments).length > 0 && (
-                                    <span className={style.toolArgs}>
-                                        {Object.entries(toolCall.arguments).map(([key, value], i) => {
-                                            const strValue = typeof value === 'string' ? value : JSON.stringify(value);
-                                            const displayValue = strValue.length > 60 ? strValue.slice(0, 57) + '...' : strValue;
-                                            return (
-                                                <span key={key}>
-                                                    {' '}
-                                                    <span className={style.argKey}>--{key}</span>{' '}
-                                                    <span className={style.argValue}>{displayValue}</span>
-                                                </span>
-                                            );
-                                        })}
-                                    </span>
-                                )}
-                            </span>
+            {toolCalls.map((toolCall) =>
+                toolCall.tool_name === 'reasoning' && toolCall.result === '[REDACTED]' ? null : (
+                    <div key={toolCall.id} className={style.toolCallItem}>
+                        <div className={style.toolCallHeader}>
+                            {toolCall.tool_name !== 'reasoning' && (
+                                <span>
+                                    <span className={style.prompt}>$</span> <span className={style.toolName}>{toolCall.tool_name}</span>
+                                    {toolCall.arguments && Object.keys(toolCall.arguments).length > 0 && (
+                                        <span className={style.toolArgs}>
+                                            {Object.entries(toolCall.arguments).map(([key, value], i) => {
+                                                const strValue = typeof value === 'string' ? value : JSON.stringify(value);
+                                                const displayValue = strValue.length > 60 ? strValue.slice(0, 57) + '...' : strValue;
+                                                return (
+                                                    <span key={key}>
+                                                        {' '}
+                                                        <span className={style.argKey}>--{key}</span> <span className={style.argValue}>{displayValue}</span>
+                                                    </span>
+                                                );
+                                            })}
+                                        </span>
+                                    )}
+                                </span>
+                            )}
+                        </div>
+                        {toolCall.result && (
+                            <div className={style.toolCallResult}>
+                                {typeof toolCall.result === 'object' ? JSON.stringify(toolCall.result, null, 2) : toolCall.result}
+                            </div>
+                        )}
+                        {toolCall.images && toolCall.images.length > 0 && (
+                            <div className={style.screenshotContainer}>
+                                {toolCall.images.map((image, index) => (
+                                    <ScreenshotImage key={index} data={image.data} mimeType={image.mimeType} />
+                                ))}
+                            </div>
                         )}
                     </div>
-                    {toolCall.result && (
-                        <div className={style.toolCallResult}>
-                            {typeof toolCall.result === 'object' ? JSON.stringify(toolCall.result, null, 2) : toolCall.result}
-                        </div>
-                    )}
-                    {toolCall.images && toolCall.images.length > 0 && (
-                        <div className={style.screenshotContainer}>
-                            {toolCall.images.map((image, index) => (
-                                <ScreenshotImage key={index} data={image.data} mimeType={image.mimeType} />
-                            ))}
-                        </div>
-                    )}
-                </div>
-            ))}
+                )
+            )}
         </div>
     );
 }
