@@ -17,7 +17,7 @@ export default function Sidebar({ children }: SidebarProps) {
     const { data: workspaces } = trpc.workspace.list.useQuery();
 
     function handleSignOut() {
-        window.location.href = 'http://localhost:5001/api/auth/logout';
+        window.location.href = 'https://sb-6zkf5i3sble1.vercel.run/api/auth/logout';
     }
 
     return (
