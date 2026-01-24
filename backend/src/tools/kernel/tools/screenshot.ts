@@ -37,7 +37,10 @@ export function buildScreenshotTool(params: { agentId: number }) {
                 mimeType: 'image/png',
             };
 
-            await emitStatus(agentId, 'running', 'tool_browser_screenshot', 'Screenshot captured', { arguments: {} });
+            await emitStatus(agentId, 'running', 'tool_browser_screenshot', 'Screenshot captured', {
+                arguments: {},
+                images: [image],
+            });
 
             return {
                 text: 'Screenshot captured successfully.',

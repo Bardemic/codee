@@ -26,14 +26,17 @@
         "typescript-eslint": "^8.50.1"
     },
     "dependencies": {
+        "@ai-sdk/google": "^3.0.10",
         "@ai-sdk/openai": "^3.0.0",
         "@onkernel/ai-sdk": "^0.0.3",
         "@onkernel/sdk": "^0.25.0",
+        "@openrouter/ai-sdk-provider": "^1.5.4",
         "@posthog/agent-toolkit": "^0.2.4",
         "@posthog/ai": "^7.3.0",
         "@trpc/server": "^11.0.0-rc.553",
         "@types/bcryptjs": "^3.0.0",
         "@vercel/sandbox": "^1.1.1",
+        "@workflow/ai": "^4.0.1-beta.51",
         "@workos-inc/node": "^7.82.0",
         "ai": "^6.0.0",
         "ai-sdk-provider-gemini-cli": "^2.0.1",

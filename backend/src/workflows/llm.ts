@@ -1,6 +1,6 @@
 'use step';
 
-import { generateText, stepCountIs } from 'ai';
+import { ToolLoopAgent, stepCountIs } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { withTracing } from '@posthog/ai';
 import { Sandbox } from '@vercel/sandbox';
@@ -16,7 +16,8 @@ import { DEFAULT_BROWSER_PORTS } from './helpers/sandbox';
 import { createReasoningStreamer } from '../stream/events';
 import { transformMessagesToModelMessages } from '../utils/llm';
 import { AGENT_SYSTEM_PROMPT, ORCHESTRATOR_AGENT_SYSTEM_PROMPT } from './prompts';
-import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli';
+import { google } from '@ai-sdk/google';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
 if (!process.env.POSTHOG_API_KEY) {
     throw new Error('POSTHOG_API_KEY is not set');
@@ -28,7 +29,7 @@ export type TokenUsageAccumulator = {
     totalTokens: number;
 };
 
-export const AGENT_MODEL = 'gpt-5.1-codex';
+export const AGENT_MODEL = 'gemini-2.5-flash-lite';
 export const ORCHESTRATOR_MODEL = 'gpt-5-mini';
 
 export async function runAgentLLM(
@@ -40,13 +41,9 @@ export async function runAgentLLM(
     subscriptionTier: SubscriptionTier
 ) {
     const phClient = new PostHog(process.env.POSTHOG_API_KEY!, { host: 'https://us.i.posthog.com' });
-    const openaiClient = createOpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
+    const modelGoogle = withTracing(google('gemini-2.5-pro'), phClient, {
+        posthogTraceId: `agent_${agentId}_${previousMessages.length}`,
     });
-
-    const geminiClient = createGeminiProvider({ authType: 'oauth-personal' });
-    const model = withTracing(openaiClient(AGENT_MODEL), phClient, { posthogTraceId: `agent_${agentId}_${previousMessages.length}` });
-    const modelGemini = withTracing(geminiClient('gemini-3-pro-preview'), phClient, { posthogTraceId: `agent_${agentId}_${previousMessages.length}` });
 
     const tools = sandboxTools(agentId, sandbox);
     const dynamicTools = await buildDynamicTools(agentId, toolSlugs, sandbox);
@@ -63,16 +60,9 @@ export async function runAgentLLM(
     const messages = transformMessagesToModelMessages(previousMessages);
     const streamReasoning = createReasoningStreamer(agentId);
 
-    const result = await generateText({
-        model: model,
-        providerOptions: {
-            openai: {
-                reasoningEffort: 'high',
-                reasoningSummary: 'detailed',
-            },
-        },
-        system: AGENT_SYSTEM_PROMPT,
-        messages,
+    const agent = new ToolLoopAgent({
+        model: modelGoogle,
+        instructions: AGENT_SYSTEM_PROMPT,
         tools: { ...tools, ...dynamicTools, ...browserTools },
         stopWhen: stepCountIs(32),
         onStepFinish: (step) => {
@@ -81,9 +71,16 @@ export async function runAgentLLM(
             usageAccumulator.completionTokens += step.usage.outputTokens || 0;
             usageAccumulator.totalTokens += step.usage.totalTokens || 0;
         },
+        maxRetries: 10,
     });
 
+    const result = await agent.generate({ messages });
+
+    console.log('token usage', result.usage);
+
     await phClient.shutdown();
+
+    console.log('result', result.text);
 
     return {
         final: result.text,
@@ -103,7 +100,9 @@ export async function runOrchestratorAgentLLM(
     const openaiClient = createOpenAI({
         apiKey: process.env.OPENAI_API_KEY,
     });
-    const model = withTracing(openaiClient(ORCHESTRATOR_MODEL), phClient, { posthogTraceId: `agent_${agent.id}_${previousMessages.length}` });
+    const model = withTracing(openaiClient(ORCHESTRATOR_MODEL), phClient, {
+        posthogTraceId: `agent_${agent.id}_${previousMessages.length}`,
+    });
 
     const tools = sandboxTools(agent.id, sandbox);
     const userImages = previousMessages.filter((message) => message.sender === 'USER').flatMap((message) => message.images);
@@ -131,18 +130,17 @@ export async function runOrchestratorAgentLLM(
     const messages = transformMessagesToModelMessages(previousMessages);
     const streamReasoning = createReasoningStreamer(agent.id);
 
-    const result = await generateText({
+    const orchestratorAgent = new ToolLoopAgent({
         model,
+        instructions: ORCHESTRATOR_AGENT_SYSTEM_PROMPT,
+        tools: { ...orchestratorAgentTools, ...dynamicTools, ...tools, ...browserTools },
+        stopWhen: stepCountIs(32),
         providerOptions: {
             openai: {
                 reasoningEffort: 'high',
                 reasoningSummary: 'concise',
             },
         },
-        system: ORCHESTRATOR_AGENT_SYSTEM_PROMPT,
-        messages,
-        tools: { ...orchestratorAgentTools, ...dynamicTools, ...tools, ...browserTools },
-        stopWhen: stepCountIs(32),
         onStepFinish: (step) => {
             streamReasoning(step);
             usageAccumulator.promptTokens += step.usage.inputTokens || 0;
@@ -150,6 +148,8 @@ export async function runOrchestratorAgentLLM(
             usageAccumulator.totalTokens += step.usage.totalTokens || 0;
         },
     });
+
+    const result = await orchestratorAgent.generate({ messages });
 
     await phClient.shutdown();
 

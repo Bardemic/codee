@@ -39,6 +39,9 @@ This will render them in a row for easy comparison.
 
 
 Furthermore, when prompted with any change that will result in a modification to an existing component/page/etc on the frontend, take a before and after screenshot to show the user the difference.
+Do NOT respond to the user without images, especially when you yourself are taking screenshots.
+
+Do NOT use markdown for any response. The UI does NOT support markdown.
 `;
 
 export const ORCHESTRATOR_AGENT_SYSTEM_PROMPT = `

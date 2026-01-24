@@ -1,16 +1,11 @@
 import { generateObject, type ModelMessage, type ToolCallPart, type ToolResultPart } from 'ai';
-import { createOpenAI } from '@ai-sdk/openai';
+import { google } from '@ai-sdk/google';
 import { z } from 'zod';
 import type { Message } from '../db/entities/Message';
 import type { ToolCall } from '../db/entities/ToolCall';
-// import { getPostHog } from './posthog';
-
-const openaiClient = createOpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
 
 export async function generateTitle(prompt: string): Promise<string> {
-    const model = openaiClient('gpt-5-nano');
+    const model = google('gemini-2.5-flash-lite');
     // const posthog = getPostHog(); setup posthog later if I want to bother w/ distinct id tracking
 
     try {
@@ -18,11 +13,6 @@ export async function generateTitle(prompt: string): Promise<string> {
             model,
             system: 'You are Codee, an async coding agent. Generate a concise workspace title under 7 words. Avoid filler like quotes or exclamations.',
             prompt,
-            providerOptions: {
-                openai: {
-                    reasoningEffort: 'minimal',
-                },
-            },
             schema: z.object({
                 title: z
                     .string()
