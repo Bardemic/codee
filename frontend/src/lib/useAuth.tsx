@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function refreshUser() {
         try {
-            const response = await axios.get('http://localhost:5001/api/auth/session', {
+            const response = await axios.get('/api/auth/session', {
                 withCredentials: true,
             });
             if (response.data.authenticated) {

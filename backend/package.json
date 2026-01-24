@@ -4,8 +4,8 @@
     "type": "module",
     "private": true,
     "scripts": {
-        "dev": "bun run --hot src/index.ts",
-        "start": "bun run src/index.ts",
+        "dev": "tsx src/index.ts",
+        "start": "node src/index.ts",
         "typecheck": "bun run tsc --noEmit",
         "format": "prettier --write .",
         "format:check": "prettier --check ."
@@ -23,7 +23,8 @@
         "eslint-plugin-prettier": "^5.5.4",
         "prettier": "^3.7.4",
         "typescript": "^5.7.2",
-        "typescript-eslint": "^8.50.1"
+        "typescript-eslint": "^8.50.1",
+        "tsx": "^3.12.7"
     },
     "dependencies": {
         "@ai-sdk/openai": "^3.0.0",
