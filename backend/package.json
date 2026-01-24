@@ -37,6 +37,7 @@
         "axios": "^1.7.9",
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.5",
+        "dotenv": "^16.4.5",
         "express": "^5.2.1",
         "morgan": "^1.10.0",
         "nitro": "^3.0.1-alpha.1",
