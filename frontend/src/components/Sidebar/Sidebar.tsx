@@ -7,6 +7,8 @@ import { trpc } from '../../lib/trpc';
 import { FiHome, FiGrid, FiUsers, FiLogOut, FiSettings, FiPieChart, FiBriefcase } from 'react-icons/fi';
 import codeeLogo from '../../assets/svgs/CodeeLogo.svg';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:5001';
+
 type SidebarProps = {
     children?: ReactNode;
 };
@@ -17,7 +19,7 @@ export default function Sidebar({ children }: SidebarProps) {
     const { data: workspaces } = trpc.workspace.list.useQuery();
 
     function handleSignOut() {
-        window.location.href = 'http://localhost:5001/api/auth/logout';
+        window.location.href = `${BACKEND_URL}/api/auth/logout`;
     }
 
     return (

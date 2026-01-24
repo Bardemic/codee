@@ -4,6 +4,7 @@ import { ensureUserHasOrganization } from '../services/organizationService';
 import { AuthenticateWithSessionCookieFailureReason } from '@workos-inc/node';
 
 const router = Router();
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 router.get('/login', (req, res) => {
     const authorizationUrl = workos.userManagement.getAuthorizationUrl({
@@ -42,10 +43,10 @@ router.get('/callback', async (req, res) => {
             sameSite: 'lax',
         });
 
-        res.redirect('http://localhost:5173/');
+        res.redirect(`${FRONTEND_URL}/`);
     } catch (error) {
         console.error('Auth callback error:', error);
-        res.redirect('http://localhost:5173/login');
+        res.redirect(`${FRONTEND_URL}/login`);
     }
 });
 
@@ -53,7 +54,7 @@ router.get('/logout', async (req, res) => {
     const sealedSession = req.cookies[COOKIE_NAME];
 
     if (!sealedSession) {
-        return res.redirect('http://localhost:5173/login');
+        return res.redirect(`${FRONTEND_URL}/login`);
     }
 
     try {
@@ -75,7 +76,7 @@ router.get('/logout', async (req, res) => {
     } catch (error) {
         console.error('Logout error:', error);
         res.clearCookie(COOKIE_NAME);
-        res.redirect('http://localhost:5173/login');
+        res.redirect(`${FRONTEND_URL}/login`);
     }
 });
 

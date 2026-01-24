@@ -13,7 +13,9 @@ const router = Router();
 
 const SLACK_CLIENT_ID = process.env.SLACK_CLIENT_ID || '';
 const SLACK_CLIENT_SECRET = process.env.SLACK_CLIENT_SECRET || '';
-const SLACK_REDIRECT_URI = process.env.SLACK_REDIRECT_URI || 'http://localhost:5001/api/slack/oauth/callback';
+const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:${process.env.PORT || '3000'}`;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const SLACK_REDIRECT_URI = process.env.SLACK_REDIRECT_URI || `${BACKEND_URL}/api/slack/oauth/callback`;
 const SLACK_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const SLACK_OAUTH_STATE_SECRET = process.env.SLACK_OAUTH_STATE_SECRET || process.env.WORKOS_COOKIE_PASSWORD || '';
 
@@ -226,7 +228,7 @@ router.get('/oauth/callback', async (req, res) => {
 
         await mappingRepository.save(mapping);
 
-        res.redirect('http://localhost:5173/integrations?slack=success');
+        res.redirect(`${FRONTEND_URL}/integrations?slack=success`);
     } catch (error) {
         console.error('Slack OAuth callback error:', error);
         res.status(500).json({ error: 'Internal server error' });

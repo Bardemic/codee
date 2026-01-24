@@ -1,6 +1,8 @@
 import { useEffect, useState, useContext, createContext, ReactNode } from 'react';
 import axios from 'axios';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:5001';
+
 interface User {
     id: string;
     email: string;
@@ -23,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function refreshUser() {
         try {
-            const response = await axios.get('http://localhost:5001/api/auth/session', {
+            const response = await axios.get(`${BACKEND_URL}/api/auth/session`, {
                 withCredentials: true,
             });
             if (response.data.authenticated) {

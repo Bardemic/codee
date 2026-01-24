@@ -3,6 +3,8 @@ import { QueryClient } from '@tanstack/react-query';
 import superjson from 'superjson';
 import type { AppRouter } from '../../../backend/src/trpc/router';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:5001';
+
 export const trpc = createTRPCReact<AppRouter>();
 
 export const queryClient = new QueryClient({
@@ -21,7 +23,7 @@ export const trpcClient = trpc.createClient({
                 return op.context.skipBatch === true;
             },
             true: httpLink({
-                url: 'http://localhost:5001/api/trpc',
+                url: `${BACKEND_URL}/api/trpc`,
                 transformer: superjson,
                 fetch(url, options) {
                     return fetch(url, {
@@ -31,7 +33,7 @@ export const trpcClient = trpc.createClient({
                 },
             }),
             false: httpBatchLink({
-                url: 'http://localhost:5001/api/trpc',
+                url: `${BACKEND_URL}/api/trpc`,
                 transformer: superjson,
                 fetch(url, options) {
                     return fetch(url, {
