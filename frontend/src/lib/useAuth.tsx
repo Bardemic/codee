@@ -17,13 +17,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const BACKEND_URL = 'https://sb-2zgoradkpon5.vercel.run';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
     async function refreshUser() {
         try {
-            const response = await axios.get('http://localhost:5001/api/auth/session', {
+            const response = await axios.get(`${BACKEND_URL}/api/auth/session`, {
                 withCredentials: true,
             });
             if (response.data.authenticated) {

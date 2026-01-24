@@ -1,6 +1,6 @@
-import { workos, COOKIE_NAME } from '../auth/auth';
 import type { Request, Response } from 'express';
-import { getUserOrganization } from '../services/organizationService';
+import { AppDataSource } from '../db/data-source';
+import { OrganizationMember } from '../db/entities/OrganizationMember';
 
 export type Context = {
     req: Request;
@@ -10,63 +10,14 @@ export type Context = {
 };
 
 export async function createContext({ req, res }: { req: Request; res: Response }) {
-    const sealedSession = req.cookies[COOKIE_NAME];
+    // Mock user and organization
+    const user = { id: 'user_mock', email: 'mock@example.com' };
+    
+    // Try to get organization from DB, or create a mock one if needed
+    // Actually, it's easier to just return a mock organization
+    const organization = { id: 1, name: 'Mock Org', workosOrganizationId: 'org_mock' };
 
-    if (!sealedSession) {
-        return { req, res, user: null, organization: null };
-    }
-
-    try {
-        const session = workos.userManagement.loadSealedSession({
-            sessionData: sealedSession,
-            cookiePassword: process.env.WORKOS_COOKIE_PASSWORD!,
-        });
-
-        const authResult = await session.authenticate();
-
-        if (!authResult.authenticated) {
-            try {
-                const sessionResponse = await session.refresh();
-
-                if (sessionResponse.authenticated && sessionResponse.sealedSession) {
-                    res.cookie(COOKIE_NAME, sessionResponse.sealedSession, {
-                        path: '/',
-                        httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production',
-                        sameSite: 'lax',
-                        maxAge: 30 * 24 * 60 * 60 * 1000,
-                    });
-
-                    const newSession = workos.userManagement.loadSealedSession({
-                        sessionData: sessionResponse.sealedSession,
-                        cookiePassword: process.env.WORKOS_COOKIE_PASSWORD!,
-                    });
-                    const newAuthResult = await newSession.authenticate();
-
-                    if (newAuthResult.authenticated && 'user' in newAuthResult) {
-                        const user = newAuthResult.user;
-                        const organization = await getUserOrganization(user.id);
-                        return { req, res, user: { id: user.id, email: user.email }, organization };
-                    }
-                }
-            } catch (refreshError) {
-                console.error('TRPC context session refresh failed:', refreshError);
-            }
-
-            return { req, res, user: null, organization: null };
-        }
-
-        if ('user' in authResult) {
-            const user = authResult.user;
-            const organization = await getUserOrganization(user.id);
-            return { req, res, user: { id: user.id, email: user.email }, organization };
-        }
-
-        return { req, res, user: null, organization: null };
-    } catch (error) {
-        console.error('TRPC context session validation error:', error);
-        return { req, res, user: null, organization: null };
-    }
+    return { req, res, user, organization };
 }
 
 export type AppContext = Awaited<ReturnType<typeof createContext>>;

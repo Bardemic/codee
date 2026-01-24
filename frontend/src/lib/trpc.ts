@@ -14,6 +14,8 @@ export const queryClient = new QueryClient({
     },
 });
 
+const BACKEND_URL = 'https://sb-2zgoradkpon5.vercel.run';
+
 export const trpcClient = trpc.createClient({
     links: [
         splitLink({
@@ -21,7 +23,7 @@ export const trpcClient = trpc.createClient({
                 return op.context.skipBatch === true;
             },
             true: httpLink({
-                url: 'http://localhost:5001/api/trpc',
+                url: `${BACKEND_URL}/api/trpc`,
                 transformer: superjson,
                 fetch(url, options) {
                     return fetch(url, {
@@ -31,7 +33,7 @@ export const trpcClient = trpc.createClient({
                 },
             }),
             false: httpBatchLink({
-                url: 'http://localhost:5001/api/trpc',
+                url: `${BACKEND_URL}/api/trpc`,
                 transformer: superjson,
                 fetch(url, options) {
                     return fetch(url, {

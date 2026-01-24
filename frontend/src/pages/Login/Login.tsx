@@ -7,6 +7,8 @@ function Login() {
     const navigate = useNavigate();
     const { user, loading } = useAuth();
 
+    const BACKEND_URL = 'https://sb-2zgoradkpon5.vercel.run';
+
     useEffect(() => {
         if (!loading && user) {
             navigate('/');
@@ -16,7 +18,7 @@ function Login() {
     return (
         <div className={styles.container}>
             <h2>Sign in to Codee</h2>
-            <button onClick={() => (window.location.href = 'http://localhost:5001/api/auth/login')} className={styles.submitButton}>
+            <button onClick={() => (window.location.href = `${BACKEND_URL}/api/auth/login`)} className={styles.submitButton}>
                 Sign in with Email
             </button>
         </div>
