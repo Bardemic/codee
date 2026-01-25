@@ -8,10 +8,10 @@ export class WorkerDefinition {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column({ length: 200 })
+    @Column({ type: "varchar", length: 200 })
     prompt!: string;
 
-    @Column()
+    @Column({ type: "int" })
     organizationId!: number;
 
     @ManyToOne('Organization', {
@@ -22,13 +22,13 @@ export class WorkerDefinition {
     @CreateDateColumn()
     createdAt!: Date;
 
-    @Column({ length: 200 })
+    @Column({ type: "varchar", length: 200 })
     slug!: string;
 
-    @Column({ nullable: true })
+    @Column({ type: "varchar", nullable: true })
     key!: string | null;
 
-    @Column({ type: 'jsonb', default: [] })
+    @Column({ type: 'json', default: '[]' })
     cloudProviders!: Array<Record<string, unknown>>;
 
     @OneToMany('WorkerDefinitionTool', 'workerDefinition')

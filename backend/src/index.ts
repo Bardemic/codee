@@ -16,7 +16,7 @@ import { slackOAuthRouter } from './slack/oauth';
 import { slackEventsRouter } from './slack/events';
 import { authRouter } from './auth/routes';
 
-const PORT = Number(process.env.PORT || 5001);
+const PORT = Number(process.env.PORT || 3000);
 
 async function shutdown() {
     await flushPostHog();
@@ -31,7 +31,7 @@ async function bootstrap() {
 
     app.use(
         cors({
-            origin: 'http://localhost:5173',
+            origin: 'https://sb-14uqjmejpz5r.vercel.run',
             credentials: true,
         })
     );

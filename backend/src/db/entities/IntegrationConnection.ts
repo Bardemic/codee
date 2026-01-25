@@ -9,7 +9,7 @@ export class IntegrationConnection {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({ type: "int" })
     organizationId!: number;
 
     @ManyToOne('Organization', {
@@ -22,10 +22,10 @@ export class IntegrationConnection {
     })
     provider!: IntegrationProvider;
 
-    @Column({ default: '' })
+    @Column({ type: "varchar", default: '' })
     externalId!: string;
 
-    @Column({ type: 'jsonb', default: {} })
+    @Column({ type: 'json', default: '{}' })
     data!: Record<string, string>;
 
     @CreateDateColumn()

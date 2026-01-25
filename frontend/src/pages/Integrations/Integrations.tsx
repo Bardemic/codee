@@ -73,7 +73,7 @@ export default function Integrations() {
             return;
         }
         if (slug === 'slack') {
-            window.location.href = 'http://localhost:5001/api/slack/oauth';
+            window.location.href = 'https://sb-z066cyy6b8th.vercel.run/api/slack/oauth';
             return;
         }
         if (data?.api_key) {

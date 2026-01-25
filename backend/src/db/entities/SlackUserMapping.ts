@@ -7,13 +7,13 @@ export class SlackUserMapping {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({ type: "varchar" })
     slackTeamId!: string;
 
-    @Column()
+    @Column({ type: "varchar" })
     slackUserId!: string;
 
-    @Column()
+    @Column({ type: "varchar" })
     codeeUserId!: string;
 
     @CreateDateColumn()

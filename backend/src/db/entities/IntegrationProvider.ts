@@ -8,16 +8,16 @@ export class IntegrationProvider {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({ type: "varchar" })
     slug!: string;
 
-    @Column()
+    @Column({ type: "varchar" })
     displayName!: string;
 
-    @Column({ default: false })
+    @Column({ type: 'boolean', default: false })
     hasCloudAgent!: boolean;
 
-    @Column({ type: 'jsonb', default: {} })
+    @Column({ type: 'json', default: '{}' })
     schema!: Record<string, unknown>;
 
     @CreateDateColumn()

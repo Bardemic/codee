@@ -15,28 +15,10 @@ import { WorkerDefinitionTool } from './entities/WorkerDefinitionTool';
 import { seedDefaults } from './seed';
 import { SlackUserMapping } from './entities/SlackUserMapping';
 
-const {
-    PGHOST = 'localhost',
-    PGPORT = '5432',
-    PGUSER = 'postgres',
-    PGPASSWORD = '',
-    PGDATABASE = 'codee',
-    PGSSL = 'false',
-    NODE_ENV = 'development',
-} = process.env;
-
-const derivedUrl = `postgres://${encodeURIComponent(PGUSER)}:${encodeURIComponent(PGPASSWORD)}@${PGHOST}:${PGPORT}/${PGDATABASE}`;
-
 export const AppDataSource = new DataSource({
-    type: 'postgres',
-    url: derivedUrl,
-    ssl:
-        PGSSL === 'true'
-            ? {
-                  rejectUnauthorized: false,
-              }
-            : undefined,
-    synchronize: NODE_ENV !== 'production',
+    type: 'sqlite',
+    database: 'database.sqlite',
+    synchronize: true,
     entities: [
         Agent,
         IntegrationConnection,

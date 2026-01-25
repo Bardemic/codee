@@ -26,7 +26,7 @@ export class Message {
     @Column({ type: 'varchar', length: 5 })
     sender!: SenderType;
 
-    @Column({ type: 'jsonb', default: [] })
+    @Column({ type: 'json', default: '[]' })
     images!: MessageImage[];
 
     @Column({ type: 'int', default: 0 })

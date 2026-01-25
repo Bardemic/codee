@@ -21,7 +21,7 @@ export const trpcClient = trpc.createClient({
                 return op.context.skipBatch === true;
             },
             true: httpLink({
-                url: 'http://localhost:5001/api/trpc',
+                url: 'https://sb-z066cyy6b8th.vercel.run/api/trpc',
                 transformer: superjson,
                 fetch(url, options) {
                     return fetch(url, {
@@ -31,7 +31,7 @@ export const trpcClient = trpc.createClient({
                 },
             }),
             false: httpBatchLink({
-                url: 'http://localhost:5001/api/trpc',
+                url: 'https://sb-z066cyy6b8th.vercel.run/api/trpc',
                 transformer: superjson,
                 fetch(url, options) {
                     return fetch(url, {
