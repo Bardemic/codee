@@ -20,17 +20,17 @@ export class Organization {
     id!: number;
 
     @Index({ unique: true })
-    @Column()
+    @Column({ type: 'varchar' })
     workosOrganizationId!: string;
 
-    @Column({ length: 200, default: 'Personal Workspace' })
+    @Column({ type: 'varchar', nullable: true,  length: 200, default: 'Personal Workspace' })
     name!: string;
 
     // Stripe
-    @Column({ nullable: true })
+    @Column({ type: 'varchar', nullable: true })
     stripeCustomerId?: string;
 
-    @Column({ nullable: true })
+    @Column({ type: 'varchar', nullable: true })
     stripeSubscriptionId?: string;
 
     @Column({ type: 'varchar', length: 20, default: SubscriptionTier.FREE })

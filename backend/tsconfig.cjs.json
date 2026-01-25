@@ -9,8 +9,6 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "esModuleInterop": true,
-        "skipLibCheck": true,
-        "outDir": "dist"
-    },
-    "include": ["src/**/*"]
+        "skipLibCheck": true
+    }
 }

@@ -16,7 +16,7 @@ function Login() {
     return (
         <div className={styles.container}>
             <h2>Sign in to Codee</h2>
-            <button onClick={() => (window.location.href = 'http://localhost:5001/api/auth/login')} className={styles.submitButton}>
+            <button onClick={() => (window.location.href = 'https://sb-4t7eq0nz2uic.vercel.run/api/auth/login')} className={styles.submitButton}>
                 Sign in with Email
             </button>
         </div>

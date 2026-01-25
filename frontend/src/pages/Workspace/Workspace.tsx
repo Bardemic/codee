@@ -87,7 +87,7 @@ export default function Workspace() {
         if (!agentId || !currentAgent) return;
         if (currentAgent.integration !== 'Codee') return;
 
-        const eventSource = new EventSource(`http://127.0.0.1:5001/stream/agent/${agentId}`);
+        const eventSource = new EventSource(`https://sb-4t7eq0nz2uic.vercel.run/stream/agent/${agentId}`);
 
         eventSource.addEventListener('status', (event: MessageEvent) => {
             const eventData = JSON.parse(event.data);

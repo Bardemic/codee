@@ -12,6 +12,8 @@ export default defineConfig({
     server: {
         port: 5173,
         strictPort: true,
+        host: '0.0.0.0',
+        allowedHosts: ['sb-28w3gyh5pb59.vercel.run'],
     },
     build: {
         outDir: 'dist',

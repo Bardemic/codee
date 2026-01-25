@@ -42,10 +42,10 @@ router.get('/callback', async (req, res) => {
             sameSite: 'lax',
         });
 
-        res.redirect('http://localhost:5173/');
+        res.redirect('https://sb-28w3gyh5pb59.vercel.run/');
     } catch (error) {
         console.error('Auth callback error:', error);
-        res.redirect('http://localhost:5173/login');
+        res.redirect('https://sb-28w3gyh5pb59.vercel.run/login');
     }
 });
 
@@ -53,7 +53,7 @@ router.get('/logout', async (req, res) => {
     const sealedSession = req.cookies[COOKIE_NAME];
 
     if (!sealedSession) {
-        return res.redirect('http://localhost:5173/login');
+        return res.redirect('https://sb-28w3gyh5pb59.vercel.run/login');
     }
 
     try {
@@ -75,7 +75,7 @@ router.get('/logout', async (req, res) => {
     } catch (error) {
         console.error('Logout error:', error);
         res.clearCookie(COOKIE_NAME);
-        res.redirect('http://localhost:5173/login');
+        res.redirect('https://sb-28w3gyh5pb59.vercel.run/login');
     }
 });
 

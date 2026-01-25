@@ -9,7 +9,7 @@ export class IntegrationConnection {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({ type: 'varchar' })
     organizationId!: number;
 
     @ManyToOne('Organization', {
@@ -22,7 +22,7 @@ export class IntegrationConnection {
     })
     provider!: IntegrationProvider;
 
-    @Column({ default: '' })
+    @Column({ type: 'varchar', nullable: true,  default: '' })
     externalId!: string;
 
     @Column({ type: 'jsonb', default: {} })

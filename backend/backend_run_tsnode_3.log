@@ -1,0 +1,60 @@
+Failed to start backend QueryFailedError: column "displayName" of relation "tool" contains null values
+    at PostgresQueryRunner.query (/vercel/sandbox/backend/node_modules/typeorm/src/driver/postgres/PostgresQueryRunner.ts:325:19)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async PostgresQueryRunner.executeQueries (/vercel/sandbox/backend/node_modules/src/query-runner/BaseQueryRunner.ts:681:13)
+    at async PostgresQueryRunner.addColumn (/vercel/sandbox/backend/node_modules/typeorm/src/driver/postgres/PostgresQueryRunner.ts:1160:9)
+    at async PostgresQueryRunner.changeColumn (/vercel/sandbox/backend/node_modules/typeorm/src/driver/postgres/PostgresQueryRunner.ts:1245:13)
+    at async PostgresQueryRunner.changeColumns (/vercel/sandbox/backend/node_modules/typeorm/src/driver/postgres/PostgresQueryRunner.ts:2319:13)
+    at async RdbmsSchemaBuilder.updateExistColumns (/vercel/sandbox/backend/node_modules/src/schema-builder/RdbmsSchemaBuilder.ts:969:13)
+    at async RdbmsSchemaBuilder.executeSchemaSyncOperationsInProperOrder (/vercel/sandbox/backend/node_modules/src/schema-builder/RdbmsSchemaBuilder.ts:229:9)
+    at async RdbmsSchemaBuilder.build (/vercel/sandbox/backend/node_modules/src/schema-builder/RdbmsSchemaBuilder.ts:95:13)
+    at async DataSource.synchronize (/vercel/sandbox/backend/node_modules/src/data-source/DataSource.ts:340:9) {
+  query: 'ALTER TABLE "tool" ADD "displayName" text NOT NULL',
+  parameters: undefined,
+  driverError: error: column "displayName" of relation "tool" contains null values
+      at /vercel/sandbox/backend/node_modules/pg/lib/client.js:588:17
+      at processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async PostgresQueryRunner.query (/vercel/sandbox/backend/node_modules/typeorm/src/driver/postgres/PostgresQueryRunner.ts:254:25)
+      at async PostgresQueryRunner.executeQueries (/vercel/sandbox/backend/node_modules/src/query-runner/BaseQueryRunner.ts:681:13)
+      at async PostgresQueryRunner.addColumn (/vercel/sandbox/backend/node_modules/typeorm/src/driver/postgres/PostgresQueryRunner.ts:1160:9)
+      at async PostgresQueryRunner.changeColumn (/vercel/sandbox/backend/node_modules/typeorm/src/driver/postgres/PostgresQueryRunner.ts:1245:13)
+      at async PostgresQueryRunner.changeColumns (/vercel/sandbox/backend/node_modules/typeorm/src/driver/postgres/PostgresQueryRunner.ts:2319:13)
+      at async RdbmsSchemaBuilder.updateExistColumns (/vercel/sandbox/backend/node_modules/src/schema-builder/RdbmsSchemaBuilder.ts:969:13)
+      at async RdbmsSchemaBuilder.executeSchemaSyncOperationsInProperOrder (/vercel/sandbox/backend/node_modules/src/schema-builder/RdbmsSchemaBuilder.ts:229:9)
+      at async RdbmsSchemaBuilder.build (/vercel/sandbox/backend/node_modules/src/schema-builder/RdbmsSchemaBuilder.ts:95:13) {
+    length: 150,
+    severity: 'ERROR',
+    code: '23502',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: 'public',
+    table: 'tool',
+    column: 'displayName',
+    dataType: undefined,
+    constraint: undefined,
+    file: 'tablecmds.c',
+    line: '6279',
+    routine: 'ATRewriteTable'
+  },
+  length: 150,
+  severity: 'ERROR',
+  code: '23502',
+  detail: undefined,
+  hint: undefined,
+  position: undefined,
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: 'public',
+  table: 'tool',
+  column: 'displayName',
+  dataType: undefined,
+  constraint: undefined,
+  file: 'tablecmds.c',
+  line: '6279',
+  routine: 'ATRewriteTable'
+}

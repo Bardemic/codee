@@ -1,0 +1,11 @@
+Failed to start backend TypeORMError: Column name of Entity Organization does not support length property.
+    at <anonymous> (/vercel/sandbox/backend/node_modules/typeorm/metadata-builder/src/metadata-builder/EntityMetadataValidator.ts:142:31)
+    at Array.forEach (<anonymous>)
+    at EntityMetadataValidator.validate (/vercel/sandbox/backend/node_modules/typeorm/metadata-builder/src/metadata-builder/EntityMetadataValidator.ts:128:18)
+    at <anonymous> (/vercel/sandbox/backend/node_modules/typeorm/metadata-builder/src/metadata-builder/EntityMetadataValidator.ts:43:18)
+    at Array.forEach (<anonymous>)
+    at EntityMetadataValidator.validateMany (/vercel/sandbox/backend/node_modules/typeorm/metadata-builder/src/metadata-builder/EntityMetadataValidator.ts:42:25)
+    at DataSource.buildMetadatas (/vercel/sandbox/backend/node_modules/typeorm/data-source/src/data-source/DataSource.ts:753:33)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async DataSource.initialize (/vercel/sandbox/backend/node_modules/typeorm/data-source/src/data-source/DataSource.ts:264:13)
+    at async initDataSource (/vercel/sandbox/backend/src/db/data-source.ts:59:9)

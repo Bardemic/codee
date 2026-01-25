@@ -17,15 +17,15 @@ export class ToolCall {
     createdAt!: Date;
 
     @Index()
-    @Column({ length: 100 })
+    @Column({ type: 'varchar', nullable: true,  length: 100 })
     toolName!: string;
 
     @Column({ type: 'jsonb', default: {} })
     arguments!: Record<string, unknown>;
 
-    @Column({ type: 'text', default: '' })
+    @Column({ type: 'varchar', default: '' })
     result!: string;
 
-    @Column({ length: 20, default: 'success' })
+    @Column({ type: 'varchar', nullable: true,  length: 20, default: 'success' })
     status!: string;
 }

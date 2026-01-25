@@ -16,7 +16,7 @@ import { slackOAuthRouter } from './slack/oauth';
 import { slackEventsRouter } from './slack/events';
 import { authRouter } from './auth/routes';
 
-const PORT = Number(process.env.PORT || 5001);
+const PORT = Number(process.env.PORT || 3001);
 
 async function shutdown() {
     await flushPostHog();
@@ -31,7 +31,7 @@ async function bootstrap() {
 
     app.use(
         cors({
-            origin: 'http://localhost:5173',
+            origin: 'https://sb-28w3gyh5pb59.vercel.run',
             credentials: true,
         })
     );
@@ -71,8 +71,8 @@ async function bootstrap() {
     app.use('/api/slack', slackOAuthRouter);
     app.use('/webhooks/slack', slackEventsRouter);
 
-    app.listen(PORT, () => {
-        console.log(`[backend] listening on http://localhost:${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`[backend] listening on http://0.0.0.0:${PORT}`);
     });
 
     process.on('SIGTERM', shutdown);

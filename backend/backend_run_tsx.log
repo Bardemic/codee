@@ -1,0 +1,13 @@
+/vercel/sandbox/backend/node_modules/typeorm/decorator/src/decorator/columns/Column.ts:192
+                throw new ColumnTypeUndefinedError(object, propertyName)
+                      ^
+
+ColumnTypeUndefinedError: Column type for Organization#name is not defined and cannot be guessed. Make sure you have turned on an "emitDecoratorMetadata": true option in tsconfig.json. Also make sure you have imported "reflect-metadata" on top of the main entry file in your application (before any entity imported).If you are using JavaScript instead of TypeScript you must explicitly provide a column type.
+    at <anonymous> (/vercel/sandbox/backend/node_modules/typeorm/decorator/src/decorator/columns/Column.ts:192:23)
+    at __decorateClass (file:///vercel/sandbox/backend/src/db/entities/Organization.ts:1:374)
+    at <anonymous> (/vercel/sandbox/backend/src/db/entities/Organization.ts:27:5)
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+
+Node.js v22.22.0

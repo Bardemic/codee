@@ -1,0 +1,29 @@
+/vercel/sandbox/backend/node_modules/ts-node/src/index.ts:859
+    return new TSError(diagnosticText, diagnosticCodes, diagnostics);
+           ^
+TSError: ⨯ Unable to compile TypeScript:
+src/trpc/routers/workspace.ts(135,21): error TS2322: Type '{ name?: string; agents?: { model?: string; }[]; }[]' is not assignable to type 'CloudProviderConfig[]'.
+  Type '{ name?: string; agents?: { model?: string; }[]; }' is not assignable to type 'CloudProviderConfig'.
+    Property 'name' is optional in type '{ name?: string; agents?: { model?: string; }[]; }' but required in type 'CloudProviderConfig'.
+src/trpc/routers/workspace.ts(136,21): error TS2322: Type '{ data?: string; mimeType?: string; }[]' is not assignable to type 'MessageImage[]'.
+  Type '{ data?: string; mimeType?: string; }' is not assignable to type 'MessageImage'.
+    Property 'data' is optional in type '{ data?: string; mimeType?: string; }' but required in type 'MessageImage'.
+src/trpc/routers/workspace.ts(149,21): error TS2322: Type '{ data?: string; mimeType?: string; }[]' is not assignable to type 'MessageImage[]'.
+  Type '{ data?: string; mimeType?: string; }' is not assignable to type 'MessageImage'.
+    Property 'data' is optional in type '{ data?: string; mimeType?: string; }' but required in type 'MessageImage'.
+src/trpc/routers/workspace.ts(197,78): error TS2345: Argument of type '{ data?: string; mimeType?: string; }[]' is not assignable to parameter of type 'MessageImage[]'.
+  Type '{ data?: string; mimeType?: string; }' is not assignable to type 'MessageImage'.
+    Property 'data' is optional in type '{ data?: string; mimeType?: string; }' but required in type 'MessageImage'.
+
+    at createTSError (/vercel/sandbox/backend/node_modules/ts-node/src/index.ts:859:12)
+    at reportTSError (/vercel/sandbox/backend/node_modules/ts-node/src/index.ts:863:19)
+    at getOutput (/vercel/sandbox/backend/node_modules/ts-node/src/index.ts:1077:36)
+    at Object.compile (/vercel/sandbox/backend/node_modules/ts-node/src/index.ts:1433:41)
+    at Module.m._compile (/vercel/sandbox/backend/node_modules/ts-node/src/index.ts:1617:30)
+    at node:internal/modules/cjs/loader:1839:10
+    at Object.require.extensions.<computed> [as .ts] (/vercel/sandbox/backend/node_modules/ts-node/src/index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14) {
+  diagnosticCodes: [ 2322, 2322, 2322, 2345 ]
+}

@@ -10,10 +10,10 @@ export class Workspace {
     @CreateDateColumn()
     createdAt!: Date;
 
-    @Column({ length: 200, default: 'Untitled' })
+    @Column({ type: 'varchar', nullable: true,  length: 200, default: 'Untitled' })
     name!: string;
 
-    @Column()
+    @Column({ type: 'varchar' })
     organizationId!: number;
 
     @ManyToOne('Organization', {
@@ -21,20 +21,20 @@ export class Workspace {
     })
     organization!: Organization;
 
-    @Column()
+    @Column({ type: 'varchar' })
     githubRepositoryName!: string;
 
-    @Column({ nullable: true })
+    @Column({ type: 'varchar', nullable: true })
     workerId?: number;
 
     @Index()
-    @Column({ default: 'main' })
+    @Column({ type: 'varchar', nullable: true,  default: 'main' })
     currentBranch!: string;
 
-    @Column({ nullable: true })
+    @Column({ type: 'varchar', nullable: true })
     slackChannelId?: string;
 
-    @Column({ nullable: true })
+    @Column({ type: 'varchar', nullable: true })
     slackMessageTs?: string;
 
     @OneToMany('Agent', 'workspace')
