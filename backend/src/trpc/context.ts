@@ -10,6 +10,16 @@ export type Context = {
 };
 
 export async function createContext({ req, res }: { req: Request; res: Response }) {
+    // Development bypass
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+        return {
+            req,
+            res,
+            user: { id: 'user_fake', email: 'test@example.com' },
+            organization: { id: 1, name: 'Fake Organization', workosOrganizationId: 'org_fake' }
+        };
+    }
+
     const sealedSession = req.cookies[COOKIE_NAME];
 
     if (!sealedSession) {

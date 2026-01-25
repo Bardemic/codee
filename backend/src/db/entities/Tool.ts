@@ -8,13 +8,13 @@ export class Tool {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({ type: "varchar", nullable: true })
     displayName!: string;
 
-    @Column()
+    @Column({ type: "varchar", nullable: true })
     slugName!: string;
 
-    @Column({ default: false })
+    @Column({ type: 'varchar',  default: false })
     isModel!: boolean;
 
     @ManyToOne(() => IntegrationProvider, {

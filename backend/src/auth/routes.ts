@@ -6,6 +6,9 @@ import { AuthenticateWithSessionCookieFailureReason } from '@workos-inc/node';
 const router = Router();
 
 router.get('/login', (req, res) => {
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+        return res.redirect('https://sb-6jmo6xpveyz0.vercel.run/');
+    }
     const authorizationUrl = workos.userManagement.getAuthorizationUrl({
         provider: 'authkit',
         redirectUri: config.redirectUri,
@@ -42,18 +45,21 @@ router.get('/callback', async (req, res) => {
             sameSite: 'lax',
         });
 
-        res.redirect('http://localhost:5173/');
+        res.redirect('https://sb-6jmo6xpveyz0.vercel.run/');
     } catch (error) {
         console.error('Auth callback error:', error);
-        res.redirect('http://localhost:5173/login');
+        res.redirect('https://sb-6jmo6xpveyz0.vercel.run/login');
     }
 });
 
 router.get('/logout', async (req, res) => {
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+        return res.redirect('https://sb-6jmo6xpveyz0.vercel.run/login');
+    }
     const sealedSession = req.cookies[COOKIE_NAME];
 
     if (!sealedSession) {
-        return res.redirect('http://localhost:5173/login');
+        return res.redirect('https://sb-6jmo6xpveyz0.vercel.run/login');
     }
 
     try {
@@ -75,11 +81,17 @@ router.get('/logout', async (req, res) => {
     } catch (error) {
         console.error('Logout error:', error);
         res.clearCookie(COOKIE_NAME);
-        res.redirect('http://localhost:5173/login');
+        res.redirect('https://sb-6jmo6xpveyz0.vercel.run/login');
     }
 });
 
 router.get('/session', async (req, res) => {
+    if (process.env.DEV_BYPASS_AUTH === 'true') {
+        return res.json({
+            authenticated: true,
+            user: { id: 'user_fake', email: 'test@example.com', firstName: 'Fake', lastName: 'User' },
+        });
+    }
     const sealedSession = req.cookies[COOKIE_NAME];
 
     if (!sealedSession) {
@@ -137,4 +149,4 @@ router.get('/session', async (req, res) => {
     }
 });
 
-export const authRouter = router;
+export { router as authRouter };

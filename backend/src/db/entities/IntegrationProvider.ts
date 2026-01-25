@@ -8,13 +8,13 @@ export class IntegrationProvider {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({ type: "varchar", nullable: true })
     slug!: string;
 
-    @Column()
+    @Column({ type: "varchar", nullable: true })
     displayName!: string;
 
-    @Column({ default: false })
+    @Column({ type: 'varchar',  default: false })
     hasCloudAgent!: boolean;
 
     @Column({ type: 'jsonb', default: {} })

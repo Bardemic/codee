@@ -1,6 +1,5 @@
 {
-    "name": "backend",
-    "module": "src/index.ts",
+    "name": "my-backend",
     "type": "module",
     "private": true,
     "scripts": {
@@ -22,15 +21,19 @@
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-prettier": "^5.5.4",
         "prettier": "^3.7.4",
-        "typescript": "^5.7.2",
+        "typescript": "^5.9.3",
         "typescript-eslint": "^8.50.1"
     },
     "dependencies": {
         "@ai-sdk/openai": "^3.0.0",
         "@posthog/agent-toolkit": "^0.2.4",
         "@posthog/ai": "^7.3.0",
+        "@swc-node/loader": "^1.6.1",
+        "@swc-node/register": "^1.11.1",
+        "@swc/core": "^1.15.10",
         "@trpc/server": "^11.0.0-rc.553",
         "@types/bcryptjs": "^3.0.0",
+        "@types/node": "^25.0.10",
         "@vercel/sandbox": "^1.1.1",
         "@workos-inc/node": "^7.82.0",
         "ai": "^6.0.0",
@@ -46,6 +49,8 @@
         "rollup": "^4.55.1",
         "stripe": "^20.1.2",
         "superjson": "^2.2.1",
+        "ts-node": "^10.9.2",
+        "tsx": "^4.21.0",
         "typeorm": "^0.3.20",
         "uuid": "^11.0.3",
         "workflow": "^4.0.1-beta.44",

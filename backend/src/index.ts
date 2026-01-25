@@ -31,7 +31,7 @@ async function bootstrap() {
 
     app.use(
         cors({
-            origin: 'http://localhost:5173',
+            origin: process.env.FRONTEND_URL || 'https://sb-6jmo6xpveyz0.vercel.run',
             credentials: true,
         })
     );

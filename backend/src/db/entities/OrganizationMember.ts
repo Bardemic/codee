@@ -12,7 +12,7 @@ export class OrganizationMember {
     @PrimaryGeneratedColumn()
     id!: number;
 
-    @Column()
+    @Column({ type: "varchar", nullable: true })
     userId!: string;
 
     @ManyToOne(() => Organization, (org) => org.members, {
@@ -20,13 +20,13 @@ export class OrganizationMember {
     })
     organization!: Organization;
 
-    @Column()
+    @Column({ type: "varchar", nullable: true })
     organizationId!: number;
 
     @Column({ type: 'varchar', length: 20, default: MemberRole.MEMBER })
     role!: MemberRole;
 
-    @Column()
+    @Column({ type: "varchar", nullable: true })
     userEmail!: string;
 
     @CreateDateColumn()

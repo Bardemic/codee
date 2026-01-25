@@ -20,7 +20,7 @@ export class Message {
     @ManyToOne('Agent', 'messages', { onDelete: 'CASCADE' })
     agent!: Agent;
 
-    @Column({ type: 'text' })
+    @Column({ type: 'varchar' })
     content!: string;
 
     @Column({ type: 'varchar', length: 5 })
@@ -38,10 +38,10 @@ export class Message {
     @Column({ type: 'int', default: 0 })
     totalTokens!: number;
 
-    @Column({ type: 'text', nullable: true })
+    @Column({ type: 'varchar', nullable: true })
     error?: string;
 
-    @Column({ type: 'text', default: 'gpt-5-mini' })
+    @Column({ type: 'varchar', default: 'gpt-5-mini' })
     model!: string;
 
     @Column({ type: 'int', default: 0 })

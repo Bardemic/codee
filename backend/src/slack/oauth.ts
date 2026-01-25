@@ -226,7 +226,7 @@ router.get('/oauth/callback', async (req, res) => {
 
         await mappingRepository.save(mapping);
 
-        res.redirect('http://localhost:5173/integrations?slack=success');
+        res.redirect('https://sb-6jmo6xpveyz0.vercel.run/integrations?slack=success');
     } catch (error) {
         console.error('Slack OAuth callback error:', error);
         res.status(500).json({ error: 'Internal server error' });
