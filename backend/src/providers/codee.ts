@@ -21,6 +21,7 @@ export class CodeeProvider implements CloudProvider {
         model,
         isOrchestratorAgent,
         images,
+        environmentId,
     }: {
         organizationId: number;
         workspace: Workspace;
@@ -31,6 +32,7 @@ export class CodeeProvider implements CloudProvider {
         model?: string | null;
         isOrchestratorAgent: boolean;
         images: MessageImage[];
+        environmentId?: number | null;
     }): Promise<Agent> {
         const agentRepository = AppDataSource.getRepository(Agent);
         const messageRepository = AppDataSource.getRepository(Message);
@@ -43,6 +45,7 @@ export class CodeeProvider implements CloudProvider {
             name: `Codee Agent${model ? ` (${model})` : ''}`,
             model: model || null,
             isOrchestratorAgent,
+            environmentId: environmentId || null,
         });
         await agentRepository.save(agent);
         agent.url = `http://localhost:5173/agent/${agent.id}`;

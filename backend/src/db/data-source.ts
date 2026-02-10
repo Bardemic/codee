@@ -14,6 +14,7 @@ import { WorkspaceTool } from './entities/WorkspaceTool';
 import { WorkerDefinitionTool } from './entities/WorkerDefinitionTool';
 import { seedDefaults } from './seed';
 import { SlackUserMapping } from './entities/SlackUserMapping';
+import { Environment } from './entities/Environment';
 
 const {
     PGHOST = 'localhost',
@@ -39,6 +40,7 @@ export const AppDataSource = new DataSource({
     synchronize: NODE_ENV !== 'production',
     entities: [
         Agent,
+        Environment,
         IntegrationConnection,
         IntegrationProvider,
         Message,

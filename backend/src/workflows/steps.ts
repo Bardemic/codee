@@ -4,6 +4,7 @@ import { Sandbox } from '@vercel/sandbox';
 import { Agent, AgentStatus } from '../db/entities/Agent';
 import { Message } from '../db/entities/Message';
 import { SubscriptionTier } from '../db/entities/Organization';
+import { Environment } from '../db/entities/Environment';
 import { AppDataSource } from '../db/data-source';
 import { emitDone, emitError, emitStatus } from '../stream/events';
 import { getAgentById, saveMessage, saveAgentActivity, updateAgent } from './helpers/agents';
@@ -61,6 +62,36 @@ export async function loadPreviousMessages(agentId: number) {
     });
 }
 
+export async function writeEnvironmentFiles(agent: Agent, sandbox: Sandbox): Promise<string[]> {
+    if (!agent.environmentId) {
+        return [];
+    }
+
+    const environment = await AppDataSource.getRepository(Environment).findOne({
+        where: { id: agent.environmentId },
+    });
+
+    if (!environment || !environment.files?.length) {
+        return [];
+    }
+
+    await emitStatus(agent.id, 'running', 'agent_env_files', 'writing environment files');
+
+    for (const file of environment.files) {
+        const dirPath = file.path.split('/').slice(0, -1).join('/');
+        if (dirPath) {
+            await sandbox.runCommand({
+                cmd: 'mkdir',
+                args: ['-p', dirPath],
+            });
+        }
+
+        await sandbox.writeFiles([{ path: file.path, content: Buffer.from(file.content, 'utf-8') }]);
+    }
+
+    return environment.files.map((f) => f.path);
+}
+
 export async function createBranchIfNeeded(agent: Agent, sandbox: Sandbox, isOrchestratorAgent: boolean) {
     if (isOrchestratorAgent) {
         return null;
@@ -116,17 +147,38 @@ export async function saveAgentResponse(
     return savedMessage;
 }
 
-export async function commitChangesIfNeeded(sandbox: Sandbox, agentId: number, prompt: string) {
+export async function commitChangesIfNeeded(sandbox: Sandbox, agentId: number, prompt: string, excludeFilePaths: string[] = []) {
     const statusResult = await sandbox.runCommand({
         cmd: 'git',
         args: ['status', '--porcelain'],
     });
-    const hasChanges = (await statusResult.stdout()).trim().length > 0;
-    if (hasChanges) {
-        await emitStatus(agentId, 'running', 'agent_commit', 'committing changes');
-        const commitMessage = `Codee: ${prompt.slice(0, 50)}${prompt.length > 50 ? '...' : ''}`;
-        await commitAndPush(sandbox, commitMessage);
+    const statusOutput = (await statusResult.stdout()).trim();
+    if (!statusOutput) {
+        return;
     }
+
+    if (excludeFilePaths.length > 0) {
+        for (const filePath of excludeFilePaths) {
+            await sandbox.runCommand({
+                cmd: 'git',
+                args: ['checkout', '--', filePath],
+            }).catch(() => {
+                // File might be new (untracked), just skip
+            });
+        }
+
+        const statusAfterResult = await sandbox.runCommand({
+            cmd: 'git',
+            args: ['status', '--porcelain'],
+        });
+        if (!(await statusAfterResult.stdout()).trim()) {
+            return;
+        }
+    }
+
+    await emitStatus(agentId, 'running', 'agent_commit', 'committing changes');
+    const commitMessage = `Codee: ${prompt.slice(0, 50)}${prompt.length > 50 ? '...' : ''}`;
+    await commitAndPush(sandbox, commitMessage);
 }
 
 export async function cleanupSandbox(sandbox: Sandbox, agentId?: number) {

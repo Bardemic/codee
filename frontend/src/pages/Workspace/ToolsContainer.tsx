@@ -93,7 +93,7 @@ export default function ToolsContainer({
                                     <span className={style.prompt}>$</span> <span className={style.toolName}>{toolCall.tool_name}</span>
                                     {toolCall.arguments && Object.keys(toolCall.arguments).length > 0 && (
                                         <span className={style.toolArgs}>
-                                            {Object.entries(toolCall.arguments).map(([key, value], i) => {
+                                            {Object.entries(toolCall.arguments).map(([key, value]) => {
                                                 const strValue = typeof value === 'string' ? value : JSON.stringify(value);
                                                 const displayValue = strValue.length > 60 ? strValue.slice(0, 57) + '...' : strValue;
                                                 return (

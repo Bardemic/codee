@@ -27,6 +27,7 @@ export class CursorProvider implements CloudProvider {
         baseBranch: string;
         model?: string | null;
         images: MessageImage[];
+        environmentId?: number | null;
     }): Promise<Agent> {
         const agentRepository = AppDataSource.getRepository(Agent);
         const agent = agentRepository.create({

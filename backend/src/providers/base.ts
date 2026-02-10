@@ -34,6 +34,7 @@ export interface CloudProvider {
         model?: string | null;
         isOrchestratorAgent: boolean;
         images: MessageImage[];
+        environmentId?: number | null;
     }): Promise<Agent>;
     getMessages(agent: Agent): Promise<ProviderMessage[]>;
     sendMessage(agent: Agent, message: string, images: MessageImage[]): Promise<boolean>;

@@ -41,7 +41,15 @@ export async function runAgentLLM(
     subscriptionTier: SubscriptionTier
 ) {
     const phClient = new PostHog(process.env.POSTHOG_API_KEY!, { host: 'https://us.i.posthog.com' });
-    const modelGoogle = withTracing(google('gemini-2.5-pro'), phClient, {
+    const modelGoogle = withTracing(google('gemini-3-flash-preview'), phClient, {
+        posthogTraceId: `agent_${agentId}_${previousMessages.length}`,
+    });
+
+    const openaiClient = createOpenAI({
+        apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    const modelOpenAI = withTracing(openaiClient('gpt-5-mini'), phClient, {
         posthogTraceId: `agent_${agentId}_${previousMessages.length}`,
     });
 
@@ -62,16 +70,22 @@ export async function runAgentLLM(
 
     const agent = new ToolLoopAgent({
         model: modelGoogle,
+        providerOptions: {
+            openai: {
+                reasoningEffort: 'high',
+                reasoningSummary: 'concise',
+            },
+        },
         instructions: AGENT_SYSTEM_PROMPT,
         tools: { ...tools, ...dynamicTools, ...browserTools },
-        stopWhen: stepCountIs(32),
+        stopWhen: stepCountIs(1024),
         onStepFinish: (step) => {
             streamReasoning(step);
             usageAccumulator.promptTokens += step.usage.inputTokens || 0;
             usageAccumulator.completionTokens += step.usage.outputTokens || 0;
             usageAccumulator.totalTokens += step.usage.totalTokens || 0;
         },
-        maxRetries: 10,
+        maxRetries: 20,
     });
 
     const result = await agent.generate({ messages });

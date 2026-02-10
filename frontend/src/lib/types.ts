@@ -25,6 +25,8 @@ export type Message = Omit<RouterOutput['workspace']['messages'][number], 'id' |
 };
 export type Worker = RouterOutput['workers']['list'][number];
 export type LinkedWorkspace = RouterOutput['workers']['list'][number]['workspaces'][number];
+export type Environment = RouterOutput['environments']['list'][number];
+export type EnvironmentForRepo = RouterOutput['environments']['listByRepository'][number];
 
 export type AgentConfig = {
     model: string;

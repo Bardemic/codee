@@ -56,7 +56,7 @@ export function transformMessagesToModelMessages(previousMessages: Message[]): M
             }
         } else {
             // Agent messages - include tool calls if present
-            const toolCalls = message.toolCalls || [];
+            const toolCalls = (message.toolCalls || []).filter((toolCall) => toolCall.toolName !== 'reasoning');
 
             if (toolCalls.length > 0) {
                 // Build assistant message with tool calls

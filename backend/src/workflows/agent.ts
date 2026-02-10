@@ -16,6 +16,7 @@ import {
     cleanupSandbox,
     markAgentComplete,
     markAgentFailed,
+    writeEnvironmentFiles,
 } from './steps';
 import { updateAgent } from './helpers/agents';
 
@@ -43,6 +44,9 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
         if (!sandbox) throw new Error('Failed to create sandbox');
 
         sandboxStartTime = Date.now();
+
+        // Write environment files if configured
+        await writeEnvironmentFiles(agent, sandbox);
 
         const previousMessages = await loadPreviousMessages(payload.agentId);
 
@@ -78,6 +82,7 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
     let sandbox: Sandbox | undefined;
     const usageAccumulator: TokenUsageAccumulator = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
     let sandboxStartTime = 0;
+    let environmentFilePaths: string[] = [];
 
     try {
         const agent = await loadAgent(payload.agentId);
@@ -89,6 +94,9 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
         sandboxStartTime = Date.now();
 
         await createBranchIfNeeded(agent, sandbox, payload.isOrchestratorAgent);
+
+        // Write environment files if configured
+        environmentFilePaths = await writeEnvironmentFiles(agent, sandbox);
 
         const previousMessages = await loadPreviousMessages(payload.agentId);
 
@@ -106,7 +114,7 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
             return;
         }
 
-        await commitChangesIfNeeded(sandbox, agent.id, payload.prompt);
+        await commitChangesIfNeeded(sandbox, agent.id, payload.prompt, environmentFilePaths);
 
         await cleanupSandbox(sandbox, agent.id);
 

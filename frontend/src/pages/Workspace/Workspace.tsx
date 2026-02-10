@@ -87,6 +87,8 @@ export default function Workspace() {
         if (!agentId || !currentAgent) return;
         if (currentAgent.integration !== 'Codee') return;
 
+        setStreamingToolCalls([]);
+
         const eventSource = new EventSource(`http://127.0.0.1:5001/stream/agent/${agentId}`);
 
         eventSource.addEventListener('status', (event: MessageEvent) => {
@@ -108,20 +110,30 @@ export default function Workspace() {
                 })();
 
                 setStreamingToolCalls((prev) => {
-                    if (prev.some((toolCall) => toolCall.id === eventId)) return prev;
-                    return [
-                        ...prev,
-                        {
-                            id: eventId,
-                            created_at: new Date(eventData.timestamp),
-                            tool_name: eventData.step,
-                            arguments: parsedArguments,
-                            result: eventData.detail ?? '',
-                            status: eventData.phase ?? 'running',
-                            duration_ms: null,
-                            images: [],
-                        },
-                    ];
+                    const existingIndex = prev.findIndex((toolCall) => toolCall.id === eventId);
+                    const newToolCall = {
+                        id: eventId,
+                        created_at: new Date(eventData.timestamp),
+                        tool_name: eventData.step,
+                        arguments: parsedArguments,
+                        result: eventData.detail ?? '',
+                        status: eventData.phase ?? 'running',
+                        duration_ms: null,
+                        images: eventData.images ?? [],
+                    };
+
+                    if (existingIndex !== -1) {
+                        // Update existing tool call (e.g., when images arrive)
+                        const updated = [...prev];
+                        updated[existingIndex] = {
+                            ...updated[existingIndex],
+                            ...newToolCall,
+                            images: newToolCall.images.length > 0 ? newToolCall.images : updated[existingIndex].images,
+                        };
+                        return updated;
+                    }
+
+                    return [...prev, newToolCall];
                 });
             }
         });

@@ -76,6 +76,7 @@ export const workspaceRouter = router({
                 branch_name: z.string().min(1),
                 sub_agents: z.boolean(),
                 images: z.array(imageSchema).default([]),
+                environment_id: z.number().optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -134,6 +135,7 @@ export const workspaceRouter = router({
                     branchName: input.branch_name,
                     cloudProviders: input.cloud_providers,
                     images: input.images,
+                    environmentId: input.environment_id,
                 });
 
                 return { agent_id: firstAgent.id };
@@ -147,6 +149,7 @@ export const workspaceRouter = router({
                     baseBranch: input.branch_name,
                     isOrchestratorAgent: true,
                     images: input.images,
+                    environmentId: input.environment_id,
                 });
 
                 return { agent_id: orchestratorAgent.id };

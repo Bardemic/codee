@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, Index, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import type { Workspace } from './Workspace';
 import type { Message } from './Message';
+import type { Environment } from './Environment';
 
 export enum AgentStatus {
     PENDING = 'PENDING',
@@ -52,6 +53,15 @@ export class Agent {
 
     @Column({ type: 'boolean', default: false })
     isOrchestratorAgent!: boolean;
+
+    @Column({ nullable: true })
+    environmentId!: number | null;
+
+    @ManyToOne('Environment', {
+        onDelete: 'SET NULL',
+        nullable: true,
+    })
+    environment!: Environment | null;
 
     @CreateDateColumn({ default: 'now()' })
     createdAt!: Date;

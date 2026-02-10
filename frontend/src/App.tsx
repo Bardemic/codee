@@ -4,6 +4,7 @@ import Login from './pages/Login/Login';
 import Home from './pages/Home/Home';
 import Sidebar from './components/Sidebar/Sidebar';
 import Integrations from './pages/Integrations/Integrations';
+import Environments from './pages/Environments/Environments';
 import Workspace from './pages/Workspace/Workspace';
 import Workers from './pages/Workers/Workers';
 import Usage from './pages/Usage/Usage';
@@ -26,6 +27,7 @@ function App() {
                     <Route path="/" element={<SidebarLayout />}>
                         <Route index element={<Home />} />
                         <Route path="integrations" element={<Integrations />} />
+                        <Route path="environments" element={<Environments />} />
                         <Route path="workers" element={<Workers />} />
                         <Route path="usage" element={<Usage />} />
                         <Route path="organization" element={<Organization />} />

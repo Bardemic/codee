@@ -1,0 +1,285 @@
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modalContent {
+    background-color: var(--color-surface);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 24px;
+    width: 700px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+}
+
+.modalContent h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--color-foreground);
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.formLabel {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-muted);
+}
+
+.formInput {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--color-foreground);
+}
+
+.formInput:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.formTextarea {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    min-height: 60px;
+    resize: none;
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--color-foreground);
+}
+
+.formTextarea:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.repoSelector {
+    position: relative;
+}
+
+.repoSelectorButton {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--color-foreground);
+    transition: background-color 0.2s;
+    width: 100%;
+    font-size: 0.95rem;
+}
+
+.repoSelectorButton:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.repoDropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: var(--color-surface);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    z-index: 10;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.repoSearchInput {
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    color: var(--color-foreground);
+    font-size: 0.9rem;
+}
+
+.repoSearchInput:focus {
+    outline: none;
+}
+
+.repoOption {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    color: var(--color-foreground);
+    transition: background-color 0.2s;
+}
+
+.repoOption:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.repoOptionSelected {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.filesSection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.filesSectionHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.addFileButton {
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--color-accent);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.addFileButton:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.fileEntry {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+.fileHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.filePathInput {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--color-foreground);
+}
+
+.filePathInput:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.removeFileButton {
+    all: unset;
+    cursor: pointer;
+    color: var(--color-muted);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.removeFileButton:hover {
+    color: #ef4444;
+}
+
+.fileContentTextarea {
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    min-height: 120px;
+    resize: vertical;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--color-foreground);
+    line-height: 1.5;
+}
+
+.fileContentTextarea:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modalActions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.cancelButton {
+    background-color: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--color-muted);
+}
+
+.cancelButton:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-foreground);
+}
+
+.deleteButton {
+    all: unset;
+    cursor: pointer;
+    color: gray;
+}
+
+.deleteButton:hover {
+    color: red;
+    background-color: transparent;
+}
+
+.buttonsBar {
+    flex: 1;
+}
+
+.errorMessage {
+    color: #ef4444;
+    font-size: 0.85rem;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
+.emptyFiles {
+    text-align: center;
+    color: var(--color-muted);
+    padding: 24px;
+    font-size: 14px;
+    font-style: italic;
+}

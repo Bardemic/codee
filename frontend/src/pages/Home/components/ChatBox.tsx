@@ -2,15 +2,17 @@ import { useState, useRef, useEffect, useMemo, useCallback, type ReactNode } fro
 import { BsSend, BsTools } from 'react-icons/bs';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { IoClose, IoImage } from 'react-icons/io5';
-import type { Integration, MessageImage } from '../../../lib/types';
+import { FiLock } from 'react-icons/fi';
+import type { Integration, MessageImage, EnvironmentForRepo } from '../../../lib/types';
 import { PromptEditor, type PromptEditorRef } from './PromptEditor';
 import { DropdownSelector, type DropdownOption } from './DropdownSelector';
 import { CloudAgentsDropdown, type CloudAgentsSelection } from './CloudAgentsDropdown';
+import { EnvironmentSelector } from './EnvironmentSelector';
 import styles from '../home.module.css';
 
 interface ChatBoxProps {
     integrations: Integration[];
-    onSubmit: (message: string, selectedTools: string[], images: MessageImage[]) => void;
+    onSubmit: (message: string, selectedTools: string[], images: MessageImage[], environmentId: number | null) => void;
     isLoading?: boolean;
     isDisabled?: boolean;
     placeholder?: string;
@@ -20,6 +22,9 @@ interface ChatBoxProps {
     onCloudAgentsChange: (sel: CloudAgentsSelection) => void;
     subAgents: boolean;
     onSubAgentsChange: (value: boolean) => void;
+    environments: EnvironmentForRepo[];
+    selectedEnvironmentId: number | null;
+    onEnvironmentChange: (id: number | null) => void;
 }
 
 export interface ChatBoxRef {
@@ -38,6 +43,9 @@ export function ChatBox({
     onCloudAgentsChange,
     subAgents,
     onSubAgentsChange,
+    environments,
+    selectedEnvironmentId,
+    onEnvironmentChange,
 }: ChatBoxProps) {
     const [selectedTools, setSelectedTools] = useState<string[]>([]);
     const [attachedImages, setAttachedImages] = useState<MessageImage[]>([]);
@@ -140,6 +148,11 @@ export function ChatBox({
                         label={toolsLabel}
                         dropdownVariant="floating"
                     />
+                    <EnvironmentSelector
+                        environments={environments}
+                        selectedId={selectedEnvironmentId}
+                        onChange={onEnvironmentChange}
+                    />
                 </div>
                 <div className={styles.toolbarGroup}>
                     <span className={styles.toggleLabel}>
@@ -176,7 +189,7 @@ export function ChatBox({
                 integrations={integrations}
                 onSelectedToolsChange={setSelectedTools}
                 onSubmit={(message) => {
-                    onSubmit(message, selectedTools, attachedImages);
+                    onSubmit(message, selectedTools, attachedImages, selectedEnvironmentId);
                     setAttachedImages([]);
                     setHasContent(false);
                 }}
@@ -206,7 +219,7 @@ export function ChatBox({
                     onClick={() => {
                         const message = editorRef.current?.getMessage().trim();
                         if (message || attachedImages.length > 0) {
-                            onSubmit(message || '', selectedTools, attachedImages);
+                            onSubmit(message || '', selectedTools, attachedImages, selectedEnvironmentId);
                             setAttachedImages([]);
                             setHasContent(false);
                         }
