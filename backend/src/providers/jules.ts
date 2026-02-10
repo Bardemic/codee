@@ -28,6 +28,7 @@ export class JulesProvider implements CloudProvider {
         model?: string | null;
         isOrchestratorAgent: boolean;
         images: MessageImage[];
+        environmentId?: number | null;
     }): Promise<Agent> {
         const agentRepository = AppDataSource.getRepository(Agent);
         const agent = agentRepository.create({

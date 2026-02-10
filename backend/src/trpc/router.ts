@@ -4,8 +4,10 @@ import { workersRouter } from './routers/workers';
 import { workspaceRouter } from './routers/workspace';
 import { organizationRouter } from './routers/organization';
 import { paymentRouter } from './routers/payment';
+import { environmentsRouter } from './routers/environments';
 
 export const appRouter = router({
+    environments: environmentsRouter,
     integrations: integrationsRouter,
     workers: workersRouter,
     workspace: workspaceRouter,

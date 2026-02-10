@@ -4,7 +4,7 @@ import SidebarButton from './SidebarButton';
 import { useAuth } from '../../lib/useAuth';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { trpc } from '../../lib/trpc';
-import { FiHome, FiGrid, FiUsers, FiLogOut, FiSettings, FiPieChart, FiBriefcase } from 'react-icons/fi';
+import { FiHome, FiGrid, FiUsers, FiLogOut, FiSettings, FiPieChart, FiBriefcase, FiLock } from 'react-icons/fi';
 import codeeLogo from '../../assets/svgs/CodeeLogo.svg';
 
 type SidebarProps = {
@@ -30,6 +30,7 @@ export default function Sidebar({ children }: SidebarProps) {
                 <div className={styles.navigationSection}>
                     <SidebarButton text="Home" to="/" icon={<FiHome size={16} />} />
                     <SidebarButton text="Integrations" to="/integrations" icon={<FiGrid size={16} />} />
+                    <SidebarButton text="Environments" to="/environments" icon={<FiLock size={16} />} />
                     <SidebarButton text="Workers" to="/workers" icon={<FiUsers size={16} />} />
                     <SidebarButton text="Usage" to="/usage" icon={<FiPieChart size={16} />} />
                     <SidebarButton text="Organization" to="/organization" icon={<FiBriefcase size={16} />} />

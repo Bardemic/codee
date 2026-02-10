@@ -2,6 +2,7 @@
 
 import { Sandbox } from '@vercel/sandbox';
 import { AgentStatus } from '../db/entities/Agent';
+import { SubscriptionTier } from '../db/entities/Organization';
 import { emitStatus } from '../stream/events';
 import { runAgentLLM, runOrchestratorAgentLLM, type TokenUsageAccumulator, AGENT_MODEL, ORCHESTRATOR_MODEL } from './llm';
 import {
@@ -15,6 +16,7 @@ import {
     cleanupSandbox,
     markAgentComplete,
     markAgentFailed,
+    writeEnvironmentFiles,
 } from './steps';
 import { updateAgent } from './helpers/agents';
 
@@ -43,6 +45,9 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
 
         sandboxStartTime = Date.now();
 
+        // Write environment files if configured
+        await writeEnvironmentFiles(agent, sandbox);
+
         const previousMessages = await loadPreviousMessages(payload.agentId);
 
         await Promise.all([
@@ -55,13 +60,13 @@ export async function runOrchestratorAgentWorkflow(payload: AgentJobPayload) {
         const sandboxDurationMs = Date.now() - sandboxStartTime;
         await saveAgentResponse(agent, response, usageAccumulator, sandboxDurationMs);
 
-        await cleanupSandbox(sandbox);
+        await cleanupSandbox(sandbox, agent.id);
 
         await markAgentComplete(agent.id);
     } catch (error: unknown) {
         if (sandbox) {
             try {
-                await cleanupSandbox(sandbox);
+                await cleanupSandbox(sandbox, payload.agentId);
             } catch {
                 // Ignore cleanup errors
             }
@@ -77,6 +82,7 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
     let sandbox: Sandbox | undefined;
     const usageAccumulator: TokenUsageAccumulator = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
     let sandboxStartTime = 0;
+    let environmentFilePaths: string[] = [];
 
     try {
         const agent = await loadAgent(payload.agentId);
@@ -89,30 +95,34 @@ export async function runAgentWorkflow(payload: AgentJobPayload) {
 
         await createBranchIfNeeded(agent, sandbox, payload.isOrchestratorAgent);
 
+        // Write environment files if configured
+        environmentFilePaths = await writeEnvironmentFiles(agent, sandbox);
+
         const previousMessages = await loadPreviousMessages(payload.agentId);
 
         await Promise.all([emitStatus(agent.id, 'running', 'sandboxagent_starting', 'running AI'), updateAgent(agent, { status: AgentStatus.RUNNING })]);
 
-        const response = await runAgentLLM(agent.id, sandbox, payload.toolSlugs || [], previousMessages, usageAccumulator);
+        const subscriptionTier = agent.workspace.organization?.subscriptionTier ?? SubscriptionTier.FREE;
+        const response = await runAgentLLM(agent.id, sandbox, payload.toolSlugs || [], previousMessages, usageAccumulator, subscriptionTier);
 
         const sandboxDurationMs = Date.now() - sandboxStartTime;
         await saveAgentResponse(agent, response, usageAccumulator, sandboxDurationMs);
 
         if (payload.isOrchestratorAgent) {
-            await cleanupSandbox(sandbox);
+            await cleanupSandbox(sandbox, agent.id);
             await markAgentComplete(agent.id);
             return;
         }
 
-        await commitChangesIfNeeded(sandbox, agent.id, payload.prompt);
+        await commitChangesIfNeeded(sandbox, agent.id, payload.prompt, environmentFilePaths);
 
-        await cleanupSandbox(sandbox);
+        await cleanupSandbox(sandbox, agent.id);
 
         await markAgentComplete(agent.id);
     } catch (error: unknown) {
         if (sandbox) {
             try {
-                await cleanupSandbox(sandbox);
+                await cleanupSandbox(sandbox, payload.agentId);
             } catch {
                 // Ignore cleanup errors
             }

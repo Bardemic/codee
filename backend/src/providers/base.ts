@@ -1,6 +1,7 @@
 import { Agent } from '../db/entities/Agent';
 import { Workspace } from '../db/entities/Workspace';
 import type { SenderType, MessageImage } from '../db/entities/Message';
+import type { ToolCallImage } from '../db/entities/ToolCall';
 
 export type ProviderToolCall = {
     id: number;
@@ -9,7 +10,7 @@ export type ProviderToolCall = {
     arguments: Record<string, unknown>;
     result: string;
     status: string;
-    duration_ms: number | null;
+    images: ToolCallImage[];
 };
 
 export type ProviderMessage = {
@@ -33,6 +34,7 @@ export interface CloudProvider {
         model?: string | null;
         isOrchestratorAgent: boolean;
         images: MessageImage[];
+        environmentId?: number | null;
     }): Promise<Agent>;
     getMessages(agent: Agent): Promise<ProviderMessage[]>;
     sendMessage(agent: Agent, message: string, images: MessageImage[]): Promise<boolean>;

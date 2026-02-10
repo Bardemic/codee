@@ -26,6 +26,7 @@ export async function createAgentsFromProviders(params: {
     branchName: string;
     cloudProviders: CloudProviderConfig[];
     images: MessageImage[];
+    environmentId?: number | null;
 }): Promise<Agent> {
     let first: Agent | null = null;
     for (const config of params.cloudProviders) {
@@ -43,6 +44,7 @@ export async function createAgentsFromProviders(params: {
                 model: agentConfig.model,
                 isOrchestratorAgent: false,
                 images: params.images,
+                environmentId: params.environmentId,
             });
             if (!first) first = agent;
         }

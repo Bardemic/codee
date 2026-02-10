@@ -12,6 +12,7 @@ import { FiGitBranch } from 'react-icons/fi';
 function Home() {
     const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
     const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
+    const [selectedEnvironmentId, setSelectedEnvironmentId] = useState<number | null>(null);
     const [subAgents, setSubAgents] = useState<boolean>(false);
     const [cloudAgents, setCloudAgents] = useState<CloudAgentsSelection>({
         providers: [{ agents: [{ model: 'auto.5', tools: [] }], name: 'Codee' }],
@@ -20,6 +21,7 @@ function Home() {
     const selectRepository = (repo: Repository) => {
         setSelectedRepo(repo);
         setSelectedBranch(repo.default_branch);
+        setSelectedEnvironmentId(null); // Reset environment when repo changes
     };
 
     const navigate = useNavigate();
@@ -28,6 +30,11 @@ function Home() {
     const { data: branches } = trpc.integrations.branches.useQuery(
         { repository_full_name: selectedRepo?.name ?? '' },
         { enabled: !!selectedRepo, trpc: { context: { skipBatch: true } } }
+    );
+
+    const { data: environments } = trpc.environments.listByRepository.useQuery(
+        { github_repository_name: selectedRepo?.name ?? '' },
+        { enabled: !!selectedRepo }
     );
 
     const createWorkspace = trpc.workspace.create.useMutation({
@@ -75,7 +82,7 @@ function Home() {
         );
     }, [branchOptions, selectedBranch]);
 
-    async function createNewWorkspace(userMessage: string, selectedTools: string[], images: MessageImage[]) {
+    async function createNewWorkspace(userMessage: string, selectedTools: string[], images: MessageImage[], environmentId: number | null) {
         if (!selectedRepo || !selectedBranch) return;
         await createWorkspace.mutateAsync({
             message: userMessage,
@@ -85,6 +92,7 @@ function Home() {
             cloud_providers: activeProviders,
             sub_agents: subAgents,
             images,
+            environment_id: environmentId ?? undefined,
         });
     }
 
@@ -118,6 +126,9 @@ function Home() {
                         placeholder="Describe your coding task..."
                         subAgents={subAgents}
                         onSubAgentsChange={setSubAgents}
+                        environments={environments ?? []}
+                        selectedEnvironmentId={selectedEnvironmentId}
+                        onEnvironmentChange={setSelectedEnvironmentId}
                         leftPills={
                             <>
                                 <RepositoriesPill selected={selectedRepo} setSelected={selectRepository} />
