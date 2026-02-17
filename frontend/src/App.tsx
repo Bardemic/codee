@@ -8,6 +8,7 @@ import Workspace from './pages/Workspace/Workspace';
 import Workers from './pages/Workers/Workers';
 import Usage from './pages/Usage/Usage';
 import Organization from './pages/Organization/Organization';
+import Landing from './pages/Landing/Landing';
 import './app.css';
 
 function SidebarLayout() {
@@ -32,6 +33,7 @@ function App() {
                         <Route path="agent/:agentId" element={<Workspace />} />
                     </Route>
                     <Route path="login" element={<Login />} />
+                    <Route path="landing" element={<Landing />} />
                 </Routes>
             </Router>
         </AuthProvider>

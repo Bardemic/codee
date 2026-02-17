@@ -1,0 +1,577 @@
+.page {
+    min-height: 100vh;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    overflow-x: hidden;
+}
+
+/* ── Navigation ── */
+
+.nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 48px;
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    background-color: rgba(25, 27, 32, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 100;
+}
+
+.navBrand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--color-foreground);
+}
+
+.navLogo {
+    width: 36px;
+    height: 36px;
+}
+
+.navName {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: lowercase;
+}
+
+.navLinks {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+.navLink {
+    color: var(--color-muted);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.navLink:hover {
+    color: var(--color-foreground);
+}
+
+.navCta {
+    background: var(--color-accent);
+    color: var(--color-background);
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.navCta:hover {
+    background: var(--color-accent-strong);
+    color: var(--color-background);
+}
+
+/* ── Hero ── */
+
+.hero {
+    text-align: center;
+    padding: 100px 48px 80px;
+    background: radial-gradient(ellipse at top, rgba(246, 213, 74, 0.06) 0%, transparent 60%);
+    position: relative;
+}
+
+.heroLabel {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-accent);
+    background: rgba(246, 213, 74, 0.1);
+    border: 1px solid rgba(246, 213, 74, 0.2);
+    padding: 6px 16px;
+    border-radius: 999px;
+    margin-bottom: 28px;
+    letter-spacing: 0.03em;
+}
+
+.heroTitle {
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    margin: 0 auto 24px;
+    max-width: 720px;
+}
+
+.heroAccent {
+    color: var(--color-accent);
+}
+
+.heroSub {
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--color-muted);
+    max-width: 560px;
+    margin: 0 auto 40px;
+}
+
+.heroCtas {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+.primaryCta {
+    background: var(--color-accent);
+    color: var(--color-background);
+    border: none;
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 10px 30px rgba(246, 213, 74, 0.2);
+    transition:
+        background-color 0.2s,
+        box-shadow 0.2s;
+}
+
+.primaryCta:hover {
+    background: var(--color-accent-strong);
+    color: var(--color-background);
+    box-shadow: 0 10px 40px rgba(246, 213, 74, 0.3);
+}
+
+.secondaryCta {
+    background: transparent;
+    color: var(--color-foreground);
+    border: 1px solid var(--color-border);
+    padding: 14px 32px;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+        background-color 0.2s,
+        border-color 0.2s;
+}
+
+.secondaryCta:hover {
+    background: var(--color-surface);
+    border-color: #3a3f48;
+    color: var(--color-foreground);
+}
+
+/* ── Screenshot showcase ── */
+
+.showcase {
+    padding: 0 48px 100px;
+    max-width: 1060px;
+    margin: 0 auto;
+}
+
+.screenshotFrame {
+    border-radius: 14px;
+    border: 1px solid #2c313a;
+    background: #20242b;
+    box-shadow:
+        0 40px 80px rgba(0, 0, 0, 0.5),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+}
+
+.screenshotBar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #2c313a;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.screenshotDot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #2d313a;
+}
+
+.screenshotDot:nth-child(1) {
+    background: #ef4444;
+}
+
+.screenshotDot:nth-child(2) {
+    background: #f6d54a;
+}
+
+.screenshotDot:nth-child(3) {
+    background: #22c55e;
+}
+
+.screenshotPlaceholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 440px;
+    background: linear-gradient(180deg, rgba(35, 38, 45, 1) 0%, rgba(25, 27, 32, 1) 100%);
+    color: var(--color-muted);
+    font-size: 14px;
+}
+
+.screenshotPlaceholderIcon {
+    font-size: 48px;
+    opacity: 0.3;
+}
+
+.screenshotCaption {
+    font-size: 13px;
+    color: var(--color-muted);
+    opacity: 0.6;
+}
+
+/* ── Features section ── */
+
+.features {
+    padding: 100px 48px;
+    max-width: 1060px;
+    margin: 0 auto;
+}
+
+.sectionLabel {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+}
+
+.sectionTitle {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 16px;
+    line-height: 1.2;
+}
+
+.sectionSub {
+    font-size: 16px;
+    color: var(--color-muted);
+    line-height: 1.6;
+    max-width: 520px;
+    margin-bottom: 56px;
+}
+
+.featureGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.featureCard {
+    background: #20242b;
+    border: 1px solid #2c313a;
+    border-radius: 14px;
+    padding: 32px 28px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    transition:
+        border-color 0.2s,
+        transform 0.2s;
+}
+
+.featureCard:hover {
+    border-color: #3a3f48;
+    transform: translateY(-2px);
+}
+
+.featureIcon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(246, 213, 74, 0.1);
+    border: 1px solid rgba(246, 213, 74, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-accent);
+    font-size: 20px;
+    margin-bottom: 20px;
+}
+
+.featureTitle {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--color-foreground);
+}
+
+.featureDesc {
+    font-size: 14px;
+    color: var(--color-muted);
+    line-height: 1.6;
+}
+
+/* ── Product screenshots section ── */
+
+.screenshots {
+    padding: 100px 48px;
+    background: linear-gradient(180deg, rgba(20, 22, 27, 0.5) 0%, transparent 100%);
+}
+
+.screenshotsInner {
+    max-width: 1060px;
+    margin: 0 auto;
+}
+
+.screenshotGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+    margin-top: 56px;
+}
+
+.screenshotCard {
+    border-radius: 14px;
+    border: 1px solid #2c313a;
+    background: #20242b;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+    transition:
+        border-color 0.2s,
+        transform 0.2s;
+}
+
+.screenshotCard:hover {
+    border-color: #3a3f48;
+    transform: translateY(-2px);
+}
+
+.screenshotCardImage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 260px;
+    background: linear-gradient(180deg, rgba(35, 38, 45, 1) 0%, rgba(25, 27, 32, 1) 100%);
+    color: var(--color-muted);
+    font-size: 13px;
+    border-bottom: 1px solid #2c313a;
+}
+
+.screenshotCardIcon {
+    font-size: 36px;
+    opacity: 0.3;
+}
+
+.screenshotCardBody {
+    padding: 24px;
+}
+
+.screenshotCardTitle {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--color-foreground);
+}
+
+.screenshotCardDesc {
+    font-size: 14px;
+    color: var(--color-muted);
+    line-height: 1.6;
+}
+
+/* ── How it works ── */
+
+.howItWorks {
+    padding: 100px 48px;
+    max-width: 1060px;
+    margin: 0 auto;
+}
+
+.stepsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-top: 56px;
+}
+
+.step {
+    text-align: center;
+}
+
+.stepNumber {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(246, 213, 74, 0.1);
+    border: 1px solid rgba(246, 213, 74, 0.2);
+    color: var(--color-accent);
+    font-size: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.stepTitle {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--color-foreground);
+}
+
+.stepDesc {
+    font-size: 14px;
+    color: var(--color-muted);
+    line-height: 1.6;
+}
+
+/* ── CTA banner ── */
+
+.ctaBanner {
+    padding: 100px 48px;
+    text-align: center;
+    background: radial-gradient(ellipse at center, rgba(246, 213, 74, 0.05) 0%, transparent 60%);
+}
+
+.ctaTitle {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 16px;
+    line-height: 1.2;
+}
+
+.ctaSub {
+    font-size: 16px;
+    color: var(--color-muted);
+    line-height: 1.6;
+    max-width: 480px;
+    margin: 0 auto 36px;
+}
+
+/* ── Footer ── */
+
+.footer {
+    padding: 40px 48px;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1060px;
+    margin: 0 auto;
+}
+
+.footerBrand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.footerLogo {
+    width: 24px;
+    height: 24px;
+}
+
+.footerName {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: lowercase;
+}
+
+.footerCopy {
+    font-size: 13px;
+    color: var(--color-muted);
+}
+
+.footerLinks {
+    display: flex;
+    gap: 24px;
+}
+
+.footerLink {
+    color: var(--color-muted);
+    text-decoration: none;
+    font-size: 13px;
+    transition: color 0.2s;
+}
+
+.footerLink:hover {
+    color: var(--color-foreground);
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+    .nav {
+        padding: 16px 24px;
+    }
+
+    .navLinks {
+        display: none;
+    }
+
+    .hero {
+        padding: 60px 24px 48px;
+    }
+
+    .heroTitle {
+        font-size: 36px;
+    }
+
+    .heroSub {
+        font-size: 16px;
+    }
+
+    .heroCtas {
+        flex-direction: column;
+    }
+
+    .showcase {
+        padding: 0 24px 60px;
+    }
+
+    .features,
+    .screenshots,
+    .howItWorks,
+    .ctaBanner {
+        padding: 60px 24px;
+    }
+
+    .featureGrid,
+    .stepsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .screenshotGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .sectionTitle {
+        font-size: 28px;
+    }
+
+    .ctaTitle {
+        font-size: 28px;
+    }
+
+    .footer {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+        padding: 32px 24px;
+    }
+}
